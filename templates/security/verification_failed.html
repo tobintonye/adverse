@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification Failed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen text-white">
+    <div class="text-center space-y-4">
+        <h2 class="text-xl font-bold text-red-500">Verification Failed</h2>
+        <p class="text-zinc-400 text-sm">This link is invalid or has expired.</p>
+        <a href="{% url 'security:register' %}" 
+           class="inline-block mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold">
+            Register Again
+        </a>
+    </div>
+</body>
+</html>

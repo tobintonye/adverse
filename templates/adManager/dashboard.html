@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redox Admin | Live Pulse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(18, 18, 18, 0.7); backdrop-filter: blur(12px); }
+        .red-glow { box-shadow: 0 0 20px rgba(220, 38, 38, 0.15); }
+        .stat-card:hover { border-color: #dc2626; transform: translateY(-2px); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-[#050505] text-zinc-200 min-h-screen flex overflow-hidden">
+
+    <!-- Sidebar: Sleek Icon-Focus -->
+    <aside class="w-20 lg:w-64 border-r border-zinc-900 bg-black flex flex-col transition-all duration-300">
+        <div class="p-6 h-20 flex items-center justify-center lg:justify-start border-b border-zinc-900">
+            <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+                <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+            </div>
+            <span class="ml-3 font-extrabold text-xl tracking-tighter hidden lg:block uppercase">REDOX</span>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-4">
+            <div class="space-y-1">
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-4 mb-2 hidden lg:block">Main Menu</p>
+                <a href="#" class="flex items-center justify-center lg:justify-start space-x-3 bg-zinc-900/80 text-white px-4 py-3 rounded-xl border border-zinc-800/50 red-glow">
+                    <i data-lucide="layout-grid" class="w-5 h-5 text-red-500"></i>
+                    <span class="text-sm font-semibold hidden lg:block">Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center justify-center lg:justify-start space-x-3 text-zinc-500 hover:text-white px-4 py-3 rounded-xl transition-all group">
+                    <i data-lucide="monitor" class="w-5 h-5 group-hover:text-red-400"></i>
+                    <span class="text-sm font-medium hidden lg:block">Billboards</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="p-6 border-t border-zinc-900">
+            <div class="flex items-center space-x-3 px-2">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 to-zinc-800 p-[1px]">
+                    <div class="w-full h-full rounded-full bg-black flex items-center justify-center text-[10px] font-bold uppercase italic">
+                        {{ admanager.business_name|slice:":2" }}
+                    </div>
+                </div>
+                <div class="hidden lg:block overflow-hidden">
+                    <p class="text-xs font-bold truncate">{{ admanager.business_name }}</p>
+                    <p class="text-[10px] text-zinc-500">Ad Manager</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Section -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- Navbar -->
+        <header class="h-20 border-b border-zinc-900 flex items-center justify-between px-8 glass sticky top-0 z-50">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-lg font-bold">Network Pulse</h1>
+                <span class="flex items-center space-x-2 text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-md font-bold border border-red-500/20 animate-pulse">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    <span>LIVE</span>
+                </span>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="p-2 text-zinc-400 hover:text-white transition"><i data-lucide="search" class="w-5 h-5"></i></button>
+                <button class="p-2 text-zinc-400 hover:text-white transition relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border-2 border-black"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            
+            <!-- Hero Stats: The Impression Pulse -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="lg:col-span-2 bg-zinc-900/20 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                        <i data-lucide="activity" class="w-32 h-32 text-red-600"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Performance Overview</p>
+                        <h3 class="text-4xl font-black text-white italic tracking-tighter">{{ admanager.total_impressions }}<span class="text-red-600 text-xl ml-2">IMPRESSIONS</span></h3>
+                        <div id="impressionChart" class="mt-4 -ml-4"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="stat-card bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-3xl shadow-xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-2 bg-red-600/10 rounded-xl"><i data-lucide="layout" class="w-5 h-5 text-red-500"></i></div>
+                            <span class="text-green-500 text-[10px] font-bold">+4 new</span>
+                        </div>
+                        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Screens</p>
+                        <h4 class="text-2xl font-bold">{{ admanager.total_billboards }}</h4>
+                    </div>
+                    <div class="stat-card bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-3xl shadow-xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-2 bg-zinc-800 rounded-xl"><i data-lucide="users" class="w-5 h-5 text-zinc-400"></i></div>
+                        </div>
+                        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Campaigns Served</p>
+                        <h4 class="text-2xl font-bold">{{ admanager.total_campaigns_serverd }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billboard Live Grid -->
+            <h3 class="text-sm font-bold uppercase tracking-widest mb-6 flex items-center">
+                <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-red-600"></i> Top Performing Assets
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="group bg-zinc-900/30 border border-zinc-800/60 rounded-3xl overflow-hidden hover:border-red-600/50 transition-all duration-500">
+                    <div class="h-48 bg-zinc-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=600')] bg-cover bg-center group-hover:scale-110 transition duration-700"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="bg-red-600 text-[8px] font-black px-2 py-1 rounded tracking-tighter uppercase">Premium Spot</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-lg group-hover:text-red-500 transition">Lagos Digital LED-01</h4>
+                            <span class="text-[10px] font-bold text-green-500 uppercase">Active</span>
+                        </div>
+                        <p class="text-xs text-zinc-500 mb-4">Ikeja City Mall Entrance</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-zinc-800">
+                            <div>
+                                <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Revenue</p>
+                                <p class="text-sm font-bold">₦2.4M</p>
+                            </div>
+                            <button class="p-2 bg-zinc-800 rounded-full hover:bg-red-600 transition group/btn">
+                                <i data-lucide="external-link" class="w-4 h-4 text-zinc-400 group-hover/btn:text-white"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="group bg-zinc-900/30 border border-zinc-800/60 rounded-3xl overflow-hidden hover:border-red-600/50 transition-all duration-500">
+                    <div class="h-48 bg-zinc-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1617391654484-2993482a747d?q=80&w=600')] bg-cover bg-center group-hover:scale-110 transition duration-700"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <span class="bg-zinc-700 text-[8px] font-black px-2 py-1 rounded tracking-tighter uppercase">Standard</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-lg group-hover:text-red-500 transition">Abuja Express Billboard</h4>
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase">Idle</span>
+                        </div>
+                        <p class="text-xs text-zinc-500 mb-4">Airport Road Bypass</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-zinc-800">
+                            <div>
+                                <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Revenue</p>
+                                <p class="text-sm font-bold">₦0.00</p>
+                            </div>
+                            <button class="p-2 bg-zinc-800 rounded-full hover:bg-red-600 transition group/btn">
+                                <i data-lucide="plus" class="w-4 h-4 text-zinc-400 group-hover/btn:text-white"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add New Placeholder -->
+                <div class="border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center space-y-4 hover:border-red-600/40 hover:bg-red-600/[0.02] cursor-pointer transition-all group">
+                    <div class="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center group-hover:scale-110 transition">
+                        <i data-lucide="plus" class="w-6 h-6 text-zinc-500"></i>
+                    </div>
+                    <p class="text-xs font-bold text-zinc-500 tracking-widest uppercase">Register New Screen</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // High Performance Impression Pulse Chart
+        var options = {
+            series: [{
+                name: 'Impressions',
+                data: [31000, 40000, 28000, 51000, 42000, 109000, 100000]
+            }],
+            chart: {
+                height: 180,
+                type: 'area',
+                toolbar: { show: false },
+                sparkline: { enabled: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            colors: ['#dc2626'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3 },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [20, 100]
+                }
+            },
+            grid: { show: false },
+            xaxis: {
+                categories: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                labels: { show: true, style: { colors: '#52525b', fontSize: '10px', fontWeight: 'bold' } },
+                axisBorder: { show: false },
+                axisTicks: { show: false }
+            },
+            yaxis: { show: false },
+            tooltip: { theme: 'dark', x: { show: false } }
+        };
+
+        var chart = new ApexCharts(document.querySelector("#impressionChart"), options);
+        chart.render();
+    </script>
+</body>
+</html>
