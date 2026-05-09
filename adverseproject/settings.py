@@ -1,6 +1,7 @@
 from pathlib import Path
 import os 
 import environ
+from datetime import timedelta
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -31,6 +32,8 @@ INSTALLED_APPS = [
     'django_recaptcha',
     'security',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist', # Allows revoking refresh tokens
     'adverse',
     'admanager', 
     'advertiser', 
@@ -104,6 +107,29 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+     'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),    
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),     
+    "ROTATE_REFRESH_TOKENS": True,              
+    #"BLACKLIST_AFTER_ROTATION": True,              
+    "UPDATE_LAST_LOGIN": True,                     
+    
+    "ALGORITHM": "HS256",
+   #  "SIGNING_KEY": env('JWT_SIGNING_KEY'),                # Use a separate key in production
+    "AUTH_HEADER_TYPES": ("Bearer",),                
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
