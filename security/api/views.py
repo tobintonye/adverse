@@ -105,7 +105,7 @@ class PasswordResetView(APIView):
                 delayed_send_email(None, request)
             return Response({"detail": "If this email exists, a password reset link has been sent."}, status=status.HTTP_200_OK)
         
-class setNewPassword(APIView): 
+class SetNewPassword(APIView): 
     permission_classes = [AllowAny]
     
     def post(self, request): 
