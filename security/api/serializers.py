@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core import exceptions
 
 User = get_user_model()
 
@@ -46,3 +48,31 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Something went wrong, please try again")
         else: 
             raise serializers.ValidationError("Must include 'email' and 'password'.")
+        
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.lower().strip()    
+
+class SetNewPasswordSerializer(serializers.Serializer): 
+    new_password1 = serializers.CharField(write_only=True)
+    new_password2 = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        password = attrs.get('new_password1')
+        confirm_password = attrs.get('new_password2')
+        if password != confirm_password:
+            raise serializers.ValidationError({"password": "Passwords don't match."})
+        user = self.context.get('user')
+        try:
+            validate_password(password, user=user)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+        return attrs
+    
+    def save(self):
+        user = self.context.get('user')
+        user.set_password(self.validated_data['new_password1'])
+        user.save(update_fields=["password"])
+        return user

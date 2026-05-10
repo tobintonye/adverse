@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from rest_framework.permissions import AllowAny
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from ..views import sendVerificationEmail, sendPasswordResetLink
+from ..views import sendVerificationEmail, sendPasswordResetLink, delayed_send_email
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.db import transaction
@@ -72,7 +72,6 @@ class VerifyEmailView(APIView):
         try:
             uid_decoded = urlsafe_base64_decode(uid).decode()
             user = User.objects.get(pk=uid_decoded)
-
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({
                 "error": "Invalid or expired verification link."},
@@ -91,4 +90,43 @@ class VerifyEmailView(APIView):
                 {"message": "Email verified successfully."},
                 status=status.HTTP_200_OK
             )
+
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request): 
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            try: 
+                user = User.objects.get(email=email)
+                sendPasswordResetLink(user, request)
+            except User.DoesNotExist: 
+                delayed_send_email(None, request)
+            return Response({"detail": "If this email exists, a password reset link has been sent."}, status=status.HTTP_200_OK)
         
+class setNewPassword(APIView): 
+    permission_classes = [AllowAny]
+    
+    def post(self, request): 
+        
+        uid = request.data.get("uid")
+        token = request.data.get("token")
+        if not uid or not token:
+            return Response({"error": "Invalid or expired verification link."}, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            uid_decoded = urlsafe_base64_decode(uid).decode()
+            user = User.objects.get(pk=uid_decoded)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+             return Response({"error": "Invalid or expired verification link."}, status=status.HTTP_400_BAD_REQUEST)
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid or expired verification link."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = SetNewPasswordSerializer(
+            data=request.data,
+            context={"user":user}
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
