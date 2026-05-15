@@ -44,7 +44,7 @@ class LoginView(APIView):
             },  status=status.HTTP_200_OK )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class SendVerificationEmailView(APIView):
+class ReSendVerificationEmailView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request): 
@@ -109,7 +109,6 @@ class SetNewPassword(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request): 
-        
         uid = request.data.get("uid")
         token = request.data.get("token")
         if not uid or not token:

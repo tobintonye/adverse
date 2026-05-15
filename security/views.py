@@ -21,6 +21,7 @@ from django.views.decorators.http import require_http_methods
 import threading
 import time
 import random
+from rest_framework.exceptions import APIException
 
 User = get_user_model()
 
@@ -170,6 +171,7 @@ def loginAccount(request):
             if not user.is_active:
                 request.session['pending_verification_email'] = user.email
                 messages.error(request, "Please verify your email address before logging in.")
+                sendVerificationEmail(user, request)
                 return redirect('security:verificationpending')
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             remember_me = form.cleaned_data.get("remember_me")
@@ -178,7 +180,7 @@ def loginAccount(request):
             else:
                 request.session.set_expiry(0) 
             messages.success(request, f"Welcome back, {user.first_name}")
-            return redirect('adverse:home')
+            return redirect('admanager:dashboard')
     else:
         form = LoginForm()
     return render(request, "security/login.html", {"form": form})
@@ -295,3 +297,13 @@ def resend_passwordreset_link(request):
        # messages.success(request, "If an security with that email exists, a password reset link has been sent.")
         return redirect("security:passwordresetdone")
     return render(request, "security/passwordReset.html")
+
+def post_login(request):
+    if request.user.is_authenticated:
+        if request.user.role:
+            if request.user.role == 'ad_manager':
+                return redirect('admanager:dashboard')
+            else:
+                return redirect('adverse:home')
+        else:
+            return redirect('adverse:home')

@@ -1,0 +1,29 @@
+from rest_framework import authentication, exceptions
+
+from ..models import Device
+
+# authentication devices registered on the app
+from rest_framework import authentication, exceptions
+
+from ..models import Device
+
+
+class DeviceTokenAuthentication(authentication.BaseAuthentication):
+    keyword = "DeviceToken"
+
+    def authenticate(self, request):
+        header = authentication.get_authorization_header(request).decode("utf-8")
+        if not header or not header.startswith(f"{self.keyword} "):
+            return None
+        token = header.split(" ", 1)[1].strip()
+        if not token:
+            raise exceptions.AuthenticationFailed("No device token provided.")
+        try:
+            device = Device.objects.get(auth_token=token)
+        except Device.DoesNotExist as exc:
+            raise exceptions.AuthenticationFailed("Invalid device token.") from exc
+        if device.status == Device.Status.DISABLED:
+            raise exceptions.AuthenticationFailed("Device is disabled.")
+        return (device, token)
+    
+        # return (AnonymousUser(), device) to be used in prod

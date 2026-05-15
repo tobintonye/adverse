@@ -1,45 +1,73 @@
+import secrets
+
 from django.db import models
+from django.utils import timezone
+
 from admanager.models import Admanager
-import uuid
+from common.models import TimeStampedModel
 
-class Device(models.Model): 
-    STATUS_CHOICES = (
-        ('online', 'Online'),
-        ('offline', 'Offline'),
-        ('maintenance', 'Maintenance'),
-    )
+class Device(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACTIVE = "active", "Active"
+        OFFLINE = "offline", "Offline"
+        DISABLED = "disabled", "Disabled"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    device_owner = models.ForeignKey(Admanager, on_delete=models.CASCADE)
-    device_id = models.CharField(max_length=255, unique=True, db_index=True) 
-    name = models.CharField(max_length=255)
-    location_name = models.CharField(max_length=255)    
-    address = models.TextField()
-    screen_resolution = models.CharField(max_length=50, default='1920x1080')
-    screen_size = models.CharField(max_length=50)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='offline')
-  
-    # Device specs
-    android_version = models.CharField(max_length=50, blank=True)
-    device_model = models.CharField(max_length=100, blank=True)
-    storage_capacity = models.BigIntegerField(default=0)
-    storage_available = models.BigIntegerField(default=0)
+    ad_manager = models.ForeignKey(Admanager, on_delete=models.CASCADE, related_name="devices")
+    device_uid = models.CharField(max_length=80, unique=True) # billboard/device identifier
+    auth_token = models.CharField(max_length=96, unique=True, editable=False) 
+    name = models.CharField(max_length=120)
+    location_name = models.CharField(max_length=255)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    screen_width_px = models.PositiveIntegerField(default=1920)
+    screen_height_px = models.PositiveIntegerField(default=1080)
+    price_per_slot= models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    firmware_version = models.CharField(max_length=80, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.auth_token:
+            self.auth_token = secrets.token_urlsafe(48)
+            if "update_fields" in kwargs and kwargs["update_fields"] is not None:
+                kwargs["update_fields"] = set(kwargs["update_fields"]) | {"auth_token"}
+        super().save(*args, **kwargs)
     
-    price_per_slot = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3, default='NGN')
+    # to be removed in prod
+    @property
+    def is_authenticated(self):
+        return True
     
-    #status tracking
-    last_sync = models.DateTimeField(null=True, blank=True)
-    last_heartbeat = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    @property
+    def is_online(self):
+        if not self.last_seen_at:
+            return False
+        return self.last_seen_at >= timezone.now() - timezone.timedelta(minutes=5)
+
+    # andriod app to ping this endpoint for status update
+    def mark_heartbeat(self, firmware_version="", free_storage_mb=None, current_media_id=None):
+        self.last_seen_at = timezone.now()
+        self.status = self.Status.ACTIVE
+        update_fields = ["last_seen_at", "status", "updated_at"]
+
+        if firmware_version:
+            self.firmware_version = firmware_version
+            update_fields.append("firmware_version")
+
+        self.save(update_fields=update_fields)
+
+    # if device token gets leak
+    def rotate_token(self): 
+        self.auth_token = secrets.token_urlsafe(48)
+        self.save(update_fields=["auth_token", "updated_at"])
+
+    def __str__(self):
+        return f"{self.name} ({self.device_uid})"
     
     class Meta:
-        db_table = 'devices'
         indexes = [
-            models.Index(fields=['device_id']),
-            models.Index(fields=['status'])
+            models.Index(fields=["device_uid"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["last_seen_at"]),
         ]
-    def __str__(self):
-        return f"{self.name} - {self.location_name}"

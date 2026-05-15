@@ -12,8 +12,7 @@ phone_regex = RegexValidator(
 
 class AdManagerProfileForm(forms.ModelForm): 
     business_phone = forms.CharField(
-        validators=[phone_regex], 
-        max_length=14,
+        max_length=20,
         widget=forms.TextInput(attrs={'placeholder': 'e.g. 08012345678'})
     )
     
@@ -52,4 +51,10 @@ class AdManagerProfileForm(forms.ModelForm):
         phone = self.cleaned_data.get('business_phone')
         # Remove any non-numeric characters except the '+'
         clean_phone = re.sub(r'[^\d+]', '', phone)
+        if not re.match(r'^(\+234|0)[789][01]\d{8}$', clean_phone):
+            raise ValidationError(
+                "Phone number must be entered in the format: "
+                "'08012345678' or '+2348012345678'."
+            )
+
         return clean_phone

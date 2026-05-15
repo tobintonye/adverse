@@ -1,3 +1,4 @@
+{% load socialaccount %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +19,7 @@
 
         <!-- Google Signup: White/Silver contrast -->
         <div class="mb-4">
-            <a href="{% url 'socialaccount_signup' %}" class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-100 font-medium rounded-lg transition text-sm">
+            <a href="{% provider_login_url 'google' %}" class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-100 font-medium rounded-lg transition text-sm">
                 <svg width="16" height="16" viewBox="0 0 18 18">
                     <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
                     <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-2.7.75 4.8 4.8 0 0 1-4.52-3.36H1.83v2.07A8 8 0 0 0 8.98 17z"/>

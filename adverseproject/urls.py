@@ -11,6 +11,7 @@ urlpatterns = [
     path('adverse-auth/', include('security.urls')),
     path('adverse/', include('adverse.urls')),
     path('admanager/', include('admanager.urls')),
+    path('devices/', include('device.urls')),
 
     # api routes 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -29,6 +29,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'django_recaptcha',
     'security',
     'rest_framework',
@@ -38,10 +42,8 @@ INSTALLED_APPS = [
     'admanager', 
     'advertiser', 
     'device',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
+    'common',
+    
 ]
 
 MIDDLEWARE = [
@@ -55,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-SITE_ID = 1
+SITE_ID = 2
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
@@ -78,6 +80,28 @@ TEMPLATES = [
     },
 ]
 
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_LOGIN_METHODS = {'email'}
+LOGIN_URL = 'security:login'
+LOGIN_REDIRECT_URL = 'security:post_login'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'security:login'
+ACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_USERNAME_REQUIRED = False
+
+# Automatically connect social accounts to existing users with the same email
+SOCIALACCOUNT_ADAPTER = "security.adapters.MySocialAccountAdapter"
+
+ACCOUNT_ADAPTER = "allauth.account.adapter.DefaultAccountAdapter"
+
+# custom user
 AUTH_USER_MODEL = "security.CustomUser"
 
 WSGI_APPLICATION = 'adverseproject.wsgi.application'
@@ -111,6 +135,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+         "device.api.authentication.DeviceTokenAuthentication",
     ),
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -167,11 +192,3 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 
-# ACCOUNT_EMAIL_REQUIRED = True
-# LOGIN_REDIRECT_URL = env('LOGIN_REDIRECT_URL', default='/user-auth/post-login/') 
-# ACCOUNT_USERNAME_REQUIRED = False # for now 
-LOGIN_REDIRECT_URL = 'adverse:home'
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGOUT_REDIRECT_URL = 'security:login'
