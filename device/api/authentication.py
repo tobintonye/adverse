@@ -1,11 +1,7 @@
-from rest_framework import authentication, exceptions
-
-from ..models import Device
-
 # authentication devices registered on the app
 from rest_framework import authentication, exceptions
 
-from ..models import Device
+from ..models import PlayerDevice
 
 
 class DeviceTokenAuthentication(authentication.BaseAuthentication):
@@ -19,11 +15,12 @@ class DeviceTokenAuthentication(authentication.BaseAuthentication):
         if not token:
             raise exceptions.AuthenticationFailed("No device token provided.")
         try:
-            device = Device.objects.get(auth_token=token)
-        except Device.DoesNotExist as exc:
+            # player = PlayerDevice.objects.get(auth_token=token)
+            player = PlayerDevice.objects.select_related("billboard").get(auth_token=token)
+        except PlayerDevice.DoesNotExist as exc:
             raise exceptions.AuthenticationFailed("Invalid device token.") from exc
-        if device.status == Device.Status.DISABLED:
+        if player.status == PlayerDevice.Status.DISABLED:
             raise exceptions.AuthenticationFailed("Device is disabled.")
-        return (device, token)
+        return (player, token)
     
         # return (AnonymousUser(), device) to be used in prod

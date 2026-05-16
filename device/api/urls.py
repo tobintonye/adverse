@@ -1,14 +1,17 @@
 from django.urls import path
 from .views import (
-    DeviceRegisterView, DeviceHeartbeatView, DeviceUpdateView,
-    DeviceDetailView, DeviceRotateTokenView)
+    BillboardListCreateView, BillboardDetailView, BillboardUpdateView,
+    BillboardDeleteView)
 
 # using this for now
 urlpatterns = [
-    path('', DeviceRegisterView.as_view(), name='register'), # GET list, POST
-    path("<uuid:pk>/", DeviceDetailView.as_view(), name="device-detail"),   # GET {id}
-    path("<uuid:pk>/update/", DeviceUpdateView.as_view(), name="device-update"),   # PATCH
-    path("<uuid:pk>/rotate-token/", DeviceRotateTokenView.as_view(), name="device-rotate-token"),
+    path('', BillboardListCreateView.as_view(), name='billboard-list-create'), # GET list, POST
+    path("<uuid:pk>/", BillboardDetailView.as_view(), name="billboard-detail"),   # GET {id}
+    path("<uuid:pk>/update/", BillboardUpdateView.as_view(), name="billboard-update"),   # PATCH
+    path("<uuid:pk>/delete/", BillboardDeleteView.as_view(), name="billboard-delete"),
+  
+  
+    #path("<uuid:pk>/rotate-token/", DeviceRotateTokenView.as_view(), name="device-rotate-token"),
 
-    path('heartbeat/', DeviceHeartbeatView.as_view(), name='heartbeat'), 
+    #path('heartbeat/', DeviceHeartbeatView.as_view(), name='heartbeat'), 
 ]

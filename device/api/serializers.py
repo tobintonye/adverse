@@ -1,52 +1,128 @@
 from rest_framework import serializers
-from ..models import Device
+from ..models import Billboard, PlayerDevice
 
-class DeviceSerializer(serializers.ModelSerializer):
-    is_online = serializers.BooleanField(read_only=True)
-
+class BillboardSerializer(serializers.ModelSerializer):
+    resolution = serializers.CharField(read_only=True)
+    is_paired = serializers.BooleanField(read_only=True)
     class Meta:
-        model = Device
+        model = Billboard
+        fields = (
+            "id",
+            "name",
+            "location_name",
+            "latitude",
+            "longitude",
+            "screen_type",
+            "screen_width_px",
+            "screen_height_px",
+            "resolution",
+            "price_per_slot",
+            "operating_hours_start",
+            "operating_hours_end",
+            "availability",
+            "is_paired",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "resolution", "is_paired", "created_at", "updated_at")
+
+
+class BillboardWriteSerializer(serializers.ModelSerializer):
+    # create and update — excludes computed/read-only fields
+    class Meta:
+        model = Billboard
+        fields = (
+            "name",
+            "location_name",
+            "latitude",
+            "longitude",
+            "screen_type",
+            "screen_width_px",
+            "screen_height_px",
+            "price_per_slot",
+            "operating_hours_start",
+            "operating_hours_end",
+            "availability",
+        )
+class PlayerDeviceSerializer(serializers.ModelSerializer):
+    is_online = serializers.BooleanField(read_only=True)
+    is_paired = serializers.BooleanField(read_only=True)
+    billboard_name = serializers.CharField(source="billboard.name", read_only=True)
+    class Meta:
+        model = PlayerDevice
         fields = (
             "id",
             "device_uid",
-            "name",
-            "location_name",
-            "latitude",
-            "longitude",
-            "screen_width_px",
-            "screen_height_px",
-            "price_per_slot",
+            "pairing_code",
+            "billboard",
+            "billboard_name",
             "firmware_version",
+            "status",
+            "last_seen_at",
             "is_online",
+            "is_paired",
+            "created_at",
+            "updated_at",
         )
-        read_only_fields = ("id", "status", "last_seen_at", "is_online", "created_at")
+        read_only_fields = (
+            "id",
+            "pairing_code",
+            "auth_token",
+            "status",
+            "last_seen_at",
+            "is_online",
+            "is_paired",
+            "billboard_name",
+            "created_at",
+            "updated_at",
+    )
 
+class PlayerDeviceRegistrationSerializer(PlayerDeviceSerializer):
+    auth_token = serializers.CharField(read_only=True) # Returned once on registration — includes auth_token
+    
+    class Meta(PlayerDeviceSerializer.Meta):
+        fields = PlayerDeviceSerializer.Meta.fields + ("auth_token",)
 
-class DeviceRegistrationSerializer(DeviceSerializer):
-    auth_token = serializers.CharField(read_only=True)
+class PairDeviceSerializer(serializers.Serializer):
+    """
+    Ad manager submits the pairing code from the Android box
+    and the billboard they want to assign it to.
+    """
+    pairing_code = serializers.CharField(max_length=12)
+    billboard_id = serializers.UUIDField()
 
-    class Meta(DeviceSerializer.Meta):
-        fields = DeviceSerializer.Meta.fields + ("auth_token",)
-
-class DeviceUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Device
-        fields = (
-            "name",
-            "location_name",
-            "latitude",
-            "longitude",
-            "screen_width_px",
-            "screen_height_px",
-            "price_per_slot",
-        )
-        
+    def validate_pairing_code(self, value):
+        try: 
+            self._player = PlayerDevice.objects.get(pairing_code=value.upper())
+        except PlayerDevice.DoesNotExist:
+            raise serializers.ValidationError("Invalid pairing code.")
+        if self._player.status == PlayerDevice.Status.DISABLED:
+            raise serializers.ValidationError("This device has been disabled.")
+        return value.upper()
+    
+    def validate_billboard_id(self, value):
+        try:
+            self._billboard = Billboard.objects.get(pk=value)
+        except Billboard.DoesNotExist:
+            raise serializers.ValidationError("Billboard not found.")
+        return value
+    
+    def validate(self, attrs):
+        # Prevent re-pairing a billboard that already has a live device
+        billboard = getattr(self, "_billboard", None)
+        if billboard and billboard.is_paired:
+            existing = billboard.player_device
+            if existing.status != PlayerDevice.Status.DISABLED:
+                raise serializers.ValidationError(
+                    "This billboard already has an active device paired. Disable it first."
+                )
+        return attrs
+    
+    def save(self, **kwargs):
+        self._player.pair_to_billboard(self._billboard)
+        return self._player
+    
 class HeartbeatSerializer(serializers.Serializer):
     firmware_version = serializers.CharField(required=False, allow_blank=True, max_length=80)
     free_storage_mb = serializers.IntegerField(required=False, min_value=0)
     current_media_id = serializers.UUIDField(required=False)
-
-class TokenRotateResponseSerializer(serializers.Serializer):
-    # Write-only response — only returned once after rotation.
-    new_auth_token = serializers.CharField()
-    rotated_at = serializers.DateTimeField()

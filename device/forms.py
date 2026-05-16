@@ -1,4 +1,4 @@
-from django import forms
+"""from django import forms
 from .models import Device
 
 # adManager register device form
@@ -15,3 +15,5 @@ class DeviceForm(forms.ModelForm):
         # Efficiently add Bootstrap classes to all whitelisted fields
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
+
+            """

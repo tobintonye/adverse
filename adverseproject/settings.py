@@ -135,7 +135,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-         "device.api.authentication.DeviceTokenAuthentication",
+         "device.api.authentication.DeviceTokenAuthentication", 
     ),
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
