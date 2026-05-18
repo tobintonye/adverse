@@ -75,7 +75,7 @@ class PlayerDevice(TimeStampedModel):
     billboard = models.OneToOneField(Billboard, on_delete=models.SET_NULL, null=True, blank=True, related_name="player_device")
     pairing_code = models.CharField(max_length=12, unique=True, blank=True) 
     auth_token = models.CharField(max_length=96, unique=True, editable=False) 
-    device_uid = models.CharField(max_length=80, unique=True)
+    device_uid = models.CharField(max_length=80, unique=True) # device_uid is hardware-sourced (IMEI, MAC, serial), not guessable like a sequential ID
     firmware_version = models.CharField(max_length=80, blank=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
     last_seen_at = models.DateTimeField(null=True, blank=True)
@@ -118,8 +118,8 @@ class PlayerDevice(TimeStampedModel):
     def _generate_pairing_code():
         clean_letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"
         clean_digits = "23456789"
-        letters = "".join(secrets.choice(clean_letters, k=3))
-        digits = "".join(secrets.choice(clean_digits, k=4))
+        letters = "".join(secrets.choice(clean_letters) for _ in range(3))
+        digits = "".join(secrets.choice(clean_digits) for _ in range(4))
         
         return f"{letters}-{digits}"
 

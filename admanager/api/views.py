@@ -1,16 +1,30 @@
-from django.shortcuts import render
 from .serializers import AdManagerProfileSerializer
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status, permissions, generics
+from ..models import Admanager
+from .permissions import IsOwnerAdManager
 
-class AdManagerView(APIView): 
-    permission_classes = [IsAuthenticated]
+class AdManagerCreateView(generics.CreateAPIView):
+    serializer_class = AdManagerProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request): 
-        serializer = AdManagerProfileSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response({"success: Your account has been created!"}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        # Prevent duplicate profile creation
+        if hasattr(request.user, "ad_manager"):
+            return Response(
+                {"error": "Profile already exists"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().create(request, *args, **kwargs)
+    
+class AdManagerDetailUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = AdManagerProfileSerializer
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsOwnerAdManager
+    ]
+    queryset = Admanager.objects.all()
+    lookup_field = "pk"

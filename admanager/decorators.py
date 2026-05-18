@@ -15,3 +15,4 @@ def ad_manager_required(view_func):
             return redirect('admanager:profile')
         return view_func(request, *agrs, **kwargs)
     return wrapper
+

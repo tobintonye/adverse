@@ -35,6 +35,6 @@ class Admanager(models.Model):
     total_campaigns_serverd = models.PositiveIntegerField(default=0)
     total_impressions = models.BigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    update_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.business_name

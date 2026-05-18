@@ -30,9 +30,12 @@ class AdManagerProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
     
     def validate_business_phone(self, value):
-        #  Remove spaces/dashes while keeping numbers and +
         cleaned_phone = re.sub(r'[^\d+]', '', value)
+
+        if not re.match(r'^(\+234|0)[789][01]\d{8}$', cleaned_phone):
+            raise serializers.ValidationError("Invalid Nigerian phone number format.")
         return cleaned_phone
+    
     def validate(self, attrs):
         business_type = attrs.get("business_type")
         reg_number = attrs.get("company_registration_number")
@@ -43,3 +46,4 @@ class AdManagerProfileSerializer(serializers.ModelSerializer):
                 "Company registration number is required for company accounts."
             })
         return attrs
+    

@@ -1,6 +1,6 @@
 from django.utils import timezone
 from rest_framework import decorators, generics, permissions, response, status, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from admanager.models import Admanager
 from ..models import Billboard, PlayerDevice
 from .serializers import (
@@ -90,3 +90,70 @@ class BillboardDeleteView(APIView):
             )
         billboard.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+# PlayerDevice endpoints  (JWT auth — dashboard / admin)
+class PlayerDeviceListCreateView(APIView):
+    """
+        GET  /players/ — list all player devices owned by this ad manager
+        POST /players/ — register a new player device (generates pairing_code + auth_token)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = (PlayerDevice.objects.filter(billboard__ad_manager__user=request.user).select_related("billboard").order_by("-created_at"))
+        return Response(PlayerDeviceSerializer(qs, many=True).data)
+    
+    def post(self, request):
+        if request.user.role != "ad_manager":
+            raise PermissionDenied("Only ad managers can register player devices.")
+        device_uid = request.data.get("device_uid")
+        if not device_uid:
+            return Response({"detail": "device_uid is required."}, status=status.HTTP_400_BAD_REQUEST)
+        player = PlayerDevice.objects.create(device_uid=device_uid)
+        return Response(PlayerDeviceRegistrationSerializer(player).data, status=status.HTTP_201_CREATED)
+    
+class PlayerDeviceDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, pk):
+        player = get_owned_player(request.user, pk)
+        return Response(PlayerDeviceSerializer(player).data)
+    
+class PairDeviceView(APIView):
+    """
+    POST /players/pair/
+    Ad manager submits { pairing_code, billboard_id } to link a device to a screen.
+    The Android box displays its pairing_code; the admin enters it in the dashboard.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PairDeviceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+    # Ensure the billboard belongs to this ad manager
+        billboard_id = serializer.validated_data["billboard_id"]
+        billboard = get_owned_billboard(request.user, billboard_id)
+        player = serializer.save()
+        return Response(
+            {
+                "detail": "Device paired successfully.",
+                "device_uid": player.device_uid,
+                "billboard": billboard.name,
+                "status": player.status,
+            }
+        )
+    
+class PlayerDeviceDisableView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk): 
+        player = get_owned_player(request.user, pk)
+        if player.status == PlayerDevice.Status.DISABLED:
+            return Response({"detail": "Device is already disabled."}, status=status.HTTP_400_BAD_REQUEST)
+        player.disable()
+        return Response({
+            "detail": "Device disabled.",
+            "device_uid": player.device_uid,
+            "status": player.status,
+        })
