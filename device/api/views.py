@@ -157,3 +157,15 @@ class PlayerDeviceDisableView(APIView):
             "device_uid": player.device_uid,
             "status": player.status,
         })
+    
+class PlayerDeviceRotateTokenView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+ 
+    def post(self, request, pk):
+        player = get_owned_player(request.user, pk)
+        player.rotate_token()
+        return Response({
+            "detail": "Token rotated. Store the new token immediately — it will not be shown again.",
+            "new_auth_token": player.auth_token,
+            "rotated_at": timezone.now(),
+        })

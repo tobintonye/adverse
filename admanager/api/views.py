@@ -19,12 +19,10 @@ class AdManagerCreateView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         return super().create(request, *args, **kwargs)
-    
-class AdManagerDetailUpdateView(generics.RetrieveUpdateAPIView):
+
+class MyAdManagerProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = AdManagerProfileSerializer
-    permission_classes = [
-        permissions.IsAuthenticated,
-        IsOwnerAdManager
-    ]
-    queryset = Admanager.objects.all()
-    lookup_field = "pk"
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.ad_manager

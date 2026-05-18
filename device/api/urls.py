@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     BillboardListCreateView, BillboardDetailView, BillboardUpdateView,
-    BillboardDeleteView, PlayerDeviceListCreateView, PairDeviceView, PlayerDeviceDetailView, PlayerDeviceDisableView
+    BillboardDeleteView, PlayerDeviceListCreateView, PairDeviceView, 
+    PlayerDeviceDetailView, PlayerDeviceDisableView, PlayerDeviceRotateTokenView
     )
 
 # using this for now
@@ -16,8 +17,8 @@ urlpatterns = [
     path("players/pair/", PairDeviceView.as_view(), name="player-pair"),
     path("players/<uuid:pk>/", PlayerDeviceDetailView.as_view(), name="player-detail"),
     path("players/<uuid:pk>/disable/", PlayerDeviceDisableView.as_view(), name="player-disable"),
-    
-    #path("<uuid:pk>/rotate-token/", DeviceRotateTokenView.as_view(), name="device-rotate-token"),
+    path("players/<uuid:pk>/rotate-token/", PlayerDeviceRotateTokenView.as_view(), name="player-rotate-token"),
+   
 
     #path('heartbeat/', DeviceHeartbeatView.as_view(), name='heartbeat'), 
 ]
