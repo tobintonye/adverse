@@ -1,5 +1,5 @@
 from django.utils import timezone
-from rest_framework import decorators, generics, permissions, response, status, viewsets
+from rest_framework import  permissions, status
 from rest_framework.exceptions import PermissionDenied, NotFound
 from admanager.models import Admanager
 from ..models import Billboard, PlayerDevice
@@ -168,4 +168,102 @@ class PlayerDeviceRotateTokenView(APIView):
             "detail": "Token rotated. Store the new token immediately — it will not be shown again.",
             "new_auth_token": player.auth_token,
             "rotated_at": timezone.now(),
+        })
+    
+#  These are called by the Android box or any media player, not the dashboard.
+class PlayerHeartbeatView(APIView):
+    """
+        API endpoint for the physical billboard hardware (Android box) to check-in.
+        
+        Purpose:
+        - Verifies the device's secure token (authenticates the hardware).
+        - Updates the device's status to 'ACTIVE' and refreshes 'last_seen_at'.
+        - Logs current telemetry data (e.g., firmware version, storage, current ad playing).
+        
+        Frequency: 
+        - Called automatically by the Player App every 2–3 minutes via the internet.
+        - If a device stops calling this, it will be marked 'OFFLINE' on the dashboard.
+    """
+    authentication_classes = [DeviceTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = HeartbeatSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        player = request.user
+        player.mark_heartbeat(**serializer.validated_data)
+        return Response({
+            "status": "heartbeat acknowledged",
+            "device_uid": player.device_uid,
+            "last_seen_at": player.last_seen_at,
+            "device_status": player.status,
+            "firmware_version": player.firmware_version or None,
+            "billboard": player.billboard.name if player.billboard_id else None,
+        })
+    
+# billboard self-registration
+class PlayerSelfRegisterView(APIView):
+    """
+        POST /players/register/
+        Called by the Android box on first boot with its hardware ID.
+        Idempotent — safe to call again after reboot.
+        Returns the pairing_code the box should render on screen.
+    """
+    permission_classes = [AllowAny]
+     
+    def post(self, request):
+        device_uid = request.data.get("device_uid", "").strip()
+        if not device_uid:
+            return Response({"detail": "device_uid is required."}, status=status.HTTP_400_BAD_REQUEST)
+        player, created = PlayerDevice.objects.get_or_create(device_uid=device_uid)
+        return Response({
+            "pairing_code": player.pairing_code, # rendered on the screen
+            "device_uid": player.device_uid,
+            "status": player.status,
+            "is_paired": player.is_paired,
+        },  status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,)
+
+class PlayerPairingStatusView(APIView):
+    """
+    Polled by the Android box (every 10s) until is_paired is true.
+    Returns auth_token exactly once — after that token_claimed_at is set
+    and the token is never returned here again.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request): 
+        device_uid = request.query_params.get("device_uid", "").strip()
+        if not device_uid:
+            return Response({"detail": "device_uid query param is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            player = PlayerDevice.objects.select_related("billboard").get(device_uid=device_uid)
+        except PlayerDevice.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not player.is_paired:
+            return Response({
+                "is_paired": False,
+                "status": player.status,
+                "auth_token": None,
+                "billboard": None,
+            })
+        # Paired — return auth_token only if it hasn't been claimed yet
+        unclaimed = player.token_claimed_at is None
+        auth_token = player.auth_token if unclaimed else None
+
+        if unclaimed:
+            player.claim_token() 
+        
+        return Response({
+            "is_paired": True,
+            "status": player.status,
+            "auth_token": auth_token,
+            "billboard": {
+                "id": str(player.billboard.id),
+                "name": player.billboard.name,
+                "location_name": player.billboard.location_name,
+                "resolution": player.billboard.resolution,
+                "operating_hours_start": player.billboard.operating_hours_start,
+                "operating_hours_end": player.billboard.operating_hours_end,
+            },
         })

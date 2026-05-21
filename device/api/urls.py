@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     BillboardListCreateView, BillboardDetailView, BillboardUpdateView,
     BillboardDeleteView, PlayerDeviceListCreateView, PairDeviceView, 
-    PlayerDeviceDetailView, PlayerDeviceDisableView, PlayerDeviceRotateTokenView
+    PlayerDeviceDetailView, PlayerDeviceDisableView, PlayerDeviceRotateTokenView,
+    PlayerHeartbeatView, PlayerSelfRegisterView, PlayerPairingStatusView
     )
 
 # using this for now
@@ -19,6 +20,8 @@ urlpatterns = [
     path("players/<uuid:pk>/disable/", PlayerDeviceDisableView.as_view(), name="player-disable"),
     path("players/<uuid:pk>/rotate-token/", PlayerDeviceRotateTokenView.as_view(), name="player-rotate-token"),
    
-
-    #path('heartbeat/', DeviceHeartbeatView.as_view(), name='heartbeat'), 
+    # Device-side calls (PlayerDeviceToken auth)
+    path("players/heartbeat/", PlayerHeartbeatView.as_view(), name="player-heartbeat"),
+        path("players/register/", PlayerSelfRegisterView.as_view(), name="player-self-register"),
+    path("players/register/status/", PlayerPairingStatusView.as_view(), name="player-pairing-status"),
 ]

@@ -133,6 +133,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
 
+     "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",   # for the simulator.py
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ],
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
          "device.api.authentication.DeviceTokenAuthentication", 
@@ -146,7 +152,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),    
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),     
     "ROTATE_REFRESH_TOKENS": True,              
-    #"BLACKLIST_AFTER_ROTATION": True,              
+    "BLACKLIST_AFTER_ROTATION": True,              
     "UPDATE_LAST_LOGIN": True,                     
     
     "ALGORITHM": "HS256",
@@ -191,4 +197,6 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
+
+
 

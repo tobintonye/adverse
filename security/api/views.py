@@ -1,7 +1,5 @@
-from django.shortcuts import render
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -12,6 +10,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.db import transaction
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 User = get_user_model()
 
@@ -129,3 +128,17 @@ class SetNewPassword(APIView):
             return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError: 
+            return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Logout successful."},status=status.HTTP_205_RESET_CONTENT)
