@@ -25,7 +25,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         user.is_active = False
-        user.role = "ad_manager" # set for now
+        user.role = "advertiser" # set for now
         user.save()
         return user
 

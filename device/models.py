@@ -71,7 +71,6 @@ class PlayerDevice(TimeStampedModel):
         OFFLINE = "offline", "Offline"
         DISABLED = "disabled", "Disabled"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # One to One 
     billboard = models.OneToOneField(Billboard, on_delete=models.SET_NULL, null=True, blank=True, related_name="player_device")
     pairing_code = models.CharField(max_length=12, unique=True, blank=True) 
     auth_token = models.CharField(max_length=96, unique=True, editable=False) 
