@@ -6,7 +6,8 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework import permissions, status
 from ..models import Advertiser
 from django.contrib.auth import get_user_model
-from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer,BillboardPublicSerializer)
+from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer, BillboardPublicSerializer)
+from decimal import Decimal
 
 User = get_user_model()
 
@@ -58,3 +59,44 @@ class AdvertiserProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(AdvertiserProfileSerializer(advertiser).data)
+
+
+class BillboardBrowseView(APIView):
+    '''
+    browse available billboards to book for campaigns.
+    Filters: ?screen_type=led  ?location=Lagos  ?max_price=5000
+    '''
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = Billboard.objects.filter(
+            availability = Billboard.Availability.AVAILABLE
+        ).order_by("price_per_slot")
+
+        screen_type = request.query_params.get("screen_type")
+        location = request.query_params.get("location")
+        max_price = request.query_params.get("max_price")
+
+        if screen_type:
+            qs = qs.filter(screen_type=screen_type)
+        if location:
+            qs = qs.filter(location_name__icontains=location)
+        if max_price:
+            try:
+                qs = qs.filter(price_per_slot__lte=Decimal(max_price))
+            except Exception:
+                pass
+ 
+        return Response(BillboardPublicSerializer(qs, many=True).data)
+    
+class BillboardBrowseDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+ 
+    def get(self, request, pk):
+        try:
+            billboard = Billboard.objects.get(
+                pk=pk, availability=Billboard.Availability.AVAILABLE
+            )
+        except Billboard.DoesNotExist:
+            raise NotFound("Billboard not found or not available.")
+        return Response(BillboardPublicSerializer(billboard).data)
