@@ -4,9 +4,12 @@ from device.models import Billboard
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework import permissions, status
-from ..models import Advertiser
+from rest_framework.parsers import FormParser, MultiPartParser
+from ..models import Advertiser, Media
 from django.contrib.auth import get_user_model
-from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer, BillboardPublicSerializer)
+from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer, BillboardPublicSerializer,
+                           MediaSerializer, MediaUploadSerializer,
+                          )
 from decimal import Decimal
 
 User = get_user_model()
@@ -18,7 +21,7 @@ def get_advertiser(user):
     except Advertiser.DoesNotExist:
         raise NotFound(
             "Advertiser profile not found. "
-            "Complete your profile setup at POST /advertiser/profile/."
+            "Complete your profile setup at /advertiser/profile/."
         )
     
 def require_verified(advertiser):
@@ -27,6 +30,12 @@ def require_verified(advertiser):
             "Your account is pending verification."
             "An admin will review and verify your account before you can submit campaigns."
         )
+    
+def get_owned_media(advertiser, pk):
+    try:
+        return Media.objects.get(pk=pk, advertiser=advertiser)  
+    except Media.DoesNotExist:
+        return NotFound("Media not found.")
     
 class AdvertiserProfileView(APIView):
     # GET, POST, PATCH - /advertiser/profile/ 
@@ -100,3 +109,33 @@ class BillboardBrowseDetailView(APIView):
         except Billboard.DoesNotExist:
             raise NotFound("Billboard not found or not available.")
         return Response(BillboardPublicSerializer(billboard).data)
+    
+class MediaListUploadView(APIView):
+    # Filters: ?status=pending|approved|rejected
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.IsAuthenticated]
+
+    # get list of uploaded media by an advertiser 
+    def get(self, request): 
+        advertiser = get_advertiser(request.user)
+        status_filter = request.query_params.get("status")
+        qs = Media.objects.filter(advertiser=advertiser).order_by("-created_at")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return Response(MediaSerializer(qs, many=True).data)
+    
+    def post(self, request):
+        advertiser = get_advertiser(request.user)
+        serializer = MediaUploadSerializer(data=request.data, context={"advertiser":advertiser})
+        serializer.is_valid(raise_exception=True)
+        media = serializer.save()
+        return Response(MediaSerializer(media).data, status=status.HTTP_201_CREATED)
+    
+class MediaDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        advertiser = get_advertiser(request.user)
+        media = (advertiser, pk)
+        return Response(MediaSerializer(media).data)
+    
