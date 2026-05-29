@@ -6,10 +6,11 @@ from django.utils import timezone
 import mimetypes
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
+from device.models import Billboard
 
 User = get_user_model()
 
-#Advertiser Profile
+# Advertiser Profile
 class Advertiser(TimeStampedModel):
     class BusinessCategory(models.TextChoices):
         RETAIL = "retail", "Retail"
@@ -160,3 +161,165 @@ class Media(TimeStampedModel):
     @property
     def file_url(self):
         return self.file.url if self.file else None
+
+# owned by Advertiser, books ad_manager's Billboards
+class Campaign(TimeStampedModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PENDING_APPROVAL = "pending_approval", "Pending Approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    advertiser  = models.ForeignKey(Advertiser, on_delete=models.CASCADE, related_name="campaigns")
+    name = models.CharField(max_length=100)
+    media = models.ForeignKey(Media, on_delete=models.PROTECT, related_name="campaigns", limit_choices_to={"status": Media.Status.APPROVED})
+    # Schedule
+    start_date = models.DateField()
+    end_date = models.DateField()
+    daily_start_time = models.TimeField(default="06:00")
+    daily_end_time = models.TimeField(default="22:00")
+    # Budget & pricing
+    budget = models.DecimalField(max_digits=12, decimal_places=2)
+    estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
+    rejection_reason = models.TextField(blank=True)
+    reviewed_by =  models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,related_name="reviewed_campaigns")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def duration_days(self):
+        if self.start_date and self.end_date:
+            return (self.end_date - self.start_date).days + 1
+        return 0
+    
+    @property
+    def is_active(self):
+        today = timezone.now().date()
+        return (self.status == self.Status.ACTIVE and self.start_date <= today <= self.end_date)
+    
+    def calculate_estimated_price(self):
+        # Sum of (billboard.price_per_slot × slots_per_day × duration_days)
+        if not self.pk:
+            return 0
+        total = 0
+        for slot in self.campaign_slots.select_related("billboard").all():
+            total += slot.billboard.price_per_slot * slot.slots_per_day * self.duration_days
+        return total
+    
+    # Recalculates and updates the estimate field atomically.
+    def sync_estimated_price(self):
+        self.estimated_price = self.calculate_estimated_price()
+        self.save(update_fields=["estimated_price"])
+
+    def submit_for_approval(self):
+        if self.status != self.Status.DRAFT:
+            raise ValidationError("Only draft campaigns can be submitted.")
+        if not self.campaign_slots.exists():
+            raise ValidationError("Add at least one billboard before submitting.")
+        if not self.advertiser.is_verified:
+            raise ValidationError("Your advertiser account must be verified before submitting campaigns.")
+        
+        # Enforce budget bounds early
+        self.estimated_price = self.calculate_estimated_price()
+        if self.estimated_price > self.budget:
+            return ValidationError(f"Campaign estimated price ({self.estimated_price}) exceeds your allocated budget ({self.budget}).")
+        self.status = self.Status.PENDING_APPROVAL
+        self.save(update_fields=["status", "estimated_price", "updated_at"])
+
+    def approve(self, reviewer):
+        self.status = self.Status.APPROVED
+        self.reviewed_by = reviewer
+        self.reviewed_at = timezone.now()
+        self.rejection_reason = ""
+        self.save(update_fields=[
+            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
+        ])
+
+    def reject(self, reviewer, reason=""):
+        self.status = self.Status.REJECTED
+        self.reviewed_by = reviewer
+        self.reviewed_at = timezone.now()
+        self.rejection_reason = reason
+        self.save(update_fields=[
+            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
+        ])
+
+    def cancel(self):
+        allowed = [self.Status.DRAFT, self.Status.APPROVED, self.Status.ACTIVE]
+        if self.status not in allowed:
+            raise ValidationError("Campaign cannot be cancelled from its current status.")
+        self.status = self.Status.CANCELLED
+        self.save(update_fields=["status", "updated_at"])
+
+    def clean(self):
+        super().clean()
+
+        # Enforce strict media status constraints programmatically
+        if self.media and self.media.status != Media.Status.APPROVED:
+            raise ValidationError({"media": "The chosen media file must be approved before scheduling campaigns."})
+        
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValidationError({"end_date": "End date cannot be before start date."})
+            # Prevent users from booking retroactive dates in production
+            if self.status == self.Status.DRAFT and self.start_date < timezone.now().date():
+                raise ValidationError({"start_date": "Start date cannot be in the past."})
+            
+        # Operations timeframe bounds
+        if self.daily_start_time and self.daily_end_time:
+            if self.daily_end_time <= self.daily_start_time:
+                raise ValidationError({"daily_end_time": "Daily end time must be after start time."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.name} [{self.status}]"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["advertiser", "status"]),
+            models.Index(fields=["status", "start_date", "end_date"]),
+        ]
+
+# connects an advertising Campaign to a specific Billboard.
+class CampaignSlot(TimeStampedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    campaign = models.ForeignKey( Campaign, on_delete=models.CASCADE, related_name="campaign_slots")
+    billboard = models.ForeignKey(Billboard, on_delete=models.PROTECT, related_name="campaign_slots")
+    slots_per_day = models.PositiveIntegerField(default=1) # store how many ads slot this campaign owns
+
+    @property
+    def slot_price(self):
+        return ( self.billboard.price_per_slot * self.slots_per_day * self.campaign.duration_days)
+    
+    class Meta:
+        unique_together = [("campaign", "billboard")]
+        indexes = [
+            models.Index(fields=["campaign"]),
+            models.Index(fields=["billboard"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        # Prevent slots modification if campaign is already locked for review/running
+        if self.campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]: 
+            raise ValidationError("Cannot modify billboard slots on a locked or active campaign.")
+        super().save(*args, **kwargs)
+        # Dynamic calculation engine hook: Auto-update campaign metadata metrics
+        self.campaign.sync_estimated_price()
+
+    def delete(self, *args, **kwargs):
+        if self.campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:
+            raise ValidationError("Cannot delete billboard slots from a locked or active campaign.")
+        campaign_ref = self.campaign
+        super().delete(*args, **kwargs)
+        campaign_ref.sync_estimated_price()
+
+    def __str__(self):
+        return f"{self.campaign.name} → {self.billboard.name} ({self.slots_per_day}/day)"

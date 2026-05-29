@@ -37,7 +37,7 @@ class Billboard(TimeStampedModel):
     screen_height_px = models.PositiveIntegerField(default=1080)
     
     # Business
-    price_per_slot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price_per_slot = models.DecimalField(max_digits=10, decimal_places=2, default=0) # it can be a day/mintue etc we don't know for now
     operating_hours_start = models.TimeField(default="06:00")
     operating_hours_end = models.TimeField(default="22:00")
     
