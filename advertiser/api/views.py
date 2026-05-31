@@ -286,7 +286,7 @@ class CampaignReviewView(APIView):
     def post(self, request, pk):
         has_manager_role = getattr(request.user, "role", None) == "ad_manager" or "admin"
 
-        if not request.user.is_staff or request.user.superuser and not has_manager_role:
+        if not request.user.is_staff or request.user.is_superuser and not has_manager_role:
             raise PermissionDenied("Only admins or ad managers can review campaigns.")
         
         try:
@@ -301,7 +301,7 @@ class CampaignReviewView(APIView):
             ).exists()
             if not owns_billboard:
                 raise PermissionDenied("You can only review campaigns that target your billboards.") 
-        if campaign.status != Campaign.Status.PENDING_APPROVAL:
+        if campaign.status != Campaign.Status.PENDING_ADMIN_REVIEW or Campaign.Status.PENDING_MANAGER_REVIEW: #change
             return Response({"detail": "Only campaigns pending approval can be reviewed."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = CampaignReviewSerializer(data=request.data)

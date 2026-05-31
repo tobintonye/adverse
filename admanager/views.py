@@ -10,7 +10,7 @@ from admanager.decorators import ad_manager_required
 User = get_user_model()
 
 
-
+# AP
 @login_required(login_url='security:login')
 @ad_manager_required
 def adManagerDashboard(request):
@@ -88,5 +88,3 @@ def adManagerProfile_settings(request):
         form = AdManagerProfileForm(instance=ad_manager)
     return render(request, 'partials/admanager/settingsprofile.html', {'form': form})
 
-    
-        

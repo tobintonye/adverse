@@ -79,14 +79,15 @@ MAX_VIDEO_BYTES = 500 * 1024 * 1024    # 500 MB
 class MediaSerializer(serializers.ModelSerializer):
     file_url = serializers.CharField(read_only=True)
     file_size_mb = serializers.FloatField(read_only=True)
-    reviewed_by_name = serializers.CharField(source="reviewed_by.get_full_name", read_only=True)
+    admin_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
+    manager_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
 
     class Meta:
         model = Media
         fields = (
             "id", "title", "file_url", "media_type", "duration_seconds",
             "file_size_bytes", "file_size_mb", "thumbnail", "status",
-            "rejection_reason", "reviewed_by_name", "reviewed_at",
+            "rejection_reason", "admin_reviewed_by_name", "manager_reviewed_by_name", "reviewed_at",
             "created_at", "updated_at",
         )
 
@@ -169,23 +170,22 @@ class CampaignSlotSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "billboard_name", "billboard_location", "slot_price")
 
 class CampaignSerializer(serializers.ModelSerializer):
-    # GET - list pf campaign
+    # GET - list of campaign
     campaign_slots = CampaignSlotSerializer(many=True, read_only=True)
     media_title = serializers.CharField(source="media.title", read_only=True)
     media_type = serializers.CharField(source="media.media_type", read_only=True)
     duration_days = serializers.IntegerField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
-    reviewed_by_name = serializers.CharField(
-        source="reviewed_by.get_full_name", read_only=True
-    )
- 
+    admin_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
+    manager_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
+
     class Meta:
         model = Campaign
         fields = (
             "id", "name", "media", "media_title", "media_type", "start_date",
             "end_date", "duration_days", "daily_start_time", "daily_end_time",
             "budget", "estimated_price", "status", "rejection_reason",
-            "reviewed_by_name", "reviewed_at", "is_active", "campaign_slots",
+            "admin_reviewed_by_name", "manager_reviewed_by_name", "reviewed_at", "is_active", "campaign_slots",
             "created_at", "updated_at",
         )
 
@@ -201,7 +201,7 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
         )
     
     def validate_media(self, media): 
-        if media.status != Media.Status.APPROVED:
+        if media.status != Media.Status.ADMIN_APPROVED:
             raise serializers.ValidationError("Only approved media files can be used to set up a campaign.")
         advertiser = self.context["advertiser"]
         if media.advertiser != advertiser:

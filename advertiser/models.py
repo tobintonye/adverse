@@ -35,24 +35,23 @@ class Advertiser(TimeStampedModel):
     # Verification — admin manually verifies advertisers before they can submit campaigns(for now).
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
-    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_advertisers",)
+    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_advertisers")
 
     def verify(self, admin_user):
         self.is_verified = True
-        self.is_verified = True
-        self.verified_at = timezone.now()
+        self.verified_by = admin_user
         self.verified_at = timezone.now()
         self.save(update_fields=["is_verified", "verified_at", "verified_by", "updated_at"])
 
-        def __str__(self):
-            return f"{self.business_name} ({self.user.username})"
+    def __str__(self):
+        return f"{self.business_name} ({self.user.username})"
         
-        class Meta:
-            indexes = [
-                models.Index(fields=["is_verified"]),
-                models.Index(fields=["business_category"]),
-            ]
-            
+    class Meta:
+        indexes = [
+            models.Index(fields=["is_verified"]),
+            models.Index(fields=["business_category"]),
+        ]
+        
 def media_upload_path(instance, filename):
     # Organise S3 uploads by advertiser UUID -> advertiser/abc-111-uuid/media/... advertiser/xyz-222-uuid/media/..
     ext = filename.rsplit(".", 1)[-1].lower()
@@ -70,7 +69,8 @@ class Media(TimeStampedModel):
     
     class Status(models.TextChoices): 
         PENDING = "pending", "Pending Review"
-        APPROVED = "approved", "Approved"
+        ADMIN_APPROVED = "admin_approved",  "Admin Approved"
+        FULLY_APPROVED = "fully_approved",  "Fully Approved" # final approval by the billboard owner
         REJECTED = "rejected", "Rejected"
 
     ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"]
@@ -98,9 +98,14 @@ class Media(TimeStampedModel):
     rejection_reason = models.TextField(blank=True)
 
     # Approval trail
-    reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media")
-    reviewed_at = models.DateTimeField(null=True, blank=True)
+   # reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media")
+    #reviewed_at = models.DateTimeField(null=True, blank=True)
 
+    admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media_admin")
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+    manager_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media_manager") 
+    manager_reviewed_at = models.DateTimeField(null=True, blank=True)
+ 
     class Meta:
         verbose_name_plural = "media"
         indexes = [
@@ -112,33 +117,74 @@ class Media(TimeStampedModel):
     def __str__(self):
         return f"{self.title} ({self.media_type}) — {self.status}"
     
-    def approve(self, reviewer): 
-        self.status = self.Status.APPROVED
-        self.reviewed_by = reviewer
-        self.reviewed_at = timezone.now()
+    """
+        Global Tech Admin approves the content.
+        Media is now usable in a campaign but NOT yet live.
+    """
+    def approve(self, admin_user): 
+        if self.status != self.Status.PENDING:
+            raise ValidationError("Only pending media can be admin-approved.")
+        self.status = self.Status.ADMIN_APPROVED
+        self.admin_reviewed_by = admin_user
+        self.admin_reviewed_at = timezone.now()
         self.rejection_reason = ""
         self.save(update_fields=[
-            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
+            "status", "admin_reviewed_by", "admin_reviewed_at", "rejection_reason", "updated_at"
+        ])
+
+    """
+        Ad Manager gives final approval.
+        Media is now fully live — playing on the billboard.
+        Called automatically when the ad manager approves the campaign.
+    """
+    def fully_approve(self, manager_user):
+        if self.status != self.Status.ADMIN_APPROVED:
+             raise ValidationError("Media must be admin-approved before manager approval.")
+        self.status = self.Status.FULLY_APPROVED
+        self.manager_reviewed_by = manager_user
+        self.manager_reviewed_at = timezone.now()
+        self.save(update_fields=[
+            "status", "manager_reviewed_by", "manager_reviewed_at", "updated_at",
         ])
 
     def reject(self, reviewer, reason=""):
+        # Can be called by admin or ad manager
+        if not reason.strip():
+            raise ValidationError("A rejection reason is required.")
         self.status = self.Status.REJECTED
-        self.reviewed_by = reviewer
-        self.reviewed_at = timezone.now()
         self.rejection_reason = reason
-        self.save(update_fields=[
-            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
-        ])
+        # Track which stage rejected it
+        if reviewer.is_staff:
+            self.admin_reviewed_by = reviewer
+            self.admin_reviewed_at = timezone.now()
+            self.save(update_fields=[
+                "status", "rejection_reason",
+                "admin_reviewed_by", "admin_reviewed_at", "updated_at",
+            ])
+        else:
+            self.manager_reviewed_by = reviewer
+            self.manager_reviewed_at = timezone.now()
+            self.save(update_fields=[
+                "status", "rejection_reason",
+                "manager_reviewed_by", "manager_reviewed_at", "updated_at",
+            ])
 
     # validation 
     def clean(self):
         # Fallback model validation
         super().clean()
+        
+        if self.media_type == self.MediaType.IMAGE and self.duration_seconds is not None:
+             raise ValidationError({ "duration_seconds": "Images cannot have a playing duration set." })
+        if self.media_type == self.MediaType.VIDEO and not self.duration_seconds: 
+            raise ValidationError({ "duration_seconds": "Duration is required for video media." })
+
         if not self.file:
             return 
+        
         self.file_size_bytes = self.file.size
         file_size_mb = self.file_size_bytes / (1024 * 1024)
-
+        
         if self.media_type == self.MediaType.IMAGE and file_size_mb > self.MAX_IMAGE_SIZE_MB:
             raise ValidationError({"file": f"Images cannot exceed {self.MAX_IMAGE_SIZE_MB}MB."})
         if self.media_type == self.MediaType.VIDEO:
@@ -156,8 +202,12 @@ class Media(TimeStampedModel):
     
     @property
     def is_approved(self):
-        return self.status == self.Status.APPROVED
+        return self.status == self.Status.ADMIN_APPROVED
  
+    @property
+    def is_live(self):
+        return self.status == self.Status.FULLY_APPROVED
+    
     @property
     def file_url(self):
         return self.file.url if self.file else None
@@ -166,7 +216,8 @@ class Media(TimeStampedModel):
 class Campaign(TimeStampedModel):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
-        PENDING_APPROVAL = "pending_approval", "Pending Approval"
+        PENDING_ADMIN_REVIEW = "pending_admin_review", "Pending Admin Review"
+        PENDING_MANAGER_REVIEW = "pending_manager_review", "Pending Manager Review"
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
         ACTIVE = "active", "Active"
@@ -177,7 +228,7 @@ class Campaign(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     advertiser  = models.ForeignKey(Advertiser, on_delete=models.CASCADE, related_name="campaigns")
     name = models.CharField(max_length=100)
-    media = models.ForeignKey(Media, on_delete=models.PROTECT, related_name="campaigns", limit_choices_to={"status": Media.Status.APPROVED})
+    media = models.ForeignKey(Media, on_delete=models.PROTECT, related_name="campaigns", limit_choices_to={"status": Media.Status.ADMIN_APPROVED}) # only admin approved media can be used when building a campaign
     # Schedule
     start_date = models.DateField()
     end_date = models.DateField()
@@ -188,8 +239,12 @@ class Campaign(TimeStampedModel):
     estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     rejection_reason = models.TextField(blank=True)
-    reviewed_by =  models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,related_name="reviewed_campaigns")
-    reviewed_at = models.DateTimeField(null=True, blank=True)
+    #reviewed_by =  models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,related_name="reviewed_campaigns")
+    #reviewed_at = models.DateTimeField(null=True, blank=True)
+    admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_admin")
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+    manager_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_manager") 
+    manager_reviewed_at = models.DateTimeField(null=True, blank=True)
 
     @property
     def duration_days(self):
@@ -228,26 +283,67 @@ class Campaign(TimeStampedModel):
         self.estimated_price = self.calculate_estimated_price()
         if self.estimated_price > self.budget:
             return ValidationError(f"Campaign estimated price ({self.estimated_price}) exceeds your allocated budget ({self.budget}).")
-        self.status = self.Status.PENDING_APPROVAL
+        self.status = self.Status.PENDING_ADMIN_REVIEW 
         self.save(update_fields=["status", "estimated_price", "updated_at"])
 
-    def approve(self, reviewer):
-        self.status = self.Status.APPROVED
-        self.reviewed_by = reviewer
-        self.reviewed_at = timezone.now()
+    # admins reviews dates/budget and forwards to ad manager. → pending_manager_review
+    def admin_forward_to_manager(self, admin_user): 
+        if self.status != self.Status.PENDING_ADMIN_REVIEW:
+            raise ValidationError("Campaign must be in pending admin review.")
+        self.status = self.Status.PENDING_MANAGER_REVIEW
+        self.admin_reviewed_by = admin_user
+        self.admin_reviewed_at = timezone.now()
         self.rejection_reason = ""
         self.save(update_fields=[
-            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
+            "status", "admin_reviewed_by", "admin_reviewed_at",
+            "rejection_reason", "updated_at",
         ])
 
-    def reject(self, reviewer, reason=""):
-        self.status = self.Status.REJECTED
-        self.reviewed_by = reviewer
-        self.reviewed_at = timezone.now()
-        self.rejection_reason = reason
+    # Ad Manager approves, the campain approved (LIVE), media if fully approved.
+    def manager_approve(self, manager_user):
+        if self.status != self.Status.PENDING_MANAGER_REVIEW:
+            raise ValidationError("Campaign must be in pending manager review.")
+        self.status = self.Status.APPROVED
+        self.manager_reviewed_by = manager_user
+        self.manager_reviewed_at = timezone.now()
+        self.rejection_reason = ""
         self.save(update_fields=[
-            "status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"
+            "status", "manager_reviewed_by", "manager_reviewed_at",
+            "rejection_reason", "updated_at",
         ])
+        # Fully approve the media at the same time
+        self.media.fully_approve(manager_user)
+
+    def reject(self, reviewer, reason=""):
+        """
+            admin or adManager
+            Campaign → rejected. Media stays at its current stage.
+        """
+        if not reason.strip():
+            raise ValidationError("A rejection reason is required.")
+        if self.status not in [
+            self.Status.PENDING_ADMIN_REVIEW,
+            self.Status.PENDING_MANAGER_REVIEW,
+        ]:
+            raise ValidationError("Campaign cannot be rejected from its current status.")
+ 
+        self.status = self.Status.REJECTED
+        self.rejection_reason = reason
+ 
+        if reviewer.is_staff:
+            self.admin_reviewed_by = reviewer
+            self.admin_reviewed_at = timezone.now()
+            self.save(update_fields=[
+                "status", "rejection_reason",
+                "admin_reviewed_by", "admin_reviewed_at", "updated_at",
+            ])
+        else:
+            self.manager_reviewed_by = reviewer
+            self.manager_reviewed_at = timezone.now()
+            self.save(update_fields=[
+                "status", "rejection_reason",
+                "manager_reviewed_by", "manager_reviewed_at", "updated_at",
+            ])
 
     def cancel(self):
         allowed = [self.Status.DRAFT, self.Status.APPROVED, self.Status.ACTIVE]
