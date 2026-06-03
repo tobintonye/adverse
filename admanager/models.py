@@ -36,5 +36,12 @@ class Admanager(models.Model):
     total_impressions = models.BigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def received_campaigns(self):
+        """Returns a queryset of all campaigns booking this manager's billboards."""
+        from advertiser.models import Campaign  # Local import to prevent circular dependency
+        return Campaign.objects.filter(campaign_slots__billboard__ad_manager=self).distinct()
+    
     def __str__(self):
         return self.business_name

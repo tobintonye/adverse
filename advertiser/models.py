@@ -173,7 +173,6 @@ class Media(TimeStampedModel):
     def clean(self):
         # Fallback model validation
         super().clean()
-        
         if self.media_type == self.MediaType.IMAGE and self.duration_seconds is not None:
              raise ValidationError({ "duration_seconds": "Images cannot have a playing duration set." })
         if self.media_type == self.MediaType.VIDEO and not self.duration_seconds: 
@@ -356,7 +355,7 @@ class Campaign(TimeStampedModel):
         super().clean()
 
         # Enforce strict media status constraints programmatically
-        if self.media and self.media.status != Media.Status.APPROVED:
+        if self.media and self.media.status != Media.Status.ADMIN_APPROVED:
             raise ValidationError({"media": "The chosen media file must be approved before scheduling campaigns."})
         
         if self.start_date and self.end_date:

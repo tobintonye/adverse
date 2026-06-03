@@ -3,7 +3,6 @@ from django.urls import path
 from .views import ( AdvertiserProfileView, BillboardBrowseView, BillboardBrowseDetailView,
                      MediaListUploadView, MediaDetailView, CampaignListCreateView, CampaignDetailView, CampaignSubmitView, 
                      CampaignCancelView, CampaignReviewView, CampaignPriceEstimateView,
-                    
                     )                    
  
 urlpatterns = [

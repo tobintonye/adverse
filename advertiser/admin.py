@@ -5,6 +5,9 @@ from django.db import transaction
 from django.contrib import messages
 from .models import Media, Campaign, CampaignSlot, Advertiser
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class CampaignSlotInline(admin.TabularInline):
     model = CampaignSlot
@@ -76,8 +79,22 @@ class MediaAdmin(admin.ModelAdmin):
                 (Media.Status.REJECTED, "Rejected"),
             ]
             form.base_fields["status"].choices = allowed_admin_choices
-            
+
+        if "admin_reviewed_by" in form.base_fields:
+            form.base_fields["admin_reviewed_by"].queryset = User.objects.filter(pk=request.user.pk)
+            form.base_fields["admin_reviewed_by"].empty_label = None
+
         return form
+    
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        initial["admin_reviewed_by"] = request.user.pk
+        return initial
+
+    def save_model(self, request, obj, form, change):
+        if not obj.admin_reviewed_by:
+            obj.admin_reviewed_by = request.user
+        super().save_model(request, obj, form, change)
 
     def display_status(self, obj): 
         colors = {
@@ -106,13 +123,42 @@ class CampaignAdmin(admin.ModelAdmin):
     def advertiser_link(self, obj):
         return obj.advertiser.business_name
     
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if "admin_reviewed_by" in form.base_fields:
+            form.base_fields["admin_reviewed_by"].queryset = User.objects.filter(pk=request.user.pk)
+            form.base_fields["admin_reviewed_by"].empty_label = None
+
+        if "status" in form.base_fields:
+            # Explicitly define exactly what a Global Admin is allowed to select manually
+            allowed_admin_choices = [
+                (Campaign.Status.DRAFT, "Draft"),
+                (Campaign.Status.PENDING_ADMIN_REVIEW, "Pending Admin Review"),
+                (Campaign.Status.PENDING_MANAGER_REVIEW, "Forward to Manager (Admin Approved)"),
+                (Campaign.Status.REJECTED, "Rejected"),
+            ]
+            form.base_fields["status"].choices = allowed_admin_choices
+        return form
+    
+    # Automatically stamps the logged-in admin user if they forward or reject the campaign.
+    def save_model(self, request, obj, form, change):
+        # Check if the status was changed to manager review or rejected by this admin
+        if "status" in form.changed_data and obj.status in [Campaign.Status.PENDING_MANAGER_REVIEW, Campaign.Status.REJECTED]:
+            obj.admin_reviewed_by = request.user
+            obj.admin_reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
     def display_status(self, obj):
         colors = {
             Campaign.Status.DRAFT: "#7f8c8d",
-            Campaign.Status.PENDING_ADMIN: "#e67e22",
-            Campaign.Status.PENDING_MANAGER: "#3498db",
+            Campaign.Status.PENDING_ADMIN_REVIEW: "#e67e22", 
+            Campaign.Status.PENDING_MANAGER_REVIEW: "#3498db", 
             Campaign.Status.APPROVED: "#2ecc71",
             Campaign.Status.REJECTED: "#e74c3c",
+            Campaign.Status.ACTIVE: "#1abc9c",
+            Campaign.Status.PAUSED: "#f1c40f",
+            Campaign.Status.COMPLETED: "#9b59b6",
+            Campaign.Status.CANCELLED: "#95a5a6",
         }
         return format_html(
             '<span style="background: {}; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold;">{}</span>',
@@ -120,3 +166,5 @@ class CampaignAdmin(admin.ModelAdmin):
             obj.get_status_display()
         )
     display_status.short_description = "Status"
+
+ 

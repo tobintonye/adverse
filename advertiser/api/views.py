@@ -148,7 +148,7 @@ class MediaDetailView(APIView):
 
     def get(self, request, pk):
         advertiser = get_advertiser(request.user)
-        media = (advertiser, pk)
+        media = get_owned_media(advertiser, pk)
         return Response(MediaSerializer(media).data)
     
     def delete(self, request, pk): 
@@ -170,24 +170,25 @@ class MediaReviewView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, pk): 
-        if not request.user.is_staff or request.user.is_superuser:
+    def post(self, request, pk):
+        if not (request.user.is_staff or request.user.is_superuser):
             raise PermissionDenied("Only admins can review media.")
+ 
         try:
             media = Media.objects.get(pk=pk)
         except Media.DoesNotExist:
             raise NotFound("Media not found.")
-
+ 
         serializer = MediaReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         action = serializer.validated_data["action"]
         reason = serializer.validated_data.get("rejection_reason", "")
 
         if action == "approve":
-            media.approve(reviewer=request.user)
+            media.approve(admin_user=request.user)
         else:
             media.reject(reviewer=request.user, reason=reason)
+ 
         return Response(MediaSerializer(media).data)
 
 class CampaignListCreateView(APIView):
@@ -227,10 +228,11 @@ class CampaignDetailView(APIView):
 
         if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]: 
             return Response({"detail": "Only draft or rejected campaigns can be edited."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = CampaignWriteSerializer(campaign, data=request.data, partial=True)
+        serializer = CampaignWriteSerializer(campaign, data=request.data, partial=True, context={"advertiser": advertiser})
+        serializer.is_valid(raise_exception=True)
         campaign = serializer.save()
         return Response(CampaignSerializer(campaign).data)
-    
+        
     def delete(self, request, pk): 
         advertiser = get_advertiser(request.user)
         campaign = get_owned_campaign(advertiser, pk)
@@ -279,29 +281,55 @@ class CampaignCancelView(APIView):
     
 class CampaignReviewView(APIView):
     """
-    Ad manager or admin reviews a submitted campaign.
+    POST  /advertiser/campaigns/<uuid:pk>/review/
+    Global Tech Admin:  action="approve"
+               Moves PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW
+               (calls campaign.admin_forward_to_manager)
+ 
+    9/10 — Ad Manager: action="approve"
+               Moves PENDING_MANAGER_REVIEW → APPROVED
+               Media status → FULLY_APPROVED
+               (calls campaign.manager_approve)
+ 
+    Either role may also action="reject" from their respective pending state.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        has_manager_role = getattr(request.user, "role", None) == "ad_manager" or "admin"
-
-        if not request.user.is_staff or request.user.is_superuser and not has_manager_role:
-            raise PermissionDenied("Only admins or ad managers can review campaigns.")
+       
+        # has_manager_role = getattr(request.user, "role", None) == "ad_manager" or "admin"
+          #if not request.user.is_staff or request.user.is_superuser and not has_manager_role:
+         #   raise PermissionDenied("Only admins or ad managers can review campaigns.")
         
+        user = request.user 
+
+        is_admin = user.is_staff or user.is_superuser
+
+        is_ad_manager = getattr(user, "role", None) in ("ad_manager",) or hasattr(user, "ad_manager")
+
+        if not (is_admin or is_ad_manager):
+            raise PermissionDenied("Only admins or ad managers can review campaigns.")
+
         try:
             campaign = Campaign.objects.prefetch_related("campaign_slots__billboard__ad_manager").get(pk=pk)
         except Campaign.DoesNotExist:
             raise NotFound("Campaign not found.")
         
         # Ad manager restriction verification loop
-        if not request.user.is_staff or request.user.ad_manager:
+        if is_ad_manager and not is_admin:
             owns_billboard = campaign.campaign_slots.filter(
-                billboard__ad_manager__user=request.user
+                billboard__ad_manager__user=user
             ).exists()
             if not owns_billboard:
                 raise PermissionDenied("You can only review campaigns that target your billboards.") 
-        if campaign.status != Campaign.Status.PENDING_ADMIN_REVIEW or Campaign.Status.PENDING_MANAGER_REVIEW: #change
+            
+        # status guard
+        reviewable = [
+            Campaign.Status.PENDING_ADMIN_REVIEW,
+            Campaign.Status.PENDING_MANAGER_REVIEW,
+        ]
+
+        if campaign.status != reviewable:
             return Response({"detail": "Only campaigns pending approval can be reviewed."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = CampaignReviewSerializer(data=request.data)
@@ -311,11 +339,13 @@ class CampaignReviewView(APIView):
         reason = serializer.validated_data.get("rejection_reason", "")
         with transaction.atomic():
             if action == "approve": 
-                campaign.approve(reviewer=request.user)
+                if campaign.status == Campaign.Status.PENDING_ADMIN_REVIEW:
+                    campaign.admin_forward_to_manager(admin_user=user) # admin forwards to ad manager
+                else:
+                    campaign.manager_approve(manager_user=user) # ad manager gives final approval
             else:
-                campaign.reject(reviewer=request.user, reason=reason)
-
-            return Response(CampaignSerializer(campaign).data)
+                campaign.reject(reviewer=user, reason=reason)
+        return Response(CampaignSerializer(campaign).data)
 
 class CampaignPriceEstimateView(APIView):
     # returns lives price breakdown without saving anything 
@@ -326,7 +356,7 @@ class CampaignPriceEstimateView(APIView):
         serializer = CampaignPriceEstimateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        start = serializer.validated_data["c"]
+        start = serializer.validated_data["start_date"]
         end = serializer.validated_data["end_date"]
         duration_days = (end - start).days + 1
         slots = serializer.validated_data["slots"]

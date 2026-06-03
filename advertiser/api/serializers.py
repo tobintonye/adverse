@@ -79,7 +79,7 @@ MAX_VIDEO_BYTES = 500 * 1024 * 1024    # 500 MB
 class MediaSerializer(serializers.ModelSerializer):
     file_url = serializers.CharField(read_only=True)
     file_size_mb = serializers.FloatField(read_only=True)
-    admin_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
+    admin_reviewed_by_name = serializers.CharField(source="admin_reviewed_by.get_full_name", read_only=True)
     manager_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
 
     class Meta:
@@ -87,7 +87,7 @@ class MediaSerializer(serializers.ModelSerializer):
         fields = (
             "id", "title", "file_url", "media_type", "duration_seconds",
             "file_size_bytes", "file_size_mb", "thumbnail", "status",
-            "rejection_reason", "admin_reviewed_by_name", "manager_reviewed_by_name", "reviewed_at",
+            "rejection_reason", "admin_reviewed_by_name", "manager_reviewed_by_name",
             "created_at", "updated_at",
         )
 
@@ -176,7 +176,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     media_type = serializers.CharField(source="media.media_type", read_only=True)
     duration_days = serializers.IntegerField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
-    admin_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
+    admin_reviewed_by_name = serializers.CharField(source="admin_reviewed_by.get_full_name", read_only=True)
     manager_reviewed_by_name = serializers.CharField(source="manager_reviewed_by.get_full_name", read_only=True)
 
     class Meta:
@@ -185,7 +185,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             "id", "name", "media", "media_title", "media_type", "start_date",
             "end_date", "duration_days", "daily_start_time", "daily_end_time",
             "budget", "estimated_price", "status", "rejection_reason",
-            "admin_reviewed_by_name", "manager_reviewed_by_name", "reviewed_at", "is_active", "campaign_slots",
+            "admin_reviewed_by_name", "manager_reviewed_by_name", "is_active", "campaign_slots",
             "created_at", "updated_at",
         )
 
@@ -229,7 +229,7 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
                 CampaignSlot.objects.create(
                     campaign=campaign,
                     billboard=slot["billboard"],
-                    slot_per_day=slot.get("slots_per_day", 1), 
+                    slots_per_day=slot.get("slots_per_day", 1), 
                 )
             # Use the single automated sync helper from your model logic
             campaign.sync_estimated_price()
@@ -259,11 +259,16 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
             instance.sync_estimated_price()
             return instance
         
+class SlotEstimateItemSerializer(serializers.Serializer):
+    """One billboard entry inside a price-estimate request."""
+    billboard = serializers.UUIDField()
+    slots_per_day = serializers.IntegerField(min_value=1, default=1)
+
 class CampaignPriceEstimateSerializer(serializers.Serializer):
     # Returns a live price estimate without saving anything.
     start_date = serializers.DateField()
     end_date = serializers.DateField()
-    slots = serializers.ListField(child=serializers.DateField(), min_length=1)
+    slots = SlotEstimateItemSerializer(many=True, min_length=1)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

@@ -2,6 +2,8 @@ from rest_framework import serializers
 import re
 from django.core.validators import RegexValidator
 from ..models import Admanager
+from advertiser.models import Campaign, CampaignSlot, Media
+
 
 # Nigerian phone validation
 phone_regex = RegexValidator(
@@ -46,4 +48,45 @@ class AdManagerProfileSerializer(serializers.ModelSerializer):
                 "Company registration number is required for company accounts."
             })
         return attrs
+
+class AdManagerMediaDetailSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    class Meta:
+        model = Media
+        fields = ['id', 'title', 'media_type', 'file_url', 'thumbnail_url', 
+                  'duration_seconds', 'status']
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file:
+            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
+        return None
     
+    def get_thumbnail_url(self, obj):
+        request = self.context.get('request')
+        if obj.thumbnail:
+            return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+        return None
+    
+class CampaignSlotMinimalSerializer(serializers.ModelSerializer):
+    # incoming requests to the Ad Manager with all relevant details (Advertiser profile, schedule, price, and active slots).
+    billboard_name = serializers.CharField(source='billboard.name', read_only=True)
+
+    class Meta:
+         model = CampaignSlot
+         fields = ['id', 'billboard', 'billboard_name', 'slots_per_day', 'slot_price']
+
+class AdManagerCampaignRequestSerializer(serializers.ModelSerializer):
+    advertiser_business_name = serializers.CharField(source='advertiser.business_name', read_only=True)
+    slots = CampaignSlotMinimalSerializer(source='campaign_slots', many=True, read_only=True)
+    duration_days = serializers.IntegerField(read_only=True)
+    media = AdManagerMediaDetailSerializer(read_only=True)
+
+    class Meta:
+        model = Campaign
+        fields = [
+            'id', 'name', 'advertiser', 'advertiser_business_name', 'media', # display the url instead of the id
+            'start_date', 'end_date', 'daily_start_time', 'daily_end_time',
+            'estimated_price', 'status', 'rejection_reason', 'duration_days', 'slots'
+        ]
