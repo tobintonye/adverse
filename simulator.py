@@ -54,7 +54,7 @@ def save_state(state: dict):
 def load_state() -> dict:
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
-            content = f.read.strip()
+            content = f.read().strip()
             if content:
                 return json.loads(content)
     return {}

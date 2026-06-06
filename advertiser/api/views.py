@@ -3,6 +3,8 @@ from rest_framework.views import APIView
 from device.models import Billboard
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from ..models import Advertiser, Media, Campaign
@@ -257,7 +259,7 @@ class CampaignSubmitView(APIView):
 
         try: 
             campaign.submit_for_approval()
-        except  ValidationError as e:
+        except DjangoValidationError  as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
@@ -329,7 +331,7 @@ class CampaignReviewView(APIView):
             Campaign.Status.PENDING_MANAGER_REVIEW,
         ]
 
-        if campaign.status != reviewable:
+        if campaign.status not in reviewable:
             return Response({"detail": "Only campaigns pending approval can be reviewed."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = CampaignReviewSerializer(data=request.data)
