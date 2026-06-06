@@ -1,0 +1,90 @@
+{% extends "adManager/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'admanager:billboard_create' %}"
+   class="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Add Billboard
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% if verification_status == 'pending' %}
+    {% if ad_manager.verification_requested %}
+    <div class="mb-6 flex items-center gap-3 px-4 py-3 bg-blue-900/20 border border-blue-500/40 rounded-lg text-sm text-blue-400">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Verification request submitted — an admin will review your account shortly.
+    </div>
+    {% else %}
+    <div class="mb-6 flex items-center justify-between gap-3 px-4 py-3 bg-yellow-900/20 border border-yellow-500/40 rounded-lg text-sm text-yellow-400">
+        <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Your account is <strong class="ml-1">pending verification</strong>. Request verification to be reviewed by an admin.
+        </div>
+        <form method="post" action="{% url 'admanager:request_verification' %}" class="flex-shrink-0">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-semibold rounded-lg transition">
+                Request Verification
+            </button>
+        </form>
+    </div>
+    {% endif %}
+{% elif verification_status == 'rejected' %}
+<div class="mb-6 flex items-center gap-3 px-4 py-3 bg-red-900/20 border border-red-500/40 rounded-lg text-sm text-red-400">
+    Account verification was rejected. Reason: {{ rejection_reason }}
+</div>
+{% endif %}
+
+<!-- Stats -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Billboards</p>
+        <p class="text-3xl font-bold text-white">{{ total_billboards }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Campaigns Served</p>
+        <p class="text-3xl font-bold text-white">{{ total_campaigns_served }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Impressions</p>
+        <p class="text-3xl font-bold text-white">{{ total_impressions|default:"0" }}</p>
+    </div>
+</div>
+
+<!-- Quick links -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <a href="{% url 'admanager:billboard_list' %}" class="group bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 flex items-center gap-4 transition">
+        <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
+            <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-semibold text-white">Manage Billboards</p>
+            <p class="text-xs text-zinc-500 mt-0.5">Add, edit or view your screens</p>
+        </div>
+    </a>
+    <a href="{% url 'admanager:campaign_requests' %}" class="group bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 flex items-center gap-4 transition">
+        <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
+            <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-semibold text-white">Campaign Requests</p>
+            <p class="text-xs text-zinc-500 mt-0.5">Review and approve pending campaigns</p>
+        </div>
+    </a>
+</div>
+
+{% endblock %}

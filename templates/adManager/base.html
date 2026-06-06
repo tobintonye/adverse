@@ -1,0 +1,256 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ad Manager{% endblock %} — Advers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        select option { background-color: #18181b; color: #fff; }
+
+        #sidebar { width: 14rem; min-width: 0; overflow: hidden; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
+        #main-content { transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1); }
+        #collapse-chevron { transition: transform 0.25s ease; }
+
+        html.sidebar-is-collapsed #sidebar { width: 4rem; }
+        html.sidebar-is-collapsed #main-content { margin-left: 4rem; }
+
+        .nav-tooltip {
+            position: absolute; left: calc(100% + 10px); top: 50%;
+            transform: translateY(-50%); padding: 4px 10px;
+            background: #27272a; border: 1px solid #3f3f46;
+            color: #fff; font-size: 12px; border-radius: 6px;
+            white-space: nowrap; pointer-events: none;
+            opacity: 0; transition: opacity 0.15s ease; z-index: 60; display: none;
+        }
+        #sidebar.collapsed .nav-tooltip { display: block; }
+        #sidebar.collapsed .nav-item:hover .nav-tooltip { opacity: 1; }
+        #sidebar.collapsed nav a { justify-content: center; }
+        #sidebar.collapsed .sidebar-signout { justify-content: center; }
+
+        @media (max-width: 767px) {
+            #sidebar { transform: translateX(-100%); transition: width 0.25s ease, transform 0.25s cubic-bezier(0.4,0,0.2,1); width: 14rem !important; }
+            #sidebar.mobile-open { transform: translateX(0); }
+            #main-content { margin-left: 0 !important; }
+            #collapse-btn { display: none !important; }
+            html.sidebar-is-collapsed #main-content { margin-left: 0 !important; }
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-is-collapsed');
+        }
+    </script>
+</head>
+<body class="bg-black text-white min-h-screen overflow-x-hidden">
+
+    <!-- Mobile backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden" onclick="closeMobileSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full bg-zinc-950 border-r border-zinc-800 flex flex-col z-40 overflow-hidden">
+
+        <div class="px-5 py-4 border-b border-zinc-800 flex items-center gap-3 flex-shrink-0">
+            <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-8 h-8 object-contain flex-shrink-0">
+            <div id="sidebar-brand">
+                <span class="text-sm font-bold text-white tracking-tight leading-none block whitespace-nowrap">Advers</span>
+                <span class="text-[9px] font-bold text-red-600 uppercase tracking-widest whitespace-nowrap">Manager</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+            <div class="nav-item relative">
+                <a href="{% url 'admanager:dashboard' %}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'dashboard' %}text-white bg-zinc-800{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/60{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span class="nav-label whitespace-nowrap">Dashboard</span>
+                </a>
+                <span class="nav-tooltip">Dashboard</span>
+            </div>
+            <div class="nav-item relative">
+                <a href="{% url 'admanager:billboard_list' %}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'billboard' in request.resolver_match.url_name %}text-white bg-zinc-800{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/60{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span class="nav-label whitespace-nowrap">Billboards</span>
+                </a>
+                <span class="nav-tooltip">Billboards</span>
+            </div>
+            <div class="nav-item relative">
+                <a href="{% url 'admanager:campaign_requests' %}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'campaign' in request.resolver_match.url_name %}text-white bg-zinc-800{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/60{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span class="nav-label whitespace-nowrap">Requests</span>
+                </a>
+                <span class="nav-tooltip">Requests</span>
+            </div>
+            <div class="nav-item relative">
+                <a href="{% url 'admanager:settings' %}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'settings' %}text-white bg-zinc-800{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/60{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="nav-label whitespace-nowrap">Settings</span>
+                </a>
+                <span class="nav-tooltip">Settings</span>
+            </div>
+        </nav>
+
+        <!-- Footer: sign out -->
+        <div class="px-3 py-4 border-t border-zinc-800 flex-shrink-0">
+            <form method="post" action="{% url 'security:logout' %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="sidebar-signout flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-zinc-500 hover:text-red-500 hover:bg-zinc-800/60 transition">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    <span class="nav-label whitespace-nowrap">Sign out</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="main-content" class="flex flex-col min-h-screen" style="margin-left: 14rem;">
+
+        <header class="sticky top-0 z-30 h-14 bg-black/80 backdrop-blur border-b border-zinc-800 flex items-center px-4 md:px-6 gap-3">
+            <!-- Hamburger (mobile only) -->
+            <button onclick="openMobileSidebar()" class="md:hidden text-zinc-400 hover:text-white transition flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <!-- Collapse toggle (desktop only) beside page title -->
+            <button id="collapse-btn" onclick="toggleCollapse()"
+                    class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition flex-shrink-0"
+                    title="Toggle sidebar">
+                <svg id="collapse-chevron" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="flex-1 min-w-0">
+                {% block breadcrumbs %}
+                <nav class="flex items-center gap-1.5 text-sm min-w-0">
+                    <span class="text-sm font-semibold text-white truncate">{% block page_title %}{% endblock %}</span>
+                </nav>
+                {% endblock %}
+            </div>
+            {% block topbar_actions %}{% endblock %}
+
+            <!-- User avatar dropdown -->
+            <div class="relative flex-shrink-0" id="user-menu-container">
+                <button onclick="toggleUserMenu()"
+                        class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                </button>
+                <div id="user-menu" class="hidden absolute right-0 top-full mt-2 w-60 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-zinc-800">
+                        <p class="text-sm font-semibold text-white truncate">{{ request.user.get_full_name|default:request.user.email }}</p>
+                        <p class="text-xs text-zinc-500 mt-0.5 truncate">{{ request.user.email }}</p>
+                        <span class="inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/30 text-red-400 border border-red-500/30 uppercase tracking-widest">Ad Manager</span>
+                    </div>
+                    <div class="px-2 py-2">
+                        <a href="{% url 'admanager:settings' %}"
+                           class="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Settings
+                        </a>
+                        <form method="post" action="{% url 'security:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                Sign out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-4 md:p-6">
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm
+                    {% if message.tags == 'error' %}bg-red-900/20 border border-red-500/40 text-red-400
+                    {% elif message.tags == 'success' %}bg-green-900/20 border border-green-500/40 text-green-400
+                    {% else %}bg-zinc-800 border border-zinc-700 text-zinc-300{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const mainContent = document.getElementById('main-content');
+        const chevron = document.getElementById('collapse-chevron');
+        const brand = document.getElementById('sidebar-brand');
+
+        let isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        function applyCollapse() {
+            const isMobile = window.innerWidth < 768;
+            const labels = sidebar.querySelectorAll('.nav-label');
+            if (isCollapsed && !isMobile) {
+                sidebar.style.width = '4rem';
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '4rem';
+                brand.classList.add('hidden');
+                labels.forEach(el => el.classList.add('hidden'));
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                sidebar.style.width = '14rem';
+                sidebar.classList.remove('collapsed');
+                if (!isMobile) mainContent.style.marginLeft = '14rem';
+                brand.classList.remove('hidden');
+                labels.forEach(el => el.classList.remove('hidden'));
+                if (chevron) chevron.style.transform = '';
+            }
+        }
+
+        function toggleCollapse() {
+            isCollapsed = !isCollapsed;
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            applyCollapse();
+        }
+
+        function openMobileSidebar() {
+            sidebar.classList.add('mobile-open');
+            backdrop.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileSidebar() {
+            sidebar.classList.remove('mobile-open');
+            backdrop.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function toggleUserMenu() {
+            document.getElementById('user-menu').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('user-menu-container');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('user-menu').classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('mobile-open');
+                backdrop.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            applyCollapse();
+        });
+
+        applyCollapse();
+    </script>
+</body>
+</html>

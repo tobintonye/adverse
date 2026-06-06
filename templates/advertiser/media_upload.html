@@ -1,0 +1,82 @@
+{% extends "advertiser/base.html" %}
+
+{% block title %}Upload Media{% endblock %}
+{% block page_title %}Upload Media{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex items-center gap-1.5 text-sm min-w-0">
+    <a href="{% url 'advertiser:media_library' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">My Media</a>
+    <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-white font-semibold truncate">Upload</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Upload Ad Media</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Images up to 10 MB · Videos up to 500 MB (MP4, MOV, WebM)</p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Title</label>
+                <input type="text" name="title" value="{{ form.title.value|default:'' }}" placeholder="e.g. Christmas Promo 2026" required
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                {% if form.title.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Media Type</label>
+                <select name="media_type" id="mediaType"
+                        class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <option value="image" {% if form.media_type.value == 'image' %}selected{% endif %}>Image</option>
+                    <option value="video" {% if form.media_type.value == 'video' %}selected{% endif %}>Video</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">File</label>
+                <input type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm" required
+                       class="w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 transition">
+                {% if form.file.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.file.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div id="durationWrapper">
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">
+                    Duration (seconds) <span class="text-zinc-600 normal-case">— required for video</span>
+                </label>
+                <input type="number" name="duration_seconds" value="{{ form.duration_seconds.value|default:'' }}" min="1" placeholder="30"
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                {% if form.duration_seconds.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.duration_seconds.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="flex items-center gap-3 pt-2 border-t border-zinc-800">
+                <button type="submit"
+                        class="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
+                    Upload
+                </button>
+                <a href="{% url 'advertiser:media_library' %}" class="text-sm text-zinc-500 hover:text-zinc-300 transition">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const mediaType = document.getElementById('mediaType');
+    const durationWrapper = document.getElementById('durationWrapper');
+
+    function toggleDuration() {
+        durationWrapper.style.display = mediaType.value === 'video' ? 'block' : 'none';
+    }
+
+    mediaType.addEventListener('change', toggleDuration);
+    toggleDuration();
+</script>
+
+{% endblock %}

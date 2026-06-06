@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +8,7 @@
 </head>
 <body class="bg-black flex items-center justify-center min-h-screen text-white">
     <div class="text-center space-y-4">
+        <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-2">
         <h2 class="text-xl font-bold text-red-500">Verification Failed</h2>
         <p class="text-zinc-400 text-sm">This link is invalid or has expired.</p>
         <a href="{% url 'security:register' %}" 

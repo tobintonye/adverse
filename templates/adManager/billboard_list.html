@@ -1,0 +1,74 @@
+{% extends "adManager/base.html" %}
+
+{% block title %}Billboards{% endblock %}
+{% block page_title %}My Billboards{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'admanager:billboard_create' %}"
+   class="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Add Billboard
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% if billboards %}
+<div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-zinc-800">
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Name / Location</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Screen</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Price/Slot</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
+                <th class="px-5 py-3"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+            {% for bb in billboards %}
+            <tr class="hover:bg-zinc-800/40 transition">
+                <td class="px-5 py-4">
+                    <p class="font-medium text-white">{{ bb.name }}</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">{{ bb.location_name }}</p>
+                </td>
+                <td class="px-5 py-4">
+                    <span class="text-zinc-300">{{ bb.get_screen_type_display }}</span>
+                    <span class="text-zinc-600 text-xs ml-1">{{ bb.resolution }}</span>
+                </td>
+                <td class="px-5 py-4 text-zinc-300">₦{{ bb.price_per_slot }}</td>
+                <td class="px-5 py-4">
+                    {% if bb.availability == 'available' %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-900/30 text-green-400">Available</span>
+                    {% elif bb.availability == 'maintenance' %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-900/30 text-yellow-400">Maintenance</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-400">Unavailable</span>
+                    {% endif %}
+                </td>
+                <td class="px-5 py-4 text-right">
+                    <a href="{% url 'admanager:billboard_edit' bb.pk %}"
+                       class="text-xs text-zinc-400 hover:text-white transition">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-20 text-center">
+    <svg class="w-12 h-12 text-zinc-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+    <p class="text-zinc-400 font-medium">No billboards yet</p>
+    <p class="text-zinc-600 text-sm mt-1">Add your first billboard to start receiving campaigns.</p>
+    <a href="{% url 'admanager:billboard_create' %}"
+       class="mt-4 px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition active:scale-95">
+        Add Billboard
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

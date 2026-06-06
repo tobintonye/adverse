@@ -39,11 +39,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist', # Allows revoking refresh tokens
     'adverse',
-    'admanager', 
-    'advertiser', 
+    'admanager',
+    'advertiser',
     'device',
     'common',
-    
+    'admin_panel',
 ]
 
 MIDDLEWARE = [
@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-SITE_ID = 3
+SITE_ID = 1
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
@@ -81,10 +81,9 @@ TEMPLATES = [
 ]
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 LOGIN_URL = 'security:login'
 LOGIN_REDIRECT_URL = 'security:post_login'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'security:login'

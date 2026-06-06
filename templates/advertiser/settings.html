@@ -1,0 +1,145 @@
+{% extends "advertiser/base.html" %}
+
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- Verification Status -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Verification Status</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Your account verification status with Advers</p>
+        </div>
+        <div class="p-6 flex items-center justify-between gap-4">
+            {% if request.user.advertiser_profile.is_verified %}
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-green-900/30 border border-green-500/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-green-400">Verified</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">Your account is verified and can submit campaigns</p>
+                </div>
+            </div>
+            {% elif request.user.advertiser_profile.verification_requested %}
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-blue-400">Verification Pending</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">Your request has been submitted and is under admin review</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-yellow-900/30 border border-yellow-500/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-yellow-400">Not Verified</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">Request verification to unlock campaign submissions</p>
+                </div>
+            </div>
+            <form method="post" action="{% url 'advertiser:request_verification' %}" class="flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition active:scale-95">
+                    Request Verification
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profile edit -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Business Profile</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Update your advertiser profile information</p>
+        </div>
+        <form method="post" class="p-6 space-y-5">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">First Name</label>
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Last Name</label>
+                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Business Name</label>
+                <input type="text" name="business_name" value="{{ form.business_name.value|default:'' }}"
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Category</label>
+                    <select name="business_category"
+                            class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                        {% for val, label in form.fields.business_category.choices %}
+                        <option value="{{ val }}" {% if form.business_category.value == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Phone</label>
+                    <input type="text" name="contact_phone" value="{{ form.contact_phone.value|default:'' }}"
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Website</label>
+                <input type="url" name="website" value="{{ form.website.value|default:'' }}"
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Address</label>
+                <textarea name="address" rows="2"
+                          class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition resize-none">{{ form.address.value|default:'' }}</textarea>
+            </div>
+
+            <div class="pt-2 border-t border-zinc-800 flex justify-end">
+                <button type="submit"
+                        class="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition active:scale-95">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Password section -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Security</h2>
+        </div>
+        <div class="p-6">
+            <a href="{% url 'security:change_password' %}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-sm text-white font-medium rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+                Change Password
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Campaign Review{% endblock %}
+{% block page_title %}Campaign Review{% endblock %}
+
+{% block content %}
+
+{% if campaigns %}
+<div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-zinc-800">
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Campaign</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Advertiser</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Dates</th>
+                <th class="text-left px-5 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Budget</th>
+                <th class="px-5 py-3"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+            {% for campaign in campaigns %}
+            <tr class="hover:bg-zinc-800/40 transition">
+                <td class="px-5 py-4">
+                    <p class="font-medium text-white">{{ campaign.name }}</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">{{ campaign.media.title }}</p>
+                </td>
+                <td class="px-5 py-4 text-zinc-300">{{ campaign.advertiser.business_name }}</td>
+                <td class="px-5 py-4">
+                    <p class="text-zinc-300">{{ campaign.start_date }} — {{ campaign.end_date }}</p>
+                    <p class="text-xs text-zinc-500 mt-0.5">{{ campaign.duration_days }} days</p>
+                </td>
+                <td class="px-5 py-4 text-zinc-300">₦{{ campaign.budget }}</td>
+                <td class="px-5 py-4 text-right">
+                    <a href="{% url 'admin_panel:campaign_detail' campaign.pk %}"
+                       class="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white rounded-lg transition">
+                        Review
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-20 text-center">
+    <svg class="w-12 h-12 text-zinc-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-zinc-400 font-medium">No campaigns pending admin review</p>
+</div>
+{% endif %}
+
+{% endblock %}

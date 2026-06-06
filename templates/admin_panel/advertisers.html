@@ -1,0 +1,267 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Advertisers{% endblock %}
+{% block page_title %}Advertisers{% endblock %}
+
+{% block content %}
+
+<!-- Search and Filter Bar -->
+<div class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-900/40 p-4 border border-zinc-800/60 rounded-xl backdrop-blur-md">
+    <!-- Search Input -->
+    <div class="relative w-full md:w-72">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </span>
+        <input type="text" id="advertiserSearch" placeholder="Search business or contact..."
+               class="w-full pl-9 pr-4 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-650 focus:border-red-650 transition">
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="flex gap-1.5 p-1 bg-black/60 border border-zinc-800 rounded-lg">
+        <button onclick="filterStatus('all')" id="btn-filter-all" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-zinc-850 text-white">All</button>
+        <button onclick="filterStatus('pending')" id="btn-filter-pending" class="px-4 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Pending Request</button>
+        <button onclick="filterStatus('verified')" id="btn-filter-verified" class="px-4 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Verified</button>
+    </div>
+</div>
+
+<!-- Advertisers Table Card -->
+<div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse" id="advertisersTable">
+            <thead>
+                <tr class="border-b border-zinc-850 bg-zinc-950/20 select-none">
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest w-12 text-center">Info</th>
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Business</th>
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Category</th>
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email</th>
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
+                    <th class="px-6 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Joined</th>
+                    <th class="px-6 py-3.5 w-24"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-850">
+                {% for advertiser in advertisers %}
+                <!-- Main row -->
+                <tr class="hover:bg-zinc-850/30 transition cursor-pointer select-none border-b border-zinc-900 advertiser-row" 
+                    data-business="{{ advertiser.business_name|lower }}" 
+                    data-contact="{{ advertiser.first_name|lower }} {{ advertiser.last_name|lower }}" 
+                    data-email="{{ advertiser.user.email|lower }}"
+                    data-status="{% if advertiser.is_verified %}verified{% elif advertiser.verification_requested %}pending{% else %}unverified{% endif %}"
+                    onclick="toggleDetails('{{ advertiser.pk }}')">
+                    
+                    <td class="px-6 py-4.5 text-center" onclick="event.stopPropagation(); toggleDetails('{{ advertiser.pk }}')">
+                        <button class="text-zinc-500 hover:text-white transition focus:outline-none" id="chevron-btn-{{ advertiser.pk }}">
+                            <svg class="w-4 h-4 transform transition-transform duration-200" id="chevron-{{ advertiser.pk }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </td>
+                    
+                    <td class="px-6 py-4.5">
+                        <p class="font-semibold text-white text-sm tracking-tight">{{ advertiser.business_name }}</p>
+                        <p class="text-xs text-zinc-500 mt-0.5">{{ advertiser.first_name }} {{ advertiser.last_name }}</p>
+                    </td>
+                    
+                    <td class="px-6 py-4.5 text-zinc-400 text-xs font-medium">{{ advertiser.get_business_category_display }}</td>
+                    <td class="px-6 py-4.5 text-zinc-400 text-xs font-mono">{{ advertiser.user.email }}</td>
+                    
+                    <td class="px-6 py-4.5">
+                        {% if advertiser.is_verified %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-950/40 text-green-400 border border-green-800/30">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Verified
+                            </span>
+                        {% else %}
+                            {% if advertiser.verification_requested %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-950/40 text-yellow-400 border border-yellow-800/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Pending Review
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800/60 text-zinc-400 border border-zinc-700/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-550"></span> Unverified
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    
+                    <td class="px-6 py-4.5 text-zinc-500 text-xs">{{ advertiser.created_at|date:"d M Y" }}</td>
+                    
+                    <td class="px-6 py-4.5 text-right" onclick="event.stopPropagation()">
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="pk" value="{{ advertiser.pk }}">
+                            {% if advertiser.is_verified %}
+                            <button type="submit" name="action" value="suspend"
+                                    class="px-3 py-1 bg-red-950/40 hover:bg-red-900/40 text-red-400 text-xs font-semibold rounded-md border border-red-900/30 hover:border-red-500/30 transition">
+                                Suspend
+                            </button>
+                            {% else %}
+                            <button type="submit" name="action" value="verify"
+                                    class="px-3 py-1 bg-green-950/40 hover:bg-green-900/40 text-green-400 text-xs font-semibold rounded-md border border-green-900/30 hover:border-green-500/30 transition">
+                                Verify
+                            </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                
+                <!-- Details row (collapsed by default) -->
+                <tr id="details-{{ advertiser.pk }}" class="hidden bg-black/45 border-b border-zinc-850 details-row" onclick="event.stopPropagation()">
+                    <td colspan="7" class="px-8 py-5 text-sm text-zinc-300">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Left block: Contact Details -->
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-1">Contact Profile</h4>
+                                <div class="space-y-2 text-xs">
+                                    <p class="flex items-center gap-2 text-zinc-400"><span class="text-zinc-500 font-medium w-16">Contact:</span> <span class="text-white font-medium">{{ advertiser.first_name }} {{ advertiser.last_name }}</span></p>
+                                    <p class="flex items-center gap-2 text-zinc-400"><span class="text-zinc-500 font-medium w-16">Phone:</span> 
+                                        {% if advertiser.contact_phone %}
+                                            <a href="tel:{{ advertiser.contact_phone }}" class="text-red-400 hover:underline hover:text-red-300">{{ advertiser.contact_phone }}</a>
+                                        {% else %}
+                                            <span class="text-zinc-650 italic">Not provided</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="flex items-center gap-2 text-zinc-400"><span class="text-zinc-500 font-medium w-16">Website:</span> 
+                                        {% if advertiser.website %}
+                                            <a href="{{ advertiser.website }}" target="_blank" class="text-blue-400 hover:underline hover:text-blue-300 inline-flex items-center gap-0.5">{{ advertiser.website }} ↗</a>
+                                        {% else %}
+                                            <span class="text-zinc-650 italic">Not provided</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Middle block: Location / Address -->
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-1">Business Location</h4>
+                                <div class="text-xs space-y-1">
+                                    <span class="text-zinc-500 font-medium block">Address:</span>
+                                    <p class="text-zinc-300 leading-relaxed max-w-xs">
+                                        {% if advertiser.address %}
+                                            {{ advertiser.address }}
+                                        {% else %}
+                                            <span class="text-zinc-650 italic">Not provided</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Right block: Platform Performance & Actions -->
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-1">System Statistics</h4>
+                                <div class="space-y-2 text-xs">
+                                    <p class="flex items-center justify-between text-zinc-405"><span class="text-zinc-500">Media Uploads:</span> <span class="font-bold text-white bg-zinc-850 px-2 py-0.5 rounded">{{ advertiser.media_count }}</span></p>
+                                    <p class="flex items-center justify-between text-zinc-405"><span class="text-zinc-500">Created Campaigns:</span> <span class="font-bold text-white bg-zinc-850 px-2 py-0.5 rounded">{{ advertiser.campaign_count }}</span></p>
+                                    
+                                    {% if advertiser.is_verified %}
+                                        <div class="mt-2 pt-2 border-t border-zinc-800/80 text-[10px] text-zinc-550">
+                                            <p>Verified by <span class="text-zinc-400 font-semibold">{{ advertiser.verified_by.get_full_name|default:advertiser.verified_by.email }}</span></p>
+                                            <p class="mt-0.5">at {{ advertiser.verified_at|date:"d M Y H:i" }}</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-16 text-center text-zinc-500">
+                        <svg class="w-12 h-12 text-zinc-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        No advertisers registered yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Client-side search and filters
+    const searchInput = document.getElementById('advertiserSearch');
+    const tableRows = document.querySelectorAll('.advertiser-row');
+    const detailsRows = document.querySelectorAll('.details-row');
+    let currentFilter = 'all';
+
+    searchInput.addEventListener('keyup', filterTable);
+
+    function filterStatus(status) {
+        currentFilter = status;
+        
+        // Update tab styling
+        ['all', 'pending', 'verified'].forEach(s => {
+            const btn = document.getElementById(`btn-filter-${s}`);
+            if (s === status) {
+                btn.classList.add('bg-zinc-850', 'text-white');
+                btn.classList.remove('text-zinc-400');
+            } else {
+                btn.classList.remove('bg-zinc-850', 'text-white');
+                btn.classList.add('text-zinc-400');
+            }
+        });
+        
+        filterTable();
+    }
+
+    function filterTable() {
+        const query = searchInput.value.toLowerCase().trim();
+        
+        tableRows.forEach(row => {
+            const business = row.getAttribute('data-business');
+            const contact = row.getAttribute('data-contact');
+            const email = row.getAttribute('data-email');
+            const status = row.getAttribute('data-status');
+            const pk = row.getAttribute('onclick').match(/'([^']+)'/)[1];
+            
+            const matchesQuery = business.includes(query) || contact.includes(query) || email.includes(query);
+            
+            let matchesFilter = true;
+            if (currentFilter === 'pending') {
+                matchesFilter = (status === 'pending');
+            } else if (currentFilter === 'verified') {
+                matchesFilter = (status === 'verified');
+            }
+            
+            if (matchesQuery && matchesFilter) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+                // Collapses details of hidden rows
+                document.getElementById(`details-${pk}`).classList.add('hidden');
+                const chevron = document.getElementById(`chevron-${pk}`);
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Toggle collapsible rows
+    function toggleDetails(pk) {
+        const detailsRow = document.getElementById(`details-${pk}`);
+        const chevron = document.getElementById(`chevron-${pk}`);
+        const isCollapsed = detailsRow.classList.contains('hidden');
+        
+        // Hide all details rows first to keep it clean
+        detailsRows.forEach(row => {
+            if (row.id !== `details-${pk}`) {
+                row.classList.add('hidden');
+                const otherPk = row.id.replace('details-', '');
+                const otherChevron = document.getElementById(`chevron-${otherPk}`);
+                if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        if (isCollapsed) {
+            detailsRow.classList.remove('hidden');
+            chevron.style.transform = 'rotate(90deg)';
+        } else {
+            detailsRow.classList.add('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    }
+</script>
+
+{% endblock %}

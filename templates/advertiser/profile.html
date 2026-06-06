@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile — Advers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        select option { background-color: #18181b; }
+    </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen p-4 text-white">
+
+    <div class="w-full max-w-lg bg-black p-8 rounded-xl border border-zinc-800 shadow-2xl">
+
+        <div class="mb-8 flex items-center gap-4">
+            <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-10 h-10 object-contain flex-shrink-0">
+            <div>
+                <span class="text-[10px] font-bold text-red-600 uppercase tracking-widest">Advers · Advertiser</span>
+                <h2 class="text-2xl font-bold mt-1">Complete your profile</h2>
+                <p class="text-zinc-500 text-sm mt-0.5">Tell us about your business before you start running campaigns.</p>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm bg-red-900/20 border border-red-500/40 text-red-400">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">First Name</label>
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" placeholder="Jane" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    {% if form.first_name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Last Name</label>
+                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" placeholder="Doe" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    {% if form.last_name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Business Name</label>
+                <input type="text" name="business_name" value="{{ form.business_name.value|default:'' }}" placeholder="e.g. Bright Sparks Ltd" required
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                {% if form.business_name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.business_name.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Business Category</label>
+                    <select name="business_category"
+                            class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                        {% for val, label in form.fields.business_category.choices %}
+                        <option value="{{ val }}" {% if form.business_category.value == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Phone</label>
+                    <input type="text" name="contact_phone" value="{{ form.contact_phone.value|default:'' }}" placeholder="08012345678"
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Website</label>
+                <input type="url" name="website" value="{{ form.website.value|default:'' }}" placeholder="https://yoursite.com"
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Address</label>
+                <textarea name="address" rows="2" placeholder="Business address..."
+                          class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition resize-none">{{ form.address.value|default:'' }}</textarea>
+            </div>
+
+            <button type="submit"
+                    class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
+                Complete Profile
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

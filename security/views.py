@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from .forms import RegisterForm, LoginForm, PasswordResetForm, SetPasswordForm
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from .models import CustomUser
 from django_ratelimit.decorators import ratelimit
@@ -76,11 +77,14 @@ def verifyEmail(request, uidb64, token):
         user.save()
         storage = messages.get_messages(request)
         storage.used = True
-        # Log the user in after verification
-       # user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-        messages.success(request, "Your account have been verified.")
-        return redirect("admanager:profile") # set for now
+        messages.success(request, "Your account has been verified.")
+        if user.role == CustomUser.UserRole.ADVERTISER:
+            return redirect("advertiser:create_profile")
+        elif user.role == CustomUser.UserRole.ADMIN or user.is_staff:
+            return redirect("admin_panel:dashboard")
+        else:
+            return redirect("admanager:profile")
     else:
         return render(request, 'security/verification_failed.html')
 
@@ -120,22 +124,40 @@ def resendVerificationLink(request):
 #@ratelimit(key='post:email', rate='3/h', block=True)
 @transaction.atomic
 def registerAccount(request):
-    if request.method == "POST": 
+    if request.method == "POST":
         form = RegisterForm(request.POST)
-        print("FORM ERRORS:", form.errors) 
         if form.is_valid():
             user = form.save(commit=False)
-            user.role = "ad_manager" # set for now
-            user.is_active = False 
+            role = request.POST.get('role', 'ad_manager')
+            if role not in ['ad_manager', 'advertiser']:
+                role = 'ad_manager'
+            user.role = role
+            user.first_name = request.POST.get('first_name', '').strip()
+            user.last_name = request.POST.get('last_name', '').strip()
             user.set_password(form.cleaned_data["password"])
-            user.save()
-            try: 
-                sendVerificationEmail(user, request)
-                messages.success(request, "Verification email sent to " + user.email )
-                return render(request, "security/verification_pending.html", {"email":user.email})
-            except ValidationError as e:
-                user.delete() 
-                messages.error(request, str(e))
+
+            if settings.DEBUG:
+                # In local dev, skip email and auto-activate so SMTP isn't required
+                user.is_active = True
+                user.save()
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, f"Account created! Welcome, {user.first_name or user.email}.")
+                if user.role == CustomUser.UserRole.ADVERTISER:
+                    return redirect('advertiser:create_profile')
+                elif user.role == CustomUser.UserRole.ADMIN or user.is_staff:
+                    return redirect('admin_panel:dashboard')
+                else:
+                    return redirect('admanager:profile')
+            else:
+                user.is_active = False
+                user.save()
+                try:
+                    sendVerificationEmail(user, request)
+                    messages.success(request, "Verification email sent to " + user.email)
+                    return render(request, "security/verification_pending.html", {"email": user.email})
+                except ValidationError as e:
+                    user.delete()
+                    messages.error(request, str(e))
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -176,11 +198,20 @@ def loginAccount(request):
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             remember_me = form.cleaned_data.get("remember_me")
             if remember_me:
-                request.session.set_expiry(60 * 60 * 24 * 30)  
+                request.session.set_expiry(60 * 60 * 24 * 30)
             else:
-                request.session.set_expiry(0) 
+                request.session.set_expiry(0)
             messages.success(request, f"Welcome back, {user.first_name}")
-            return redirect('admanager:dashboard')
+            if user.role == CustomUser.UserRole.ADVERTISER:
+                if hasattr(user, 'advertiser_profile'):
+                    return redirect('advertiser:dashboard')
+                return redirect('advertiser:create_profile')
+            elif user.role == CustomUser.UserRole.ADMIN or user.is_staff:
+                return redirect('admin_panel:dashboard')
+            else:
+                if hasattr(user, 'ad_manager'):
+                    return redirect('admanager:dashboard')
+                return redirect('admanager:profile')
     else:
         form = LoginForm()
     return render(request, "security/login.html", {"form": form})
@@ -300,10 +331,38 @@ def resend_passwordreset_link(request):
 
 def post_login(request):
     if request.user.is_authenticated:
-        if request.user.role:
-            if request.user.role == 'ad_manager':
+        role = request.user.role
+        if role == CustomUser.UserRole.ADVERTISER:
+            if hasattr(request.user, 'advertiser_profile'):
+                return redirect('advertiser:dashboard')
+            return redirect('advertiser:create_profile')
+        elif role == CustomUser.UserRole.ADMIN or request.user.is_staff:
+            return redirect('admin_panel:dashboard')
+        elif role == CustomUser.UserRole.AD_MANAGER:
+            if hasattr(request.user, 'ad_manager'):
                 return redirect('admanager:dashboard')
+            return redirect('admanager:profile')
+    return redirect('adverse:home')
+
+@login_required(login_url='security:login')
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Your password has been changed successfully.')
+            role = request.user.role
+            if role == CustomUser.UserRole.ADVERTISER:
+                return redirect('advertiser:settings')
+            elif role == CustomUser.UserRole.ADMIN or request.user.is_staff:
+                return redirect('admin_panel:dashboard')
             else:
-                return redirect('adverse:home')
+                return redirect('admanager:settings')
         else:
-            return redirect('adverse:home')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'security/change_password.html', {'form': form})

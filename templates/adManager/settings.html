@@ -1,39 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stark White Ad Manager Dashboard | MonoSlot</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font (Professional & Modern) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom scrollbar for better UI in an all-white context */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
-        
-        body { background-color: #ffffff; color: #0f172a; }
-    </style>
-</head>
-<body class="antialiased font-sans flex h-screen overflow-hidden bg-white">
+{% extends "adManager/base.html" %}
 
-    <h1>Settings</h1>
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
 
-</body>
-</html>
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- Profile Section -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Business Profile</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Update your ad manager profile information</p>
+        </div>
+        <div id="profile-form-wrapper" class="p-6">
+            {% include "partials/admanager/settingsprofile.html" %}
+        </div>
+    </div>
+
+    <!-- Password Section -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-6 py-4 border-b border-zinc-800">
+            <h2 class="text-sm font-semibold text-white">Security</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Manage your account password</p>
+        </div>
+        <div class="p-6">
+            <a href="{% url 'security:change_password' %}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-sm text-white font-medium rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+                Change Password
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

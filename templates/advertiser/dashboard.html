@@ -1,0 +1,133 @@
+{% extends "advertiser/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'advertiser:campaign_create' %}"
+   class="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    New Campaign
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% if not advertiser.is_verified %}
+    {% if advertiser.verification_requested %}
+    <div class="mb-6 flex items-center gap-3 px-4 py-3 bg-blue-900/20 border border-blue-500/40 rounded-lg text-sm text-blue-400">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Verification request submitted — an admin will review your account shortly.
+    </div>
+    {% else %}
+    <div class="mb-6 flex items-center justify-between gap-3 px-4 py-3 bg-yellow-900/20 border border-yellow-500/40 rounded-lg text-sm text-yellow-400">
+        <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Your account is <strong class="ml-1">pending verification</strong>. You can upload media but cannot submit campaigns until verified.
+        </div>
+        <form method="post" action="{% url 'advertiser:request_verification' %}" class="flex-shrink-0">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-semibold rounded-lg transition">
+                Request Verification
+            </button>
+        </form>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- Stats -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Media Files</p>
+        <p class="text-3xl font-bold text-white">{{ media_count }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Active Campaigns</p>
+        <p class="text-3xl font-bold text-white">{{ active_campaigns }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pending Review</p>
+        <p class="text-3xl font-bold text-white">{{ pending_campaigns }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Recent Media -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div class="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white">Recent Media</h3>
+            <a href="{% url 'advertiser:media_library' %}" class="text-xs text-zinc-500 hover:text-zinc-300 transition">View all</a>
+        </div>
+        {% if recent_media %}
+        <ul class="divide-y divide-zinc-800">
+            {% for media in recent_media %}
+            <li class="px-5 py-3 flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-white font-medium">{{ media.title }}</p>
+                    <p class="text-xs text-zinc-500">{{ media.get_media_type_display }}</p>
+                </div>
+                {% if media.status == 'pending' %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-900/30 text-yellow-400">Pending</span>
+                {% elif media.status == 'admin_approved' %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-900/30 text-blue-400">Admin Approved</span>
+                {% elif media.status == 'fully_approved' %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-900/30 text-green-400">Live</span>
+                {% else %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/30 text-red-400">Rejected</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="px-5 py-8 text-center">
+            <p class="text-zinc-500 text-sm">No media yet.</p>
+            <a href="{% url 'advertiser:upload_media' %}" class="mt-2 inline-block text-xs text-red-500 hover:text-red-400">Upload your first file →</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="space-y-3">
+        <a href="{% url 'advertiser:upload_media' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
+            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
+                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">Upload Media</p>
+                <p class="text-xs text-zinc-500 mt-0.5">Add images or videos for your campaigns</p>
+            </div>
+        </a>
+        <a href="{% url 'advertiser:browse_billboards' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
+            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
+                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">Browse Billboards</p>
+                <p class="text-xs text-zinc-500 mt-0.5">Find screens available in your target area</p>
+            </div>
+        </a>
+        <a href="{% url 'advertiser:campaign_list' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
+            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
+                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">My Campaigns</p>
+                <p class="text-xs text-zinc-500 mt-0.5">Track the status of your campaigns</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

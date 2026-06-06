@@ -2,15 +2,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
-from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/adverse-auth/login/', permanent=False)),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('adverse-auth/', include('security.urls')),
     path('adverse/', include('adverse.urls')),
     path('admanager/', include('admanager.urls')),
+    path('advertiser/', include('advertiser.urls')),
+    path('admin-panel/', include('admin_panel.urls')),
     path('devices/', include('device.urls')),
 
     # api routes 

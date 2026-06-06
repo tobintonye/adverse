@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from .models import Admanager
+from device.models import Billboard
 import re
 
  # Regex for: +234..., 080..., 070..., 090... etc
@@ -58,3 +59,25 @@ class AdManagerProfileForm(forms.ModelForm):
             )
 
         return clean_phone
+
+
+class BillboardForm(forms.ModelForm):
+    class Meta:
+        model = Billboard
+        fields = [
+            'name', 'location_name', 'latitude', 'longitude',
+            'screen_type', 'screen_width_px', 'screen_height_px',
+            'price_per_slot', 'operating_hours_start', 'operating_hours_end',
+            'availability',
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'e.g. Victoria Island Main Screen'}),
+            'location_name': forms.TextInput(attrs={'placeholder': 'e.g. Adeola Odeku Street, VI, Lagos'}),
+            'latitude': forms.NumberInput(attrs={'placeholder': '6.4281', 'step': 'any'}),
+            'longitude': forms.NumberInput(attrs={'placeholder': '3.4219', 'step': 'any'}),
+            'screen_width_px': forms.NumberInput(attrs={'placeholder': '1920'}),
+            'screen_height_px': forms.NumberInput(attrs={'placeholder': '1080'}),
+            'price_per_slot': forms.NumberInput(attrs={'placeholder': '5000.00', 'step': '0.01'}),
+            'operating_hours_start': forms.TimeInput(attrs={'type': 'time'}),
+            'operating_hours_end': forms.TimeInput(attrs={'type': 'time'}),
+        }

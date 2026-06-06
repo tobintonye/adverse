@@ -36,12 +36,15 @@ class Advertiser(TimeStampedModel):
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_advertisers")
+    verification_requested = models.BooleanField(default=False)
+    verification_requested_at = models.DateTimeField(null=True, blank=True)
 
     def verify(self, admin_user):
         self.is_verified = True
+        self.verification_requested = False
         self.verified_by = admin_user
         self.verified_at = timezone.now()
-        self.save(update_fields=["is_verified", "verified_at", "verified_by", "updated_at"])
+        self.save(update_fields=["is_verified", "verification_requested", "verified_at", "verified_by", "updated_at"])
 
     def __str__(self):
         return f"{self.business_name} ({self.user.username})"

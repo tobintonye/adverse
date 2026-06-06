@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 import uuid
 
 User = get_user_model()
@@ -29,6 +30,10 @@ class Admanager(models.Model):
     state = models.CharField(max_length=100)
     country = models.CharField(max_length=100,default="Nigeria")
     verification_status = models.CharField(max_length=20, choices=VerificationStatus.choices, default=VerificationStatus.PENDING)
+    verification_requested = models.BooleanField(default=False)
+    verification_requested_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='verified_ad_managers')
     is_active = models.BooleanField(default=True)
     rejection_reason = models.TextField(blank=True)
     total_billboards = models.PositiveIntegerField(default=0)
@@ -36,6 +41,25 @@ class Admanager(models.Model):
     total_impressions = models.BigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    def verify(self, admin_user):
+        self.verification_status = self.VerificationStatus.VERIFIED
+        self.verification_requested = False
+        self.verified_by = admin_user
+        self.verified_at = timezone.now()
+        self.rejection_reason = ''
+        self.save(update_fields=['verification_status', 'verification_requested', 'verified_by', 'verified_at', 'rejection_reason', 'update_at'])
+
+    def reject(self, admin_user, reason=''):
+        self.verification_status = self.VerificationStatus.REJECTED
+        self.verification_requested = False
+        self.rejection_reason = reason
+        self.save(update_fields=['verification_status', 'verification_requested', 'rejection_reason', 'update_at'])
+
+    def suspend(self):
+        self.verification_status = self.VerificationStatus.SUSPENDED
+        self.is_active = False
+        self.save(update_fields=['verification_status', 'is_active', 'update_at'])
 
     @property
     def received_campaigns(self):

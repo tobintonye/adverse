@@ -1,0 +1,77 @@
+{% extends "advertiser/base.html" %}
+
+{% block title %}Browse Billboards{% endblock %}
+{% block page_title %}Browse Billboards{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<form method="get" class="flex flex-wrap items-end gap-3 mb-6">
+    <div>
+        <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Screen Type</label>
+        <select name="screen_type"
+                class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 transition">
+            <option value="">All Types</option>
+            {% for val, label in screen_type_choices %}
+            <option value="{{ val }}" {% if screen_type == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Max Price (₦/slot)</label>
+        <input type="number" name="max_price" value="{{ max_price }}" step="500" placeholder="e.g. 10000"
+               class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 transition">
+    </div>
+    <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition active:scale-95">Filter</button>
+    <a href="{% url 'advertiser:browse_billboards' %}" class="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition">Clear</a>
+</form>
+
+{% if billboards %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for bb in billboards %}
+    <div class="bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <p class="font-semibold text-white">{{ bb.name }}</p>
+                <p class="text-xs text-zinc-500 mt-0.5">{{ bb.location_name }}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-900/30 text-green-400">Available</span>
+        </div>
+        <div class="space-y-1 text-sm text-zinc-400 mb-4">
+            <div class="flex justify-between">
+                <span>Screen type</span>
+                <span class="text-zinc-300">{{ bb.get_screen_type_display }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Resolution</span>
+                <span class="text-zinc-300">{{ bb.resolution }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Operating hours</span>
+                <span class="text-zinc-300">{{ bb.operating_hours_start }} — {{ bb.operating_hours_end }}</span>
+            </div>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-zinc-800">
+            <div>
+                <p class="text-[10px] text-zinc-500 uppercase tracking-widest">Price per slot</p>
+                <p class="text-lg font-bold text-white">₦{{ bb.price_per_slot }}</p>
+            </div>
+            <a href="{% url 'advertiser:campaign_create' %}?billboard={{ bb.pk }}"
+               class="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95">
+                Book
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-20 text-center">
+    <svg class="w-12 h-12 text-zinc-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+    <p class="text-zinc-400 font-medium">No billboards found</p>
+    <p class="text-zinc-600 text-sm mt-1">Try adjusting your filters.</p>
+</div>
+{% endif %}
+
+{% endblock %}
