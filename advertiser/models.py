@@ -7,6 +7,7 @@ import mimetypes
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from device.models import Billboard
+from django.db.models import UniqueConstraint
 
 User = get_user_model()
 
@@ -90,6 +91,7 @@ class Media(TimeStampedModel):
         upload_to=media_upload_path, 
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS)]
     )
+    file_hash = models.CharField(max_length=64, blank=True, help_text="SHA-256 of the uploaded file. Used to detect duplicates.") # used to detect is a file already exists
     media_type = models.CharField(max_length=10, choices=MediaType.choices, blank=False, null=False)
     duration_seconds = models.PositiveIntegerField(
         null=True, blank=True,
@@ -115,6 +117,13 @@ class Media(TimeStampedModel):
             models.Index(fields=["advertiser", "status"]), 
             models.Index(fields=["media_type"]),
             models.Index(fields=["status"]),
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["advertiser", "file_hash"],
+                name="unique_media_per_advertiser",
+            )
         ]
 
     def __str__(self):
@@ -241,8 +250,6 @@ class Campaign(TimeStampedModel):
     estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     rejection_reason = models.TextField(blank=True)
-    #reviewed_by =  models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,related_name="reviewed_campaigns")
-    #reviewed_at = models.DateTimeField(null=True, blank=True)
     admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_admin")
     admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     manager_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_manager") 
@@ -281,10 +288,34 @@ class Campaign(TimeStampedModel):
         if not self.advertiser.is_verified:
             raise ValidationError("Your advertiser account must be verified before submitting campaigns.")
         
+        # Block duplicate active campaigns on the same billboards + overlapping dates
+        booked_billboards  = self.campaign_slots.values_list("billboard_id", flat=True)
+        conflict = Campaign.objects.filter(
+            advertiser=self.advertiser,
+            status__in=[
+            self.Status.PENDING_ADMIN_REVIEW,
+            self.Status.PENDING_MANAGER_REVIEW,
+            self.Status.APPROVED,
+            self.Status.ACTIVE,
+            ],
+            campaign_slots__billboard_id__in=booked_billboards,
+        ).exclude(pk=self.pk).filter(
+            # Date overlap check: existing.start <= self.end AND existing.end >= self.start
+            start_date__lte=self.end_date,
+            end_date__gte=self.start_date,
+        ).distinct()
+
+        if conflict.exists():
+            names = ", ".join(conflict.values_list("name", flat=True))
+            raise ValidationError(
+                f"You already have an active campaign on the same billboard(s) "
+                f"during this period: {names}"
+            )
+
         # Enforce budget bounds early
         self.estimated_price = self.calculate_estimated_price()
         if self.estimated_price > self.budget:
-            return ValidationError(f"Campaign estimated price ({self.estimated_price}) exceeds your allocated budget ({self.budget}).")
+             raise ValidationError(f"Estimated price (₦{self.estimated_price}) exceeds your budget (₦{self.budget}).")
         self.status = self.Status.PENDING_ADMIN_REVIEW 
         self.save(update_fields=["status", "estimated_price", "updated_at"])
 
@@ -374,7 +405,8 @@ class Campaign(TimeStampedModel):
                 raise ValidationError({"daily_end_time": "Daily end time must be after start time."})
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        if not kwargs.get("update_fields"):
+            self.full_clean()
         super().save(*args, **kwargs)
     
     def __str__(self):

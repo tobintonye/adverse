@@ -3,6 +3,10 @@ from ..models import Advertiser, Media, Campaign, CampaignSlot
 from device.models import Billboard
 import magic
 from django.db import transaction
+import hashlib
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 # Advertiser Profile
 class AdvertiserProfileSerializer(serializers.ModelSerializer):
@@ -138,9 +142,25 @@ class MediaUploadSerializer(serializers.ModelSerializer):
         attrs["advertiser"] = self.context["advertiser"]
         return attrs
 
-    def create(self, validated_data):
-        return super().create(validated_data)
+     # Compute and check hash
+    def clean(self): 
+        super().clean()
+        if self.file and not self.pk: # only on new uploads
+            self.file.seek(0)
+            file_hash = hashlib.sha256(self.file.read()).hexdigest()
+            self.file.seek(0)
+            self.file_hash = file_hash
 
+            if Media.objects.filter(advertiser=self.advertiser, file_hash=file_hash).exists():
+                raise ValidationError(
+                {"file": "You have already uploaded this file. Check your media library."}
+            )
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict)
+        
 class MediaReviewSerializer(serializers.Serializer):
     # Admin/ad manager action processor to approve or reject submissions.
     action = serializers.ChoiceField(choices=["approve", "reject"])
@@ -222,6 +242,24 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         slots_data = validated_data.pop("slots", [])
         advertiser = self.context["advertiser"]
+
+        # Block duplicate draft campaigns before they're even saved
+        name = validated_data.get("name", "").strip()
+        if Campaign.objects.filter(
+            advertiser=advertiser, 
+            name__iexact=name,
+            status__in=[
+            Campaign.Status.DRAFT,
+            Campaign.Status.PENDING_ADMIN_REVIEW,
+            Campaign.Status.PENDING_MANAGER_REVIEW,
+            Campaign.Status.APPROVED,
+            Campaign.Status.ACTIVE,
+        ]
+        ).exists():
+            raise serializers.ValidationError(
+            {"name": f"You already have an active or draft campaign named '{name}'."}
+        )
+
         with transaction.atomic():
             campaign = Campaign.objects.create(advertiser=advertiser, **validated_data)
 
