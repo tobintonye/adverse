@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
+from ..models import CustomUser
+from django.contrib.auth.signals import user_login_failed
 
 User = get_user_model()
 
@@ -37,18 +39,26 @@ class LoginSerializer(serializers.Serializer):
         email = data.get('email')
         password = data.get('password')
 
-        if email and password:
-            user = authenticate(email=email, password=password)
-            if user: 
-                if not user.is_active:
-                    raise serializers.ValidationError("Invalid email or password.")
-                data["user"] = user
-                return data
-            else: 
-                raise serializers.ValidationError("Something went wrong, please try again")
-        else: 
+        if not email or not password:
             raise serializers.ValidationError("Must include 'email' and 'password'.")
         
+        request = self.context.get('request')
+        user = authenticate(request=request, email=email, password=password)
+        
+        if not user: 
+            # axes will pick this up
+            user_login_failed.send(
+                sender=self.__class__,
+                credentials={"email": email},   
+                request=request,
+            )
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Invalid email or password.")
+        data["user"] = user
+        return data
+    
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -77,3 +87,10 @@ class SetNewPasswordSerializer(serializers.Serializer):
         user.save(update_fields=["password"])
         return user
     
+
+
+class RoleSelectionSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=[
+        CustomUser.UserRole.AD_MANAGER, 
+        CustomUser.UserRole.ADVERTISER
+    ])

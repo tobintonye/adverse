@@ -3,8 +3,8 @@ from rest_framework import permissions, status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView 
-from ...device.models import Billboard
-from ...advertiser.models import Campaign
+from device.models import Billboard
+from advertiser.models import Campaign
 from ..models import ( BillboardCapacity, ScheduleGenerationLog, TimeSlot, check_capacity, 
                     generate_schedule, get_playlist_for_billboard,
 )
@@ -153,7 +153,7 @@ class CampaignScheduleGenerateView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST,)
         
         # Clear existing slots before regenerating
-        TimeSlot.objects.filter(campaign.campaign).delete()
+        TimeSlot.objects.filter(campaign=campaign).delete()
         created, skipped = generate_schedule(campaign)
 
         return Response({
@@ -165,8 +165,6 @@ class CampaignScheduleGenerateView(APIView):
                 if skipped else None
             ),
         })
-    
-
 
 class CampaignSchedulePreviewView(APIView): 
     """
@@ -192,7 +190,7 @@ class CampaignSchedulePreviewView(APIView):
         slots = TimeSlot.objects.filter(
             campaign=campaign,
             is_active=True,
-        ).values("billboard__name", "date").annotate(slot_count=models.Count("id")).order_by("date", "billboard__name")
+        ).values("billboard__name", "date").annotate(slot_count=Count("id")).order_by("date", "billboard__name")
 
         log = ScheduleGenerationLog.objects.filter(
             campaign=campaign
