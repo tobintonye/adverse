@@ -5,7 +5,7 @@
 
 {% block topbar_actions %}
 <a href="{% url 'advertiser:campaign_create' %}"
-   class="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95">
+   class="flex items-center gap-2 px-4 py-1.5 bg-red-650 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-lg shadow-red-950/20 hover:shadow-red-900/10">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
@@ -15,25 +15,54 @@
 
 {% block content %}
 
+<!-- Custom dashboard styling -->
+<style>
+    .glass-kpi-card {
+        background: rgba(24, 24, 27, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(63, 63, 70, 0.4);
+    }
+    .kpi-emerald:hover {
+        border-color: rgba(16, 185, 129, 0.5);
+        box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15);
+    }
+    .kpi-indigo:hover {
+        border-color: rgba(99, 102, 241, 0.5);
+        box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.15);
+    }
+    .kpi-amber:hover {
+        border-color: rgba(245, 158, 11, 0.5);
+        box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.15);
+    }
+    .pulse-glow-green {
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    }
+    .pulse-glow-amber {
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    }
+</style>
+
+<!-- Account Verification Status Header Banner -->
 {% if not advertiser.is_verified %}
     {% if advertiser.verification_requested %}
-    <div class="mb-6 flex items-center gap-3 px-4 py-3 bg-blue-900/20 border border-blue-500/40 rounded-lg text-sm text-blue-400">
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        Verification request submitted — an admin will review your account shortly.
+    <div class="mb-6 flex items-center gap-3 px-4 py-3.5 bg-blue-950/20 border border-blue-900/35 rounded-xl text-xs text-blue-400 backdrop-blur-md">
+        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0"></span>
+        <p class="font-medium">Verification request submitted — our admin team will review your advertiser credentials shortly.</p>
     </div>
     {% else %}
-    <div class="mb-6 flex items-center justify-between gap-3 px-4 py-3 bg-yellow-900/20 border border-yellow-500/40 rounded-lg text-sm text-yellow-400">
+    <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-3.5 bg-amber-950/20 border border-amber-900/35 rounded-xl text-xs text-amber-400 backdrop-blur-md">
         <div class="flex items-center gap-3">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
-            Your account is <strong class="ml-1">pending verification</strong>. You can upload media but cannot submit campaigns until verified.
+            <p class="font-medium">
+                Your account is currently <strong class="text-white">pending verification</strong>. You can upload media assets, but you cannot launch campaign schedules until verified.
+            </p>
         </div>
-        <form method="post" action="{% url 'advertiser:request_verification' %}" class="flex-shrink-0">
+        <form method="post" action="{% url 'advertiser:request_verification' %}" class="flex-shrink-0 w-full sm:w-auto">
             {% csrf_token %}
-            <button type="submit" class="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-semibold rounded-lg transition">
+            <button type="submit" class="w-full px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-bold rounded-lg transition active:scale-95">
                 Request Verification
             </button>
         </form>
@@ -41,93 +70,454 @@
     {% endif %}
 {% endif %}
 
-<!-- Stats -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Media Files</p>
-        <p class="text-3xl font-bold text-white">{{ media_count }}</p>
+<!-- Welcome & Platform Header -->
+<div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-zinc-900/40 via-zinc-950 to-black p-4 rounded-xl border border-zinc-800/40">
+    <div>
+        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Welcome back, {{ advertiser.business_name }}
+            {% if advertiser.is_verified %}
+                <span class="inline-flex items-center gap-1 bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Verified
+                </span>
+            {% else %}
+                <span class="inline-flex items-center gap-1 bg-zinc-900 text-zinc-500 border border-zinc-800/60 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Unverified
+                </span>
+            {% endif %}
+        </h1>
+        <p class="text-xs text-zinc-500 mt-1">Monitor your performance analytics and campaign schedules.</p>
     </div>
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Active Campaigns</p>
-        <p class="text-3xl font-bold text-white">{{ active_campaigns }}</p>
-    </div>
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pending Review</p>
-        <p class="text-3xl font-bold text-white">{{ pending_campaigns }}</p>
+    <div class="flex items-center gap-3">
+        <span class="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800/60 px-3 py-1.5 rounded-lg font-mono">
+            {% now "D, M d, Y" %}
+        </span>
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Recent Media -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div class="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
-            <h3 class="text-sm font-semibold text-white">Recent Media</h3>
-            <a href="{% url 'advertiser:media_library' %}" class="text-xs text-zinc-500 hover:text-zinc-300 transition">View all</a>
+<!-- Row 1: Consolidated KPI Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Lifetime Budget Spent -->
+    <div class="relative overflow-hidden glass-kpi-card kpi-emerald rounded-xl p-5 transition-all duration-300 hover:-translate-y-0.5 group">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-600/5 rounded-full blur-xl group-hover:scale-125 transition-all duration-500"></div>
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Lifetime Spend</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/20 border border-emerald-900/30 flex items-center justify-center text-emerald-450 group-hover:scale-105 transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
         </div>
-        {% if recent_media %}
-        <ul class="divide-y divide-zinc-800">
-            {% for media in recent_media %}
-            <li class="px-5 py-3 flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-white font-medium">{{ media.title }}</p>
-                    <p class="text-xs text-zinc-500">{{ media.get_media_type_display }}</p>
-                </div>
-                {% if media.status == 'pending' %}
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-900/30 text-yellow-400">Pending</span>
-                {% elif media.status == 'admin_approved' %}
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-900/30 text-blue-400">Admin Approved</span>
-                {% elif media.status == 'fully_approved' %}
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-900/30 text-green-400">Live</span>
-                {% else %}
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/30 text-red-400">Rejected</span>
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
+        <div class="flex items-baseline gap-1">
+            <span class="text-sm font-bold text-emerald-500">₦</span>
+            <p class="text-2xl font-extrabold text-white tracking-tight">{{ total_lifetime_budget|floatformat:2 }}</p>
+        </div>
+        <p class="text-[10px] text-zinc-500 mt-2 font-mono">₦{{ total_active_budget|floatformat:2 }} active now</p>
+    </div>
+
+    <!-- Active Campaigns count -->
+    <a href="{% url 'advertiser:campaign_list' %}" class="relative overflow-hidden glass-kpi-card kpi-emerald rounded-xl p-5 transition-all duration-300 hover:-translate-y-0.5 group block">
+        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Campaigns</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/20 border border-emerald-900/30 flex items-center justify-center text-emerald-450 group-hover:scale-105 transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+            <p class="text-2xl font-extrabold text-white">{{ active_campaigns }}</p>
+            {% if active_campaigns > 0 %}
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse pulse-glow-green"></span>
+            {% endif %}
+        </div>
+        <p class="text-[10px] text-zinc-500 mt-2 font-mono">{{ daily_slots_booked }} slot loops scheduled</p>
+    </a>
+
+    <!-- Pending / Action Needed count -->
+    <a href="{% url 'advertiser:campaign_list' %}" class="relative overflow-hidden glass-kpi-card kpi-amber rounded-xl p-5 transition-all duration-300 hover:-translate-y-0.5 group block">
+        <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Awaiting & Drafts</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-950/20 border border-amber-900/30 flex items-center justify-center text-amber-450 group-hover:scale-105 transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+            <p class="text-2xl font-extrabold text-white">
+                {{ pending_campaigns }} <span class="text-xs font-normal text-zinc-500">pending</span>
+            </p>
+            <span class="text-xs font-extrabold text-zinc-500">/</span>
+            <p class="text-2xl font-extrabold text-zinc-400">
+                {{ draft_campaigns_count }} <span class="text-xs font-normal text-zinc-650">drafts</span>
+            </p>
+        </div>
+        <p class="text-[10px] text-zinc-500 mt-2">
+            {% if rejected_campaigns_count > 0 %}
+                <span class="text-red-500 font-bold">{{ rejected_campaigns_count }} rejected needs attention</span>
+            {% else %}
+                Awaiting review or modifications
+            {% endif %}
+        </p>
+    </a>
+
+    <!-- Media Assets count -->
+    <a href="{% url 'advertiser:media_library' %}" class="relative overflow-hidden glass-kpi-card kpi-indigo rounded-xl p-5 transition-all duration-300 hover:-translate-y-0.5 group block">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Media Assets</span>
+            <div class="w-7 h-7 rounded-lg bg-indigo-950/20 border border-indigo-900/30 flex items-center justify-center text-indigo-450 group-hover:scale-105 transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+            <p class="text-2xl font-extrabold text-white">{{ media_count }}</p>
+            <span class="text-xs text-zinc-500">creatives</span>
+        </div>
+        <p class="text-[10px] text-zinc-500 mt-2 font-mono">{{ total_media_size_mb }} MB total size</p>
+    </a>
+</div>
+
+<!-- Row 2: Spend Analytics Charts -->
+<div class="glass-kpi-card rounded-xl p-5 mb-6 border border-zinc-800/80">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/60 mb-6">
+        <div>
+            <h3 class="text-xs font-bold text-white tracking-wider uppercase">Spend Analytics</h3>
+            <p class="text-[10px] text-zinc-500 mt-0.5">Visual representation of campaign budgets</p>
+        </div>
+        <div class="flex items-center bg-zinc-950 p-1 border border-zinc-850 rounded-xl">
+            <button id="btn-monthly" onclick="switchChart('monthly')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 bg-zinc-800 text-white border border-zinc-700">
+                Monthly Spend
+            </button>
+            <button id="btn-annual" onclick="switchChart('annual')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 text-zinc-500 hover:text-white border border-transparent">
+                Annual Spend
+            </button>
+        </div>
+    </div>
+    
+    <div class="relative h-64 md:h-72 w-full">
+        <!-- Monthly Chart Canvas -->
+        <div id="container-monthly" class="w-full h-full">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+        <!-- Annual Chart Canvas -->
+        <div id="container-annual" class="w-full h-full hidden">
+            <canvas id="annualChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Split Grid layout (Recent Campaigns + Recent Media / Actions) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Recent Campaigns -->
+    <div class="lg:col-span-2 bg-zinc-950 border border-zinc-800/80 rounded-xl shadow-xl flex flex-col p-5">
+        <div class="flex items-center justify-between pb-4 border-b border-zinc-900 mb-4">
+            <div>
+                <h3 class="text-xs font-bold text-white tracking-wider uppercase">Recent Campaigns</h3>
+                <p class="text-[10px] text-zinc-500 mt-0.5">Status of your five most recently created campaigns</p>
+            </div>
+            <a href="{% url 'advertiser:campaign_list' %}" class="text-[10px] font-bold text-zinc-500 hover:text-white transition uppercase tracking-wide">View all</a>
+        </div>
+
+        {% if recent_campaigns %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider text-[10px]">
+                        <th class="py-3 pr-4">Campaign</th>
+                        <th class="py-3 px-4">Media</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Budget</th>
+                        <th class="py-3 pl-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-900/50">
+                    {% for campaign in recent_campaigns %}
+                    <tr class="hover:bg-zinc-900/10 transition-colors">
+                        <!-- Campaign Name & Schedule -->
+                        <td class="py-3.5 pr-4">
+                            <p class="font-bold text-white leading-tight">{{ campaign.name }}</p>
+                            <p class="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                {{ campaign.start_date|date:"M d, Y" }} - {{ campaign.end_date|date:"M d, Y" }}
+                            </p>
+                        </td>
+                        <!-- Media name and type -->
+                        <td class="py-3.5 px-4">
+                            <span class="text-zinc-300 font-medium truncate block max-w-[120px]" title="{{ campaign.media.title }}">
+                                {{ campaign.media.title }}
+                            </span>
+                            <span class="text-[8px] px-1 py-0.2 bg-zinc-900 text-zinc-500 font-extrabold uppercase rounded">
+                                {{ campaign.media.get_media_type_display }}
+                            </span>
+                        </td>
+                        <!-- Status Badge -->
+                        <td class="py-3.5 px-4">
+                            {% if campaign.status == 'active' or campaign.status == 'approved' %}
+                                <span class="inline-flex items-center gap-1 bg-emerald-950/30 text-emerald-450 border border-emerald-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    <span class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    {{ campaign.get_status_display }}
+                                </span>
+                            {% elif campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
+                                <span class="inline-flex items-center gap-1 bg-amber-950/20 text-amber-450 border border-amber-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    <span class="w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
+                                    Reviewing
+                                </span>
+                            {% elif campaign.status == 'draft' or campaign.status == 'paused' %}
+                                <span class="inline-flex items-center gap-1 bg-zinc-900 text-zinc-400 border border-zinc-800/60 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {{ campaign.get_status_display }}
+                                </span>
+                            {% elif campaign.status == 'completed' %}
+                                <span class="inline-flex items-center gap-1 bg-blue-950/20 text-blue-400 border border-blue-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {{ campaign.get_status_display }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 bg-red-950/20 text-red-400 border border-red-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {{ campaign.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <!-- Budget -->
+                        <td class="py-3.5 px-4 text-right font-mono font-bold text-white">
+                            ₦{{ campaign.budget|floatformat:2 }}
+                        </td>
+                        <!-- Details link -->
+                        <td class="py-3.5 pl-4 text-center">
+                            <a href="{% url 'advertiser:campaign_detail' campaign.pk %}" class="inline-flex items-center px-2.5 py-1 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white font-bold text-[10px] rounded-lg transition active:scale-95">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <div class="px-5 py-8 text-center">
-            <p class="text-zinc-500 text-sm">No media yet.</p>
-            <a href="{% url 'advertiser:upload_media' %}" class="mt-2 inline-block text-xs text-red-500 hover:text-red-400">Upload your first file →</a>
+        <div class="p-8 text-center flex-1 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-xl my-4">
+            <div class="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800/80 flex items-center justify-center mb-3">
+                <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <p class="text-zinc-400 text-xs font-bold">No campaigns created yet</p>
+            <p class="text-[10px] text-zinc-600 mt-1">Configure slot bookings and upload your creatives to schedule campaigns.</p>
+            <a href="{% url 'advertiser:campaign_create' %}" class="mt-3 text-[10px] font-bold text-red-500 hover:text-red-400 transition">Create your first campaign →</a>
         </div>
         {% endif %}
     </div>
 
-    <!-- Quick Actions -->
-    <div class="space-y-3">
-        <a href="{% url 'advertiser:upload_media' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
-            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
+    <!-- Right Side: Quick Actions -->
+    <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-xl">
+            <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3.5">Quick Actions</h3>
+            <div class="space-y-2.5">
+                <a href="{% url 'advertiser:upload_media' %}" class="group flex items-center gap-3 bg-zinc-900/20 border border-zinc-850 hover:border-zinc-700 rounded-xl p-3.5 transition-all duration-300 hover:scale-[1.01]">
+                    <div class="p-2 bg-zinc-900 border border-zinc-800 rounded-lg group-hover:bg-zinc-800 text-zinc-400 group-hover:text-white transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white">Upload Media</p>
+                        <p class="text-[9px] text-zinc-500 mt-0.5">Add creative assets to your library</p>
+                    </div>
+                </a>
+                <a href="{% url 'advertiser:browse_billboards' %}" class="group flex items-center gap-3 bg-zinc-900/20 border border-zinc-850 hover:border-zinc-700 rounded-xl p-3.5 transition-all duration-300 hover:scale-[1.01]">
+                    <div class="p-2 bg-zinc-900 border border-zinc-800 rounded-lg group-hover:bg-zinc-800 text-zinc-400 group-hover:text-white transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white">Browse Billboards</p>
+                        <p class="text-[9px] text-zinc-500 mt-0.5">Find available screens and pricing</p>
+                    </div>
+                </a>
+                <a href="{% url 'advertiser:campaign_create' %}" class="group flex items-center gap-3 bg-zinc-900/20 border border-zinc-850 hover:border-zinc-700 rounded-xl p-3.5 transition-all duration-300 hover:scale-[1.01]">
+                    <div class="p-2 bg-zinc-900 border border-zinc-800 rounded-lg group-hover:bg-zinc-800 text-zinc-400 group-hover:text-white transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white">Launch Campaign</p>
+                        <p class="text-[9px] text-zinc-500 mt-0.5">Schedule a campaign on digital billboards</p>
+                    </div>
+                </a>
             </div>
-            <div>
-                <p class="text-sm font-semibold text-white">Upload Media</p>
-                <p class="text-xs text-zinc-500 mt-0.5">Add images or videos for your campaigns</p>
-            </div>
-        </a>
-        <a href="{% url 'advertiser:browse_billboards' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
-            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-            </div>
-            <div>
-                <p class="text-sm font-semibold text-white">Browse Billboards</p>
-                <p class="text-xs text-zinc-500 mt-0.5">Find screens available in your target area</p>
-            </div>
-        </a>
-        <a href="{% url 'advertiser:campaign_list' %}" class="group flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition">
-            <div class="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition">
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
-                </svg>
-            </div>
-            <div>
-                <p class="text-sm font-semibold text-white">My Campaigns</p>
-                <p class="text-xs text-zinc-500 mt-0.5">Track the status of your campaigns</p>
-            </div>
-        </a>
+        </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Parse JSON chart data passed from backend views
+    const monthlyLabels = JSON.parse('{{ monthly_labels_json|escapejs }}');
+    const monthlyValues = JSON.parse('{{ monthly_values_json|escapejs }}');
+    const annualLabels = JSON.parse('{{ annual_labels_json|escapejs }}');
+    const annualValues = JSON.parse('{{ annual_values_json|escapejs }}');
+
+    // Chart instances
+    let monthlyChartInstance = null;
+    let annualChartInstance = null;
+
+    // Custom Tooltip design options
+    const customTooltipOptions = {
+        enabled: true,
+        backgroundColor: '#18181b', // zinc-900
+        titleColor: '#ffffff',
+        titleFont: { family: 'Inter', weight: 'bold', size: 11 },
+        bodyColor: '#e4e4e7', // zinc-200
+        bodyFont: { family: 'Inter', size: 11 },
+        borderColor: '#27272a', // zinc-800
+        borderWidth: 1,
+        padding: 10,
+        displayColors: false,
+        callbacks: {
+            label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                    label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                    label += new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(context.parsed.y);
+                }
+                return label;
+            }
+        }
+    };
+
+    // Initialize charts on DOMContentLoaded
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctxM = document.getElementById('monthlyChart').getContext('2d');
+        const gradientM = ctxM.createLinearGradient(0, 0, 0, 240);
+        gradientM.addColorStop(0, 'rgba(239, 68, 68, 0.7)'); // red-500
+        gradientM.addColorStop(1, 'rgba(239, 68, 68, 0.02)');
+
+        monthlyChartInstance = new Chart(ctxM, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: 'Monthly Marketing Spend',
+                    data: monthlyValues,
+                    backgroundColor: gradientM,
+                    borderColor: 'rgba(239, 68, 68, 0.95)',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    hoverBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    hoverBorderColor: '#ffffff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: customTooltipOptions
+                },
+                scales: {
+                    y: {
+                        grid: { color: 'rgba(63, 63, 70, 0.15)' },
+                        ticks: {
+                            color: '#a1a1aa',
+                            font: { family: 'Inter', size: 9 },
+                            callback: function(value) {
+                                return '₦' + new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value);
+                            }
+                        },
+                        border: { dash: [4, 4] }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#a1a1aa',
+                            font: { family: 'Inter', size: 9 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Setup Annual Chart
+        const ctxA = document.getElementById('annualChart').getContext('2d');
+        const gradientA = ctxA.createLinearGradient(0, 0, 0, 240);
+        gradientA.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
+        gradientA.addColorStop(1, 'rgba(239, 68, 68, 0.02)');
+
+        annualChartInstance = new Chart(ctxA, {
+            type: 'bar',
+            data: {
+                labels: annualLabels,
+                datasets: [{
+                    label: 'Annual Marketing Spend',
+                    data: annualValues,
+                    backgroundColor: gradientA,
+                    borderColor: 'rgba(239, 68, 68, 0.95)',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    hoverBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    hoverBorderColor: '#ffffff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: customTooltipOptions
+                },
+                scales: {
+                    y: {
+                        grid: { color: 'rgba(63, 63, 70, 0.15)' },
+                        ticks: {
+                            color: '#a1a1aa',
+                            font: { family: 'Inter', size: 9 },
+                            callback: function(value) {
+                                return '₦' + new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value);
+                            }
+                        },
+                        border: { dash: [4, 4] }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#a1a1aa',
+                            font: { family: 'Inter', size: 9 }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    // Handle switching charts
+    function switchChart(type) {
+        const btnMonthly = document.getElementById('btn-monthly');
+        const btnAnnual = document.getElementById('btn-annual');
+        const containerMonthly = document.getElementById('container-monthly');
+        const containerAnnual = document.getElementById('container-annual');
+
+        if (type === 'monthly') {
+            btnMonthly.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 bg-zinc-800 text-white border border-zinc-700';
+            btnAnnual.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 text-zinc-500 hover:text-white border border-transparent';
+            containerMonthly.classList.remove('hidden');
+            containerAnnual.classList.add('hidden');
+            if (monthlyChartInstance) monthlyChartInstance.resize();
+        } else {
+            btnAnnual.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 bg-zinc-800 text-white border border-zinc-700';
+            btnMonthly.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all duration-200 text-zinc-500 hover:text-white border border-transparent';
+            containerAnnual.classList.remove('hidden');
+            containerMonthly.classList.add('hidden');
+            if (annualChartInstance) annualChartInstance.resize();
+        }
+    }
+</script>
 
 {% endblock %}

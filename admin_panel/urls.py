@@ -10,4 +10,6 @@ urlpatterns = [
     path("campaigns/", views.campaign_review_list, name="campaign_review"),
     path("campaigns/<uuid:pk>/", views.admin_campaign_detail, name="campaign_detail"),
     path("ad-managers/", views.ad_manager_list, name="ad_manager_list"),
+    path("revenue-settings/", views.revenue_settings, name="revenue_settings"),
+    path("withdrawals/", views.admin_withdrawal_list, name="withdrawal_list"),
 ]

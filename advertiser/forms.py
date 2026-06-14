@@ -38,23 +38,22 @@ class MediaUploadForm(forms.ModelForm):
 
 
 class CampaignForm(forms.ModelForm):
-    billboards = forms.ModelMultipleChoiceField(
+    billboard = forms.ModelChoiceField(
         queryset=Billboard.objects.filter(availability='available'),
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.Select,
         required=True,
-        label='Select Billboards',
+        label='Select Billboard',
+        empty_label='Choose a billboard...',
     )
-    slots_per_day = forms.IntegerField(min_value=1, initial=1, label='Slots Per Day (per billboard)')
+    slots_per_day = forms.IntegerField(min_value=1, initial=1, label='Quantity (slots/hours/days)')
 
     class Meta:
         model = Campaign
-        fields = ['name', 'media', 'start_date', 'end_date', 'daily_start_time', 'daily_end_time', 'budget']
+        fields = ['name', 'media', 'start_date', 'end_date', 'budget']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. Ramadan Campaign 2026'}),
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
-            'daily_start_time': forms.TimeInput(attrs={'type': 'time'}),
-            'daily_end_time': forms.TimeInput(attrs={'type': 'time'}),
             'budget': forms.NumberInput(attrs={'placeholder': '500000.00', 'step': '0.01'}),
         }
 
@@ -63,6 +62,9 @@ class CampaignForm(forms.ModelForm):
         if advertiser:
             self.fields['media'].queryset = Media.objects.filter(
                 advertiser=advertiser,
-                status=Media.Status.ADMIN_APPROVED,
-            )
-        self.fields['media'].empty_label = 'Select approved media...'
+                status__in=[
+                    Media.Status.ADMIN_APPROVED,
+                    Media.Status.FULLY_APPROVED,
+                ],
+            ).order_by('-created_at')
+        self.fields['media'].empty_label = 'Select your approved media...'

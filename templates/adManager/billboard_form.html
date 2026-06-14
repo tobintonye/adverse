@@ -5,6 +5,10 @@
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
+    <a href="{% url 'admanager:dashboard' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">Dashboard</a>
+    <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
     <a href="{% url 'admanager:billboard_list' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">Billboards</a>
     <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -15,39 +19,133 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div class="px-6 py-4 border-b border-zinc-800">
+    <div class="relative overflow-hidden bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl shadow-xl">
+        <div class="px-6 py-4 border-b border-zinc-850">
             <h2 class="text-sm font-semibold text-white">{{ action }} Billboard</h2>
             <p class="text-xs text-zinc-500 mt-0.5">Register a physical screen on the platform</p>
         </div>
 
-        <form method="post" class="p-6 space-y-5">
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-5">
             {% csrf_token %}
 
-            <!-- Hidden coordinate inputs — populated by JS when a location is selected -->
-            <input type="hidden" id="lat-input" name="latitude" value="{{ form.latitude.value|default:'' }}">
-            <input type="hidden" id="lng-input" name="longitude" value="{{ form.longitude.value|default:'' }}">
-
             <!-- Name & Location -->
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Billboard Name</label>
+                <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. VI Main Screen" required
+                       class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                {% if form.name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- Country & State -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Billboard Name</label>
-                    <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. VI Main Screen"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                    {% if form.name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Country</label>
+                    <select id="country-input" name="country" data-initial="{{ form.country.value|default:'' }}" required
+                            class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                        <option value="">Select Country...</option>
+                    </select>
+                    {% if form.country.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.country.errors.0 }}</p>{% endif %}
                 </div>
-                <div class="relative">
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Location Name</label>
-                    <input type="text" id="location-autocomplete" name="location_name"
-                           value="{{ form.location_name.value|default:'' }}"
-                           placeholder="Start typing an address…"
-                           autocomplete="off"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                    <p id="coords-status" class="text-[10px] text-zinc-500 mt-1 ml-1 hidden"></p>
-                    {% if form.location_name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.location_name.errors.0 }}</p>{% endif %}
-                    <!-- Autocomplete dropdown -->
-                    <div id="location-dropdown"
-                         class="absolute left-0 right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-50 hidden overflow-hidden">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">State</label>
+                    <select id="state-input" name="state" data-initial="{{ form.state.value|default:'' }}" required
+                            class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                        <option value="">Select State...</option>
+                    </select>
+                    {% if form.state.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.state.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Location Name -->
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Location Name</label>
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="location-autocomplete" name="location_name"
+                               value="{{ form.location_name.value|default:'' }}"
+                               placeholder="Start typing or use auto-detect..." required
+                               autocomplete="off"
+                               class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                        <!-- Autocomplete dropdown -->
+                        <div id="location-dropdown"
+                             class="absolute left-0 right-0 top-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl z-50 hidden overflow-hidden max-h-60 overflow-y-auto">
+                        </div>
+                    </div>
+                    <button type="button" id="detect-location-btn" onclick="detectLocation()"
+                            class="px-3 bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-350 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1 text-xs font-bold active:scale-95 flex-shrink-0"
+                            title="Auto-detect current location">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Detect</span>
+                    </button>
+                </div>
+                <p id="coords-status" class="text-[10px] text-zinc-400 mt-1 ml-1 flex items-center gap-1.5 hidden"></p>
+                {% if form.location_name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.location_name.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- Coordinates (Latitude & Longitude) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Latitude</label>
+                    <input type="number" step="any" id="lat-input" name="latitude" value="{{ form.latitude.value|default:'' }}" placeholder="e.g. 6.4281" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    {% if form.latitude.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.latitude.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Longitude</label>
+                    <input type="number" step="any" id="lng-input" name="longitude" value="{{ form.longitude.value|default:'' }}" placeholder="e.g. 3.4219" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-red-650 focus:border-red-650 transition">
+                    {% if form.longitude.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.longitude.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Billboard Image/Video Media Upload -->
+            <div class="border border-zinc-800/80 bg-zinc-950/40 rounded-xl p-5 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Billboard Media File</label>
+                    <p class="text-[11px] text-zinc-500 mb-3 ml-1">Upload a photo or a video of this billboard to preview its physical presentation.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                        <div class="relative overflow-hidden bg-black border border-zinc-800/80 rounded-lg w-full md:w-64 h-36 flex items-center justify-center group/preview">
+                            {% if billboard and billboard.media_file %}
+                                <div id="media-preview-container" class="w-full h-full">
+                                    {% with url_str=billboard.media_file.url|lower %}
+                                        {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
+                                            <video src="{{ billboard.media_file.url }}" class="w-full h-full object-cover" id="media-preview-video" controls preload="metadata"></video>
+                                        {% else %}
+                                            <img src="{{ billboard.media_file.url }}" alt="Billboard Preview" class="w-full h-full object-cover" id="media-preview-img">
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                            {% else %}
+                                <div id="media-preview-placeholder" class="text-zinc-650 flex flex-col items-center justify-center p-4 text-center">
+                                    <svg class="w-8 h-8 mb-2 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span class="text-[11px] font-medium text-zinc-500">No media uploaded</span>
+                                </div>
+                                <div id="media-preview-container" class="hidden w-full h-full">
+                                    <img src="" alt="Selected Preview" class="w-full h-full object-cover hidden" id="media-preview-img">
+                                    <video src="" class="w-full h-full object-cover hidden" id="media-preview-video" controls preload="metadata"></video>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-1 w-full space-y-2">
+                            <label class="relative cursor-pointer flex flex-col items-center justify-center border border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 hover:bg-zinc-800/40 rounded-lg p-6 text-center transition group">
+                                <svg class="w-6 h-6 text-zinc-500 group-hover:text-zinc-300 transition mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                <span class="text-xs text-zinc-400 group-hover:text-white transition font-medium">Click to select new file</span>
+                                <span class="text-[10px] text-zinc-650 mt-1">Image (JPG, PNG) or Video (MP4, WebM)</span>
+                                <input type="file" name="media_file" id="media-file-input" class="hidden" accept="image/*,video/*" onchange="previewSelectedMedia(this)">
+                            </label>
+                            {% if form.media_file.errors %}
+                                <p class="text-red-400 text-[11px] mt-1">{{ form.media_file.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -55,60 +153,55 @@
             <!-- Screen Type & Resolution -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Screen Type</label>
-                    <select name="screen_type"
-                            class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                        {% for val, label in form.fields.screen_type.choices %}
-                        <option value="{{ val }}" {% if form.screen_type.value == val %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Screen Type</label>
+                    {{ form.screen_type }}
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Width (px)</label>
-                    <input type="number" name="screen_width_px" value="{{ form.screen_width_px.value|default:'1920' }}"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Width (px)</label>
+                    <input type="number" name="screen_width_px" value="{{ form.screen_width_px.value|default:'1920' }}" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Height (px)</label>
-                    <input type="number" name="screen_height_px" value="{{ form.screen_height_px.value|default:'1080' }}"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Height (px)</label>
+                    <input type="number" name="screen_height_px" value="{{ form.screen_height_px.value|default:'1080' }}" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                 </div>
             </div>
 
             <!-- Price & Hours -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Price Per Slot (₦)</label>
-                    <input type="number" name="price_per_slot" value="{{ form.price_per_slot.value|default:'' }}" step="0.01" placeholder="5000.00"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Charge Unit</label>
+                    {{ form.charge_unit }}
+                    {% if form.charge_unit.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.charge_unit.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label id="price-label" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Price (₦)</label>
+                    <input type="number" name="price_per_slot" value="{{ form.price_per_slot.value|default:'' }}" step="0.01" placeholder="5000.00" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                     {% if form.price_per_slot.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.price_per_slot.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Opens At</label>
-                    <input type="time" name="operating_hours_start" value="{{ form.operating_hours_start.value|default:'06:00' }}"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Opens At</label>
+                    <input type="time" name="operating_hours_start" value="{{ form.operating_hours_start.value|default:'06:00' }}" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Closes At</label>
-                    <input type="time" name="operating_hours_end" value="{{ form.operating_hours_end.value|default:'22:00' }}"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Closes At</label>
+                    <input type="time" name="operating_hours_end" value="{{ form.operating_hours_end.value|default:'22:00' }}" required
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                 </div>
             </div>
 
             <!-- Availability -->
             <div class="w-48">
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Availability</label>
-                <select name="availability"
-                        class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                    {% for val, label in form.fields.availability.choices %}
-                    <option value="{{ val }}" {% if form.availability.value == val %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Availability</label>
+                {{ form.availability }}
             </div>
 
-            <div class="flex items-center gap-3 pt-2 border-t border-zinc-800">
+            <div class="flex items-center gap-3 pt-4 border-t border-zinc-850">
                 <button type="submit"
-                        class="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
+                        class="px-8 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
                     {{ action }} Billboard
                 </button>
                 <a href="{% url 'admanager:billboard_list' %}" class="text-sm text-zinc-500 hover:text-zinc-300 transition">Cancel</a>
@@ -127,7 +220,7 @@
 
     // Show badge on load if editing a billboard that already has coordinates
     if (latInput.value && lngInput.value) {
-        coordsStatus.textContent = '📍 ' + parseFloat(latInput.value).toFixed(5) + ', ' + parseFloat(lngInput.value).toFixed(5);
+        coordsStatus.innerHTML = '<span class="text-zinc-400">📍 ' + parseFloat(latInput.value).toFixed(5) + ', ' + parseFloat(lngInput.value).toFixed(5) + '</span>';
         coordsStatus.classList.remove('hidden');
     }
 
@@ -141,7 +234,21 @@
     });
 
     function fetchSuggestions(query) {
-        const url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(query) + '&format=json&limit=6&addressdetails=1';
+        let finalQuery = query;
+        const countrySelectEl = document.getElementById('country-input');
+        const stateSelectEl   = document.getElementById('state-input');
+        const countryVal = countrySelectEl ? countrySelectEl.value : '';
+        const stateVal = stateSelectEl ? stateSelectEl.value : '';
+
+        // Append state and country to search query for OpenStreetMap lookup accuracy
+        if (stateVal) {
+            finalQuery += ', ' + stateVal;
+        }
+        if (countryVal) {
+            finalQuery += ', ' + countryVal;
+        }
+
+        const url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(finalQuery) + '&format=json&limit=6&addressdetails=1';
         fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'AdversApp/1.0' } })
             .then(function (res) { return res.json(); })
             .then(function (data) { renderDropdown(data); })
@@ -154,10 +261,17 @@
             const lat  = encodeURIComponent(r.lat);
             const lon  = encodeURIComponent(r.lon);
             const name = r.display_name.replace(/"/g, '&quot;');
+            
+            // Extract country & state from addressdetails
+            const country = r.address && r.address.country ? r.address.country.replace(/"/g, '&quot;') : '';
+            const state = r.address && r.address.state ? r.address.state.replace(/"/g, '&quot;') : '';
+            
             return '<button type="button"'
                 + ' data-lat="' + r.lat + '"'
                 + ' data-lon="' + r.lon + '"'
                 + ' data-name="' + name + '"'
+                + ' data-country="' + country + '"'
+                + ' data-state="' + state + '"'
                 + ' class="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition border-b border-zinc-800/60 last:border-0">'
                 + r.display_name
                 + '</button>';
@@ -173,7 +287,27 @@
         locationInput.value = btn.dataset.name;
         latInput.value      = parseFloat(btn.dataset.lat).toFixed(6);
         lngInput.value      = parseFloat(btn.dataset.lon).toFixed(6);
-        coordsStatus.textContent = '📍 ' + parseFloat(btn.dataset.lat).toFixed(5) + ', ' + parseFloat(btn.dataset.lon).toFixed(5);
+        
+        const countryInput = document.getElementById('country-input');
+        const stateInput   = document.getElementById('state-input');
+        
+        if (countryInput && btn.dataset.country) {
+            const option = Array.from(countryInput.options).find(opt => 
+                opt.value.toLowerCase() === btn.dataset.country.toLowerCase() ||
+                opt.value.toLowerCase().includes(btn.dataset.country.toLowerCase())
+            );
+            if (option) {
+                countryInput.value = option.value;
+                if (window.fetchStates) {
+                    window.fetchStates(option.value, btn.dataset.state);
+                }
+            } else {
+                countryInput.value = "";
+                if (stateInput) stateInput.innerHTML = '<option value="">Select State...</option>';
+            }
+        }
+        
+        coordsStatus.innerHTML = '<span class="text-emerald-400">✔ Captured: ' + parseFloat(btn.dataset.lat).toFixed(5) + ', ' + parseFloat(btn.dataset.lon).toFixed(5) + '</span>';
         coordsStatus.classList.remove('hidden');
         hideDropdown();
     }
@@ -189,10 +323,249 @@
         }
     });
 
-    // Close on Escape
     locationInput.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') hideDropdown();
     });
+
+    // Price label switcher based on charge unit choice
+    const chargeUnitSelect = document.getElementById('charge-unit-select');
+    const priceLabel = document.getElementById('price-label');
+
+    function updatePriceLabel() {
+        if (!chargeUnitSelect || !priceLabel) return;
+        const val = chargeUnitSelect.value;
+        if (val === 'hourly') {
+            priceLabel.textContent = 'Price Per Hour (₦)';
+        } else if (val === 'daily') {
+            priceLabel.textContent = 'Price Per Day (₦)';
+        } else {
+            priceLabel.textContent = 'Price Per Slot (₦)';
+        }
+    }
+
+    if (chargeUnitSelect && priceLabel) {
+        chargeUnitSelect.addEventListener('change', updatePriceLabel);
+        updatePriceLabel(); // run on load
+    }
+
+    const countrySelect = document.getElementById('country-input');
+    const stateSelect   = document.getElementById('state-input');
+
+    function fetchStates(country, selectedState = '') {
+        if (!stateSelect) return;
+        stateSelect.innerHTML = '<option value="">Loading States...</option>';
+        if (!country) {
+            stateSelect.innerHTML = '<option value="">Select State...</option>';
+            return;
+        }
+
+        fetch('https://countriesnow.space/api/v0.1/countries/states', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country: country })
+        })
+        .then(res => res.json())
+        .then(result => {
+            stateSelect.innerHTML = '<option value="">Select State...</option>';
+            if (result.error) return;
+            const states = result.data.states || [];
+            states.sort((a, b) => a.name.localeCompare(b.name));
+
+            states.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = s.name;
+                if (selectedState && (s.name.toLowerCase() === selectedState.toLowerCase() || 
+                                       s.name.toLowerCase().includes(selectedState.toLowerCase()) || 
+                                       selectedState.toLowerCase().includes(s.name.toLowerCase()))) {
+                    opt.selected = true;
+                }
+                stateSelect.appendChild(opt);
+            });
+        })
+        .catch(err => {
+            console.error('Error fetching states:', err);
+            stateSelect.innerHTML = '<option value="">Select State...</option>';
+        });
+    }
+
+    window.fetchStates = fetchStates;
+
+    if (countrySelect && stateSelect) {
+        const initialCountry = countrySelect.dataset.initial;
+        const initialState = stateSelect.dataset.initial;
+
+        fetch('https://countriesnow.space/api/v0.1/countries')
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) return;
+                const countries = result.data || [];
+                countries.sort((a, b) => a.country.localeCompare(b.country));
+
+                countries.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.country;
+                    opt.textContent = c.country;
+                    if (initialCountry && c.country.toLowerCase() === initialCountry.toLowerCase()) {
+                        opt.selected = true;
+                    }
+                    countrySelect.appendChild(opt);
+                });
+
+                if (initialCountry) {
+                    fetchStates(initialCountry, initialState);
+                }
+            })
+            .catch(err => console.error('Error fetching countries:', err));
+
+        countrySelect.addEventListener('change', function () {
+            fetchStates(this.value);
+        });
+    }
 }());
+
+function detectLocation() {
+    const btn = document.getElementById('detect-location-btn');
+    const statusText = document.getElementById('coords-status');
+    const latInput = document.getElementById('lat-input');
+    const lngInput = document.getElementById('lng-input');
+    const locationInput = document.getElementById('location-autocomplete');
+
+    if (!navigator.geolocation) {
+        statusText.innerHTML = '<span class="text-red-400">❌ Geolocation is not supported by your browser</span>';
+        statusText.classList.remove('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = `
+        <svg class="animate-spin w-3.5 h-3.5 text-zinc-300" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Detecting...</span>
+    `;
+    statusText.innerHTML = '<span class="text-zinc-400">📍 Requesting GPS coordinates...</span>';
+    statusText.classList.remove('hidden');
+
+    navigator.geolocation.getCurrentPosition(
+        function (position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+
+            statusText.innerHTML = `<span class="text-zinc-400">📍 GPS coordinates captured. Resolving address...</span>`;
+
+            // Call OSM Nominatim reverse geocoding
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+            
+            fetch(url, {
+                headers: {
+                    'Accept-Language': 'en',
+                    'User-Agent': 'AdversApp/1.0'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    locationInput.value = data.display_name;
+                    
+                    if (data.address) {
+                        const countryInput = document.getElementById('country-input');
+                        const stateInput   = document.getElementById('state-input');
+                        if (countryInput && data.address.country) {
+                            const option = Array.from(countryInput.options).find(opt => 
+                                opt.value.toLowerCase() === data.address.country.toLowerCase() ||
+                                opt.value.toLowerCase().includes(data.address.country.toLowerCase())
+                            );
+                            if (option) {
+                                countryInput.value = option.value;
+                                if (window.fetchStates) {
+                                    window.fetchStates(option.value, data.address.state);
+                                }
+                            } else {
+                                countryInput.value = "";
+                                if (stateInput) stateInput.innerHTML = '<option value="">Select State...</option>';
+                            }
+                        }
+                    }
+                    
+                    statusText.innerHTML = `<span class="text-emerald-400">✔ Captured: ${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`;
+                } else {
+                    statusText.innerHTML = `<span class="text-amber-400">⚠ Captured coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)} (Reverse lookup failed)</span>`;
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            })
+            .catch(err => {
+                console.error(err);
+                statusText.innerHTML = `<span class="text-amber-400">⚠ Captured coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)} (Reverse lookup network failure)</span>`;
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            });
+        },
+        function (error) {
+            console.error(error);
+            let errMsg = 'Failed to retrieve location.';
+            if (error.code === error.PERMISSION_DENIED) {
+                errMsg = 'Location permission denied by user.';
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                errMsg = 'Location information is unavailable.';
+            } else if (error.code === error.TIMEOUT) {
+                errMsg = 'Location request timed out.';
+            }
+            statusText.innerHTML = `<span class="text-red-400">❌ ${errMsg}</span>`;
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+function previewSelectedMedia(input) {
+    const file = input.files[0];
+    const placeholder = document.getElementById('media-preview-placeholder');
+    const container = document.getElementById('media-preview-container');
+    const previewImg = document.getElementById('media-preview-img');
+    const previewVid = document.getElementById('media-preview-video');
+
+    if (!file) return;
+
+    // Show preview container
+    if (placeholder) placeholder.classList.add('hidden');
+    if (container) container.classList.remove('hidden');
+
+    const reader = new FileReader();
+
+    if (file.type.startsWith('video/')) {
+        // Handle video preview
+        if (previewImg) previewImg.classList.add('hidden');
+        if (previewVid) {
+            previewVid.src = URL.createObjectURL(file);
+            previewVid.classList.remove('hidden');
+            previewVid.load();
+        }
+    } else {
+        // Handle image preview
+        if (previewVid) {
+            previewVid.classList.add('hidden');
+            previewVid.pause();
+        }
+        if (previewImg) {
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewImg.classList.remove('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+}
 </script>
 {% endblock %}

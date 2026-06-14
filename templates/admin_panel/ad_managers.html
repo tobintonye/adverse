@@ -201,7 +201,7 @@
                                 <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-1">Platform Stats</h4>
                                 <div class="space-y-2 text-xs">
                                     <p class="flex items-center justify-between"><span class="text-zinc-500">Billboards:</span> <span class="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded">{{ mgr.billboard_count }}</span></p>
-                                    <p class="flex items-center justify-between"><span class="text-zinc-500">Campaigns Served:</span> <span class="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded">{{ mgr.total_campaigns_serverd }}</span></p>
+                                    <p class="flex items-center justify-between"><span class="text-zinc-500">Campaigns Served:</span> <span class="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded">{{ mgr.campaigns_served_count }}</span></p>
                                     <p class="flex items-center justify-between"><span class="text-zinc-500">Impressions:</span> <span class="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded">{{ mgr.total_impressions }}</span></p>
                                     {% if mgr.verification_requested and mgr.verification_requested_at %}
                                     <p class="mt-2 text-[10px] text-zinc-500">Requested: {{ mgr.verification_requested_at|date:"d M Y H:i" }}</p>

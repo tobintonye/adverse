@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from .models import Admanager
+from .models import Admanager, BankAccount
 from device.models import Billboard
 import re
 
@@ -62,22 +62,72 @@ class AdManagerProfileForm(forms.ModelForm):
 
 
 class BillboardForm(forms.ModelForm):
+    latitude = forms.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        required=True,
+        widget=forms.NumberInput(attrs={'placeholder': '6.4281', 'step': 'any'})
+    )
+    longitude = forms.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        required=True,
+        widget=forms.NumberInput(attrs={'placeholder': '3.4219', 'step': 'any'})
+    )
+
     class Meta:
         model = Billboard
         fields = [
-            'name', 'location_name', 'latitude', 'longitude',
+            'name', 'country', 'state', 'location_name', 'latitude', 'longitude',
             'screen_type', 'screen_width_px', 'screen_height_px',
-            'price_per_slot', 'operating_hours_start', 'operating_hours_end',
-            'availability',
+            'charge_unit', 'price_per_slot', 'operating_hours_start', 'operating_hours_end',
+            'availability', 'media_file',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. Victoria Island Main Screen'}),
             'location_name': forms.TextInput(attrs={'placeholder': 'e.g. Adeola Odeku Street, VI, Lagos'}),
-            'latitude': forms.NumberInput(attrs={'placeholder': '6.4281', 'step': 'any'}),
-            'longitude': forms.NumberInput(attrs={'placeholder': '3.4219', 'step': 'any'}),
+            'country': forms.TextInput(attrs={
+                'placeholder': 'e.g. Nigeria',
+                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'id': 'country-input'
+            }),
+            'state': forms.TextInput(attrs={
+                'placeholder': 'e.g. Lagos State',
+                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'id': 'state-input'
+            }),
             'screen_width_px': forms.NumberInput(attrs={'placeholder': '1920'}),
             'screen_height_px': forms.NumberInput(attrs={'placeholder': '1080'}),
+            'charge_unit': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'id': 'charge-unit-select'
+            }),
             'price_per_slot': forms.NumberInput(attrs={'placeholder': '5000.00', 'step': '0.01'}),
             'operating_hours_start': forms.TimeInput(attrs={'type': 'time'}),
             'operating_hours_end': forms.TimeInput(attrs={'type': 'time'}),
+            'screen_type': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition'
+            }),
+            'availability': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition'
+            }),
         }
+
+
+class BankAccountForm(forms.ModelForm):
+    class Meta:
+        model = BankAccount
+        fields = ['bank_name', 'account_name', 'account_number', 'is_default']
+        widgets = {
+            'bank_name': forms.TextInput(attrs={'placeholder': 'e.g. GTBank, Access Bank'}),
+            'account_name': forms.TextInput(attrs={'placeholder': 'Full name on bank account'}),
+            'account_number': forms.TextInput(attrs={'placeholder': '10-digit account number', 'maxlength': '20'}),
+        }
+
+    def clean_account_number(self):
+        num = self.cleaned_data.get('account_number', '').strip()
+        if not num.isdigit():
+            raise ValidationError("Account number must contain digits only.")
+        if len(num) < 10:
+            raise ValidationError("Account number must be at least 10 digits.")
+        return num

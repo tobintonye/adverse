@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from common.models import TimeStampedModel
 from django.utils import timezone
@@ -247,7 +248,10 @@ class Campaign(TimeStampedModel):
     daily_end_time = models.TimeField(default="22:00")
     # Budget & pricing
     budget = models.DecimalField(max_digits=12, decimal_places=2)
-    estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
+    estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
+    actual_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    admin_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    admanager_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     rejection_reason = models.TextField(blank=True)
     admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_admin")
@@ -340,9 +344,20 @@ class Campaign(TimeStampedModel):
         self.manager_reviewed_by = manager_user
         self.manager_reviewed_at = timezone.now()
         self.rejection_reason = ""
+        
+        # Calculate split prices based on current RevenueSetting
+        from admin_panel.models import RevenueSetting
+        setting = RevenueSetting.objects.first()
+        if not setting:
+            setting = RevenueSetting.objects.create(admin_percentage=Decimal('30.00'), admanager_percentage=Decimal('70.00'))
+        
+        self.actual_price = self.estimated_price
+        self.admin_split_price = self.actual_price * (setting.admin_percentage / Decimal('100.00'))
+        self.admanager_split_price = self.actual_price * (setting.admanager_percentage / Decimal('100.00'))
+        
         self.save(update_fields=[
             "status", "manager_reviewed_by", "manager_reviewed_at",
-            "rejection_reason", "updated_at",
+            "rejection_reason", "actual_price", "admin_split_price", "admanager_split_price", "updated_at",
         ])
         # Fully approve the media at the same time
         self.media.fully_approve(manager_user)

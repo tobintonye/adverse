@@ -74,9 +74,39 @@
                         <h2 class="text-base font-bold text-white tracking-tight">{{ campaign.name }}</h2>
                         <p class="text-xs text-zinc-500 mt-0.5">Submitted by {{ campaign.advertiser.business_name }}</p>
                     </div>
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-950/45 text-yellow-400 border border-yellow-900/30">
-                        Pending Review
-                    </span>
+                    {% if campaign.status == 'pending_admin_review' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-950/45 text-yellow-400 border border-yellow-900/30">
+                            Pending Review
+                        </span>
+                    {% elif campaign.status == 'pending_manager_review' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Pending Manager
+                        </span>
+                    {% elif campaign.status == 'approved' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">
+                            Approved
+                        </span>
+                    {% elif campaign.status == 'active' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-450 border border-emerald-500/20 animate-pulse">
+                            Active
+                        </span>
+                    {% elif campaign.status == 'completed' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
+                            Completed
+                        </span>
+                    {% elif campaign.status == 'rejected' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                            Rejected
+                        </span>
+                    {% elif campaign.status == 'cancelled' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-500 border border-zinc-700/30">
+                            Cancelled
+                        </span>
+                    {% else %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
+                            {{ campaign.status|title }}
+                        </span>
+                    {% endif %}
                 </div>
                 <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8 text-sm">
                     <div>
@@ -125,7 +155,8 @@
                 </div>
             </div>
 
-            <!-- Decision Card -->
+            <!-- Decision Card / Review Results -->
+            {% if campaign.status == 'pending_admin_review' %}
             <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
                 <div class="px-5 py-4 border-b border-zinc-800 bg-zinc-950/20">
                     <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Your Decision</h3>
@@ -150,6 +181,60 @@
                     </div>
                 </form>
             </div>
+            {% else %}
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
+                <div class="px-5 py-4 border-b border-zinc-800 bg-zinc-950/20">
+                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Decision Summary</h3>
+                </div>
+                <div class="p-6 space-y-4 text-sm">
+                    <p class="text-zinc-400">
+                        This campaign has already been processed and is currently <strong class="text-white uppercase">{{ campaign.get_status_display }}</strong>.
+                    </p>
+
+                    {% if campaign.admin_reviewed_by %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-black/20 p-4 border border-zinc-805 rounded-lg">
+                        <div>
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Admin Reviewer</span>
+                            <p class="text-white font-medium">{{ campaign.admin_reviewed_by.get_full_name|default:campaign.admin_reviewed_by.username }}</p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Reviewed At</span>
+                            <p class="text-zinc-300 font-mono">{{ campaign.admin_reviewed_at|date:"d M Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if campaign.manager_reviewed_by %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-black/20 p-4 border border-zinc-805 rounded-lg mt-2">
+                        <div>
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Manager Reviewer</span>
+                            <p class="text-white font-medium">{{ campaign.manager_reviewed_by.get_full_name|default:campaign.manager_reviewed_by.username }}</p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Reviewed At</span>
+                            <p class="text-zinc-300 font-mono">{{ campaign.manager_reviewed_at|date:"d M Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if campaign.status == 'rejected' and campaign.rejection_reason %}
+                        <div class="bg-black/40 border border-zinc-800 rounded-lg p-4 space-y-2">
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Rejection Reason</span>
+                            <p class="text-red-400 leading-relaxed font-medium text-xs">{{ campaign.rejection_reason }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="pt-2">
+                        <a href="{% url 'admin_panel:campaign_review' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg transition-all text-xs font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                            Back to Campaign Review
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
     </div>

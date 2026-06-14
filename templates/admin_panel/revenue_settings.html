@@ -1,0 +1,112 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Revenue Settings{% endblock %}
+{% block page_title %}Revenue Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-6">
+    <div class="glass-panel rounded-2xl p-6 md:p-8 shadow-2xl bg-zinc-950 border border-zinc-800/80">
+        <div class="mb-6 pb-4 border-b border-zinc-800/60">
+            <h2 class="text-lg font-bold text-white tracking-wide">Revenue Split Configuration</h2>
+            <p class="text-xs text-zinc-500 mt-1">Configure the percentage split of campaign fees between the Platform (Admin) and the screen operators (AdManagers). The sum of both percentages must equal 100%.</p>
+        </div>
+
+        <form method="post" action="{% url 'admin_panel:revenue_settings' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Admin Split -->
+                <div class="space-y-2">
+                    <label for="id_admin_percentage" class="block text-xs font-bold text-zinc-400 uppercase tracking-wider">Admin Percentage (%)</label>
+                    <div class="relative">
+                        <input type="number" 
+                               step="0.01" 
+                               min="0" 
+                               max="100" 
+                               name="admin_percentage" 
+                               id="id_admin_percentage" 
+                               value="{{ setting.admin_percentage }}" 
+                               oninput="balancePercentages('admin')"
+                               class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-xl text-sm font-bold text-white placeholder-zinc-700 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition"
+                               required>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-xs select-none">%</span>
+                    </div>
+                    <p class="text-[10px] text-zinc-500">Revenue share going to the platform admin.</p>
+                </div>
+
+                <!-- AdManager Split -->
+                <div class="space-y-2">
+                    <label for="id_admanager_percentage" class="block text-xs font-bold text-zinc-400 uppercase tracking-wider">AdManager Percentage (%)</label>
+                    <div class="relative">
+                        <input type="number" 
+                               step="0.01" 
+                               min="0" 
+                               max="100" 
+                               name="admanager_percentage" 
+                               id="id_admanager_percentage" 
+                               value="{{ setting.admanager_percentage }}" 
+                               oninput="balancePercentages('admanager')"
+                               class="w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-xl text-sm font-bold text-white placeholder-zinc-700 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition"
+                               required>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-xs select-none">%</span>
+                    </div>
+                    <p class="text-[10px] text-zinc-500">Revenue share going to the screen owner/operator.</p>
+                </div>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="validation-error" class="hidden px-4 py-3.5 bg-red-950/20 border border-red-900/35 rounded-xl text-xs text-red-400">
+                <p class="font-bold flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    The percentages must add up to exactly 100%.
+                </p>
+            </div>
+
+            <div class="pt-4 border-t border-zinc-800/60 flex items-center justify-end">
+                <button type="submit" 
+                        id="btn-save"
+                        class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition active:scale-95 shadow-lg shadow-red-950/20 hover:shadow-red-900/10">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function balancePercentages(source) {
+        const adminInput = document.getElementById('id_admin_percentage');
+        const admanagerInput = document.getElementById('id_admanager_percentage');
+        const errorBanner = document.getElementById('validation-error');
+        const btnSave = document.getElementById('btn-save');
+
+        let val = parseFloat(source === 'admin' ? adminInput.value : admanagerInput.value) || 0;
+        
+        // Clamp between 0 and 100
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+
+        const balanced = (100 - val).toFixed(2);
+        
+        if (source === 'admin') {
+            admanagerInput.value = balanced;
+        } else {
+            adminInput.value = balanced;
+        }
+
+        // Validate sum
+        const sum = parseFloat(adminInput.value) + parseFloat(admanagerInput.value);
+        if (Math.abs(sum - 100.0) > 0.01) {
+            errorBanner.classList.remove('hidden');
+            btnSave.disabled = true;
+            btnSave.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            errorBanner.classList.add('hidden');
+            btnSave.disabled = false;
+            btnSave.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+</script>
+{% endblock %}

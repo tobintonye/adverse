@@ -210,6 +210,9 @@ def loginAccount(request):
                 return redirect('admin_panel:dashboard')
             else:
                 if hasattr(user, 'ad_manager'):
+                    ad_manager = user.ad_manager
+                    ad_manager.revenue = ad_manager.calculate_revenue()
+                    ad_manager.save(update_fields=['revenue'])
                     return redirect('admanager:dashboard')
                 return redirect('admanager:profile')
     else:

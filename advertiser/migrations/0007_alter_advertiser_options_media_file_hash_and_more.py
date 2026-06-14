@@ -21,14 +21,6 @@ class Migration(migrations.Migration):
             name='file_hash',
             field=models.CharField(blank=True, help_text='SHA-256 of the uploaded file. Used to detect duplicates.', max_length=64),
         ),
-        migrations.AddIndex(
-            model_name='advertiser',
-            index=models.Index(fields=['is_verified'], name='advertiser__is_veri_d57754_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='advertiser',
-            index=models.Index(fields=['business_category'], name='advertiser__busines_2eb11f_idx'),
-        ),
         migrations.AddConstraint(
             model_name='media',
             constraint=models.UniqueConstraint(fields=('advertiser', 'file_hash'), name='unique_media_per_advertiser'),

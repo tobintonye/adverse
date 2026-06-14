@@ -19,26 +19,96 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
+    <div class="relative overflow-hidden bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl shadow-xl">
         <div class="px-6 py-4 border-b border-zinc-800">
             <h2 class="text-sm font-semibold text-white">Edit Campaign</h2>
             <p class="text-xs text-zinc-500 mt-0.5">Update your draft campaign. Changes are saved immediately.</p>
         </div>
 
-        <form method="post" class="p-6 space-y-6">
+        <form method="post" class="p-6 space-y-5">
             {% csrf_token %}
 
-            <!-- Name -->
+            <!-- Campaign Name -->
             <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Campaign Name</label>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Campaign Name</label>
                 <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. Ramadan Campaign 2026" required
                        class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                 {% if form.name.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.name.errors.0 }}</p>{% endif %}
             </div>
 
+            <!-- Billboard Selector -->
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Select Billboard</label>
+                <select id="billboard-select" name="billboard" required
+                        class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <option value="">Choose a billboard...</option>
+                    {% for bb in form.fields.billboard.queryset %}
+                    <option value="{{ bb.pk }}"
+                            {% if form.billboard.value|stringformat:"s" == bb.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ bb.name }} — {{ bb.location_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.billboard.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.billboard.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- Billboard Info Card -->
+            <div id="bb-info-card" class="hidden rounded-xl border border-zinc-700/60 bg-zinc-950/60 overflow-hidden">
+                <div id="bb-media-wrap" class="relative w-full aspect-video bg-black border-b border-zinc-800 flex items-center justify-center">
+                    <img id="bb-preview-img" src="" alt="Billboard preview" class="w-full h-full object-cover hidden">
+                    <video id="bb-preview-vid" src="" class="w-full h-full object-cover hidden" controls preload="metadata"></video>
+                    <div id="bb-no-preview" class="flex flex-col items-center text-zinc-700">
+                        <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-600">No Preview Available</span>
+                    </div>
+                </div>
+                <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                        <p class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Billboard</p>
+                        <p id="bb-name" class="text-sm font-bold text-white mt-0.5 truncate">—</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Location</p>
+                        <p id="bb-location" class="text-xs text-zinc-300 mt-0.5 truncate">—</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Screen Type</p>
+                        <p id="bb-screen-type" class="text-xs text-zinc-300 mt-0.5">—</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Hours</p>
+                        <p id="bb-hours" class="text-xs text-zinc-300 mt-0.5">—</p>
+                    </div>
+                </div>
+                <div class="px-4 pb-4">
+                    <div class="rounded-lg bg-red-950/20 border border-red-900/30 px-4 py-3 flex items-center justify-between">
+                        <div>
+                            <p class="text-[9px] font-bold text-red-400 uppercase tracking-widest">Billing Plan</p>
+                            <p id="bb-charge-label" class="text-sm font-bold text-white mt-0.5">—</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Rate</p>
+                            <p id="bb-rate" class="text-lg font-black text-red-400">₦—</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantity Field -->
+            <div id="qty-row" class="hidden">
+                <div>
+                    <label id="qty-label" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Quantity</label>
+                    <input type="number" id="slots-per-day" name="slots_per_day" value="{{ form.slots_per_day.value|default:'1' }}" min="1"
+                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                    <p id="qty-hint" class="text-[10px] text-zinc-500 mt-1 ml-1"></p>
+                </div>
+            </div>
+
             <!-- Media -->
             <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Select Media <span class="text-zinc-600 normal-case">(admin-approved only)</span></label>
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Select Media <span class="text-zinc-600 normal-case">(admin-approved only)</span></label>
                 <select name="media"
                         class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                     <option value="">Select approved media...</option>
@@ -51,98 +121,61 @@
                 {% if form.media.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.media.errors.0 }}</p>{% endif %}
             </div>
 
-            <!-- Billboards -->
-            <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 ml-1">Select Billboards</label>
-                <div class="space-y-2 max-h-48 overflow-y-auto bg-black border border-zinc-800 rounded-lg p-3">
-                    {% for bb in form.fields.billboards.queryset %}
-                    <label class="flex items-center justify-between cursor-pointer hover:bg-zinc-900/60 px-2 py-1.5 rounded-lg transition">
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" name="billboards" value="{{ bb.pk }}"
-                                   data-price="{{ bb.price_per_slot }}"
-                                   {% if bb.pk|stringformat:"s" in form.billboards.value|default:'' %}checked{% endif %}
-                                   class="accent-red-600 billboard-cb">
-                            <div>
-                                <p class="text-sm text-white">{{ bb.name }}</p>
-                                <p class="text-[10px] text-zinc-500">{{ bb.location_name }} · {{ bb.get_screen_type_display }}</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-medium text-zinc-400">₦{{ bb.price_per_slot }}/slot</span>
-                    </label>
-                    {% empty %}
-                    <p class="text-zinc-500 text-sm text-center py-4">No available billboards at the moment.</p>
-                    {% endfor %}
-                </div>
-                {% if form.billboards.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.billboards.errors.0 }}</p>{% endif %}
-            </div>
-
-            <!-- Slots per day -->
-            <div class="w-40">
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Slots Per Day</label>
-                <input type="number" id="slots-per-day" name="slots_per_day" value="{{ form.slots_per_day.value|default:'1' }}" min="1"
-                       class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-            </div>
-
             <!-- Schedule -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Start Date</label>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Start Date</label>
                     <input type="date" id="start-date" name="start_date" value="{{ form.start_date.value|default:'' }}" required
                            style="color-scheme: dark;"
                            class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                     {% if form.start_date.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.start_date.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">End Date</label>
+                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">End Date</label>
                     <input type="date" id="end-date" name="end_date" value="{{ form.end_date.value|default:'' }}" required
                            style="color-scheme: dark;"
                            class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
                     {% if form.end_date.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.end_date.errors.0 }}</p>{% endif %}
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Daily Start Time</label>
-                    <input type="time" name="daily_start_time" value="{{ form.daily_start_time.value|default:'06:00' }}"
-                           style="color-scheme: dark;"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Daily End Time</label>
-                    <input type="time" name="daily_end_time" value="{{ form.daily_end_time.value|default:'22:00' }}"
-                           style="color-scheme: dark;"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                </div>
             </div>
 
-            <!-- Live price estimate -->
-            <div id="price-estimate" class="bg-black border border-zinc-800 rounded-lg px-4 py-3 hidden">
-                <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Price Estimate</p>
-                <div class="grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                        <p class="text-zinc-500">Duration</p>
-                        <p class="text-white font-semibold mt-0.5"><span id="est-days">0</span> days</p>
+            <!-- Live Price Breakdown -->
+            <div id="price-estimate" class="hidden rounded-xl border border-zinc-800 bg-black overflow-hidden">
+                <div class="px-4 py-3 border-b border-zinc-800/60">
+                    <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">💰 Cost Estimate</p>
+                </div>
+                <div class="p-4 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-zinc-500">Billboard rate</span>
+                        <span id="est-rate" class="text-zinc-300 font-medium">—</span>
                     </div>
-                    <div>
-                        <p class="text-zinc-500">Billboards</p>
-                        <p class="text-white font-semibold mt-0.5"><span id="est-boards">0</span> selected</p>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-zinc-500" id="est-qty-label">Quantity</span>
+                        <span id="est-qty-val" class="text-zinc-300 font-medium">—</span>
                     </div>
-                    <div>
-                        <p class="text-zinc-500">Estimated Total</p>
-                        <p class="text-red-400 font-bold text-sm mt-0.5">₦<span id="est-price">0</span></p>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-zinc-500">Campaign days</span>
+                        <span id="est-days" class="text-zinc-300 font-medium">0 days</span>
+                    </div>
+                    <div class="border-t border-zinc-800/60 pt-2 flex justify-between items-center">
+                        <span class="text-xs text-zinc-400 font-semibold">Estimated Total</span>
+                        <span class="text-xl font-black text-red-400">₦<span id="est-total">0.00</span></span>
                     </div>
                 </div>
             </div>
 
             <!-- Budget -->
             <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 ml-1">Budget (₦)</label>
-                <input type="number" name="budget" value="{{ form.budget.value|default:'' }}" step="0.01" placeholder="500000.00" required
+                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Budget (₦)</label>
+                <input type="number" id="budget-input" name="budget" value="{{ form.budget.value|default:'' }}" step="0.01" placeholder="500000.00" required
                        class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+                <p id="budget-warning" class="text-red-400 text-[11px] mt-1 hidden">⚠ Budget is below the estimated cost.</p>
                 {% if form.budget.errors %}<p class="text-red-400 text-[11px] mt-1">{{ form.budget.errors.0 }}</p>{% endif %}
             </div>
 
             <div class="flex items-center gap-3 pt-2 border-t border-zinc-800">
                 <button type="submit"
-                        class="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
+                        class="px-8 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-95">
                     Save Changes
                 </button>
                 <a href="{% url 'advertiser:campaign_detail' campaign.pk %}" class="text-sm text-zinc-500 hover:text-zinc-300 transition">Cancel</a>
@@ -153,52 +186,177 @@
 
 <script>
 (function () {
-    var startDateEl  = document.getElementById('start-date');
-    var endDateEl    = document.getElementById('end-date');
-    var slotsEl      = document.getElementById('slots-per-day');
-    var checkboxes   = document.querySelectorAll('.billboard-cb');
-    var panel        = document.getElementById('price-estimate');
-    var estDays      = document.getElementById('est-days');
-    var estBoards    = document.getElementById('est-boards');
-    var estPrice     = document.getElementById('est-price');
+    var BILLBOARDS = {{ billboards_json|safe }};
+
+    var selectEl      = document.getElementById('billboard-select');
+    var startDateEl   = document.getElementById('start-date');
+    var endDateEl     = document.getElementById('end-date');
+    var slotsEl       = document.getElementById('slots-per-day');
+    var budgetEl      = document.getElementById('budget-input');
+
+    var infoCard      = document.getElementById('bb-info-card');
+    var qtyRow        = document.getElementById('qty-row');
+    var bbName        = document.getElementById('bb-name');
+    var bbLocation    = document.getElementById('bb-location');
+    var bbScreenType  = document.getElementById('bb-screen-type');
+    var bbHours       = document.getElementById('bb-hours');
+    var bbChargeLabel = document.getElementById('bb-charge-label');
+    var bbRate        = document.getElementById('bb-rate');
+    var bbPreviewImg  = document.getElementById('bb-preview-img');
+    var bbPreviewVid  = document.getElementById('bb-preview-vid');
+    var bbNoPreview   = document.getElementById('bb-no-preview');
+
+    var pricePanel    = document.getElementById('price-estimate');
+    var estRate       = document.getElementById('est-rate');
+    var estQtyLabel   = document.getElementById('est-qty-label');
+    var estQtyVal     = document.getElementById('est-qty-val');
+    var estDays       = document.getElementById('est-days');
+    var estTotal      = document.getElementById('est-total');
+    var qtyLabel      = document.getElementById('qty-label');
+    var qtyHint       = document.getElementById('qty-hint');
+    var budgetWarning = document.getElementById('budget-warning');
+
+    var currentBillboard = null;
+
+    function fmt(n) {
+        return n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getDays() {
+        var s = startDateEl.value ? new Date(startDateEl.value) : null;
+        var e = endDateEl.value   ? new Date(endDateEl.value)   : null;
+        if (s && e && e >= s) return Math.round((e - s) / 86400000) + 1;
+        return 0;
+    }
+
+    function getHoursPerDay() {
+        // Use model defaults: 06:00 to 22:00 = 16 hours
+        return 16;
+    }
+
+    function updateBillboardCard(bb) {
+        currentBillboard = bb;
+
+        if (bb.media_url) {
+            if (bb.media_is_video) {
+                bbPreviewImg.classList.add('hidden');
+                bbNoPreview.classList.add('hidden');
+                bbPreviewVid.src = bb.media_url;
+                bbPreviewVid.classList.remove('hidden');
+            } else {
+                bbPreviewVid.classList.add('hidden');
+                bbNoPreview.classList.add('hidden');
+                bbPreviewImg.src = bb.media_url;
+                bbPreviewImg.classList.remove('hidden');
+            }
+        } else {
+            bbPreviewImg.classList.add('hidden');
+            bbPreviewVid.classList.add('hidden');
+            bbNoPreview.classList.remove('hidden');
+        }
+
+        bbName.textContent       = bb.name;
+        bbLocation.textContent   = (bb.state ? bb.state + ', ' : '') + bb.country;
+        bbScreenType.textContent = bb.screen_type;
+        bbHours.textContent      = bb.hours_start + ' – ' + bb.hours_end;
+        bbRate.textContent       = '₦' + fmt(bb.price);
+
+        var unitLabel, qLabel, qHint;
+        if (bb.charge_unit === 'hourly') {
+            unitLabel = 'Hourly — billed per hour/day';
+            qLabel    = 'Hours Per Day';
+            qHint     = 'Number of hours of airtime per day on this screen.';
+        } else if (bb.charge_unit === 'daily') {
+            unitLabel = 'Daily — billed per day';
+            qLabel    = 'Ad Plays Per Day';
+            qHint     = 'How many times your ad runs per day on this screen.';
+        } else {
+            unitLabel = 'Per Slot — billed per ad slot/day';
+            qLabel    = 'Ad Slots Per Day';
+            qHint     = 'Number of times your ad plays on this screen per day.';
+        }
+
+        bbChargeLabel.textContent = unitLabel;
+        qtyLabel.textContent      = qLabel;
+        qtyHint.textContent       = qHint;
+
+        // Always show the quantity field for all billing types
+        slotsEl.closest('div').classList.remove('hidden');
+
+        infoCard.classList.remove('hidden');
+        qtyRow.classList.remove('hidden');
+        recalculate();
+    }
 
     function recalculate() {
-        var start = startDateEl.value ? new Date(startDateEl.value) : null;
-        var end   = endDateEl.value   ? new Date(endDateEl.value)   : null;
-        var slots = parseInt(slotsEl.value, 10) || 1;
+        if (!currentBillboard) { pricePanel.classList.add('hidden'); return; }
 
-        var days = 0;
-        if (start && end && end >= start) {
-            days = Math.round((end - start) / 86400000) + 1;
+        var days  = getDays();
+        var hours = getHoursPerDay();
+        var qty   = parseInt(slotsEl.value, 10) || 1;
+        var price = currentBillboard.price;
+        var unit  = currentBillboard.charge_unit;
+        var total = 0;
+        var rateText, qLabel, qVal;
+
+        if (unit === 'daily') {
+            total    = price * qty * days;
+            rateText = '₦' + fmt(price) + ' / day';
+            qLabel   = 'Plays × days';
+            qVal     = qty + ' play' + (qty !== 1 ? 's' : '') + '/day × ' + days + ' day' + (days !== 1 ? 's' : '');
+        } else if (unit === 'hourly') {
+            total    = price * qty * days;
+            rateText = '₦' + fmt(price) + ' / hour';
+            qLabel   = 'Hours × days';
+            qVal     = qty + ' hr' + (qty !== 1 ? 's' : '') + ' × ' + days + ' day' + (days !== 1 ? 's' : '');
+        } else {
+            total    = price * qty * days;
+            rateText = '₦' + fmt(price) + ' / slot';
+            qLabel   = 'Slots × days';
+            qVal     = qty + ' slot' + (qty !== 1 ? 's' : '') + ' × ' + days + ' day' + (days !== 1 ? 's' : '');
         }
 
-        var total = 0;
-        var selected = 0;
-        checkboxes.forEach(function (cb) {
-            if (cb.checked) {
-                selected++;
-                total += parseFloat(cb.dataset.price || 0) * slots * days;
-            }
-        });
+        estRate.textContent     = rateText;
+        estQtyLabel.textContent = qLabel;
+        estQtyVal.textContent   = qVal;
+        estDays.textContent     = days + ' day' + (days !== 1 ? 's' : '');
+        estTotal.textContent    = fmt(total);
 
-        estDays.textContent   = days;
-        estBoards.textContent = selected;
-        estPrice.textContent  = total.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        if (days > 0 && selected > 0) {
-            panel.classList.remove('hidden');
+        if (days > 0) {
+            pricePanel.classList.remove('hidden');
         } else {
-            panel.classList.add('hidden');
+            pricePanel.classList.add('hidden');
+        }
+
+        if (budgetEl.value && total > 0) {
+            budgetWarning.classList.toggle('hidden', parseFloat(budgetEl.value) >= total);
+        } else {
+            budgetWarning.classList.add('hidden');
         }
     }
+
+    selectEl.addEventListener('change', function () {
+        var pk = this.value;
+        if (pk && BILLBOARDS[pk]) {
+            updateBillboardCard(BILLBOARDS[pk]);
+        } else {
+            currentBillboard = null;
+            infoCard.classList.add('hidden');
+            qtyRow.classList.add('hidden');
+            pricePanel.classList.add('hidden');
+        }
+    });
 
     startDateEl.addEventListener('change', recalculate);
     endDateEl.addEventListener('change', recalculate);
     slotsEl.addEventListener('input', recalculate);
-    checkboxes.forEach(function (cb) { cb.addEventListener('change', recalculate); });
+    if (budgetEl) budgetEl.addEventListener('input', recalculate);
 
-    // Run immediately so the estimate shows on load for an existing draft
-    recalculate();
+    // Auto-init if billboard already selected (editing existing draft)
+    var initialPk = selectEl.value;
+    if (initialPk && BILLBOARDS[initialPk]) {
+        updateBillboardCard(BILLBOARDS[initialPk]);
+    }
 }());
 </script>
 {% endblock %}

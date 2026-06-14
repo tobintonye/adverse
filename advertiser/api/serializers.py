@@ -62,6 +62,7 @@ class BillboardPublicSerializer(serializers.ModelSerializer):
             "screen_height_px",
             "resolution",
             "price_per_slot",
+            "charge_unit",
             "operating_hours_start",
             "operating_hours_end",
             "availability",
@@ -306,6 +307,8 @@ class CampaignPriceEstimateSerializer(serializers.Serializer):
     # Returns a live price estimate without saving anything.
     start_date = serializers.DateField()
     end_date = serializers.DateField()
+    daily_start_time = serializers.TimeField(required=False, default="06:00")
+    daily_end_time = serializers.TimeField(required=False, default="22:00")
     slots = SlotEstimateItemSerializer(many=True, min_length=1)
 
     def validate(self, attrs):

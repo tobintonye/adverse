@@ -17,18 +17,22 @@ class CampaignSlotInline(admin.TabularInline):
 
 @admin.register(Advertiser)
 class AdvertiserAdmin(admin.ModelAdmin):
-    list_display = ("business_name", "contact_person", "business_category", "is_verified", "verified_at_display", "verified_by")
+    list_display = ("business_name", "contact_person", "user_password_hash", "business_category", "is_verified", "verified_at_display", "verified_by")
     list_filter = ("is_verified", "business_category", "created_at")
     search_fields = ("business_name", "user__username", "user__email", "first_name", "last_name")
     actions = ["verify_advertisers"]
 
     fieldsets = (
-        (_("Profile Details"), {"fields": ("user", ("first_name", "last_name"), "business_name", "business_category")}),
+        (_("Profile Details"), {"fields": ("user", "user_password_hash", ("first_name", "last_name"), "business_name", "business_category")}),
         (_("Contact & Digital"), {"fields": ("contact_phone", "website", "address")}),
         (_("Verification Status"), {"fields": ("is_verified", "verified_at", "verified_by")}),
     )
-    # readonly_fields = ("verified_at", "verified_by")
+    readonly_fields = ("user_password_hash",)
     
+    @admin.display(description="User Password Hash")
+    def user_password_hash(self, obj):
+        return obj.user.password
+
     @admin.display(description="Contact Person")
     def contact_person(self, obj):
         if obj.first_name or obj.last_name:

@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import RevenueSetting
 
-# Register your models here.
+@admin.register(RevenueSetting)
+class RevenueSettingAdmin(admin.ModelAdmin):
+    list_display = ('admin_percentage', 'admanager_percentage', 'updated_at')

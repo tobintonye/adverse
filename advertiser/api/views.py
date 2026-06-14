@@ -360,6 +360,8 @@ class CampaignPriceEstimateView(APIView):
 
         start = serializer.validated_data["start_date"]
         end = serializer.validated_data["end_date"]
+        daily_start = serializer.validated_data.get("daily_start_time")
+        daily_end = serializer.validated_data.get("daily_end_time")
         duration_days = (end - start).days + 1
         slots = serializer.validated_data["slots"]
 
@@ -377,13 +379,27 @@ class CampaignPriceEstimateView(APIView):
             except (Billboard.DoesNotExist, ValidationError):
                 continue
 
-            line_total = billboard.price_per_slot * slots_per_day * duration_days
+            if billboard.charge_unit == Billboard.ChargeUnit.DAILY:
+                line_total = billboard.price_per_slot * duration_days
+            elif billboard.charge_unit == Billboard.ChargeUnit.HOURLY:
+                if daily_start and daily_end:
+                    from datetime import datetime, date
+                    dt1 = datetime.combine(date.min, daily_start)
+                    dt2 = datetime.combine(date.min, daily_end)
+                    diff_hours = Decimal(str((dt2 - dt1).total_seconds() / 3600.0))
+                    line_total = billboard.price_per_slot * diff_hours * duration_days
+                else:
+                    line_total = billboard.price_per_slot * duration_days
+            else: # SLOT
+                line_total = billboard.price_per_slot * slots_per_day * duration_days
+                
             total += line_total
             breakdown.append({
                 "billboard_id": str(billboard.id),
                 "billboard_name": billboard.name,
                 "location": billboard.location_name,
                 "price_per_slot": billboard.price_per_slot,
+                "charge_unit": billboard.charge_unit,
                 "slots_per_day": slots_per_day,
                 "duration_days": duration_days,
                 "line_total": line_total,
