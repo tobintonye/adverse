@@ -5,9 +5,16 @@
 
 {% block content %}
 
+<!-- Page Header & Subtext -->
+<div class="mb-6">
+    <h1 class="text-xl font-bold text-white tracking-tight">Media Review Library</h1>
+    <p class="text-xs text-zinc-455 mt-1">Review, approve, or reject uploaded media creatives from advertisers. Ensure content fits quality guidelines before campaigns launch.</p>
+</div>
+
 <!-- Search and Filter Bar -->
-<div class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-900/40 p-4 border border-zinc-800/60 rounded-xl backdrop-blur-md">
-    <div class="relative w-full md:w-72">
+<div class="mb-6 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-zinc-900/40 p-4 border border-zinc-800/60 rounded-xl backdrop-blur-md">
+    <!-- Search Input -->
+    <div class="relative w-full lg:w-72">
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -17,19 +24,42 @@
                class="w-full pl-9 pr-4 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
     </div>
 
-    <div class="flex gap-1.5 p-1 bg-black/60 border border-zinc-800 rounded-lg">
-        <button onclick="filterStatus('all')" id="btn-filter-all" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-zinc-800 text-white">All</button>
-        <button onclick="filterStatus('pending')" id="btn-filter-pending" class="px-4 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Pending</button>
-        <button onclick="filterStatus('approved')" id="btn-filter-approved" class="px-4 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Approved</button>
-        <button onclick="filterStatus('rejected')" id="btn-filter-rejected" class="px-4 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Rejected</button>
+    <!-- Filter Buttons (Format and Status) -->
+    <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <!-- Media Format Filter -->
+        <div class="flex gap-1.5 p-1 bg-black/60 border border-zinc-800 rounded-lg">
+            <button onclick="filterType('all')" id="btn-type-all" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-zinc-800 text-white">All Media</button>
+            <button onclick="filterType('image')" id="btn-type-image" class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Images</button>
+            <button onclick="filterType('video')" id="btn-type-video" class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Videos</button>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex gap-1.5 p-1 bg-black/60 border border-zinc-800 rounded-lg">
+            <button onclick="filterStatus('all')" id="btn-filter-all" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-zinc-800 text-white">All Status</button>
+            <button onclick="filterStatus('pending')" id="btn-filter-pending" class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Pending</button>
+            <button onclick="filterStatus('approved')" id="btn-filter-approved" class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Approved</button>
+            <button onclick="filterStatus('rejected')" id="btn-filter-rejected" class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Rejected</button>
+        </div>
     </div>
 </div>
 
 {% if media_files %}
 <div class="space-y-6" id="mediaContainer">
+    <!-- Client-side empty state for filtering -->
+    <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center w-full">
+        <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800/80 flex items-center justify-center mb-4 text-zinc-550">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <p class="text-zinc-355 text-xs font-bold">No media assets match these filters</p>
+        <p class="text-zinc-650 text-[11px] mt-1">Try switching tabs or adjusting search query.</p>
+    </div>
+
     {% for media in media_files %}
     <div class="media-card bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl p-5 md:p-6 shadow-xl hover:border-zinc-700/80 transition duration-300 group"
          data-status="{{ media.status }}"
+         data-media-type="{{ media.media_type }}"
          data-title="{{ media.title|lower }}"
          data-advertiser="{{ media.advertiser.business_name|lower }}">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -145,6 +175,7 @@
     const searchInput = document.getElementById('mediaSearch');
     const mediaCards = document.querySelectorAll('.media-card');
     let currentFilter = 'all';
+    let currentType = 'all';
 
     searchInput.addEventListener('keyup', filterMedia);
 
@@ -163,16 +194,34 @@
         filterMedia();
     }
 
+    function filterType(type) {
+        currentType = type;
+        ['all', 'image', 'video'].forEach(t => {
+            const btn = document.getElementById(`btn-type-${t}`);
+            if (t === type) {
+                btn.classList.add('bg-zinc-800', 'text-white');
+                btn.classList.remove('text-zinc-400');
+            } else {
+                btn.classList.remove('bg-zinc-800', 'text-white');
+                btn.classList.add('text-zinc-400');
+            }
+        });
+        filterMedia();
+    }
+
     function filterMedia() {
         const query = searchInput.value.toLowerCase().trim();
+        let visibleCount = 0;
+
         mediaCards.forEach(card => {
             const title = card.getAttribute('data-title');
             const advertiser = card.getAttribute('data-advertiser');
             const status = card.getAttribute('data-status');
+            const type = card.getAttribute('data-media-type');
 
             const matchesQuery = title.includes(query) || advertiser.includes(query);
-            let matchesFilter = true;
             
+            let matchesFilter = true;
             if (currentFilter === 'pending') {
                 matchesFilter = (status === 'pending');
             } else if (currentFilter === 'approved') {
@@ -181,12 +230,29 @@
                 matchesFilter = (status === 'rejected');
             }
 
-            if (matchesQuery && matchesFilter) {
+            let matchesType = true;
+            if (currentType === 'image') {
+                matchesType = (type === 'image');
+            } else if (currentType === 'video') {
+                matchesType = (type === 'video');
+            }
+
+            if (matchesQuery && matchesFilter && matchesType) {
                 card.classList.remove('hidden');
+                visibleCount++;
             } else {
                 card.classList.add('hidden');
             }
         });
+
+        const emptyState = document.getElementById('gallery-empty-state');
+        if (emptyState) {
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
     }
 </script>
 

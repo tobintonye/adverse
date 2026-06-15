@@ -15,89 +15,116 @@
 
 {% block content %}
 
+<!-- Page Header & Subtext -->
+<div class="mb-6">
+    <h1 class="text-xl font-bold text-white tracking-tight">My Media Library</h1>
+    <p class="text-xs text-zinc-400 mt-1">Manage and preview all your creative assets. Upload new images or videos to use in your billboard campaigns.</p>
+</div>
+
 {% if media_files %}
-<div class="bg-zinc-950 border border-zinc-800/80 rounded-xl overflow-hidden shadow-xl">
-    <table class="w-full text-sm">
-        <thead>
-            <tr class="border-b border-zinc-800/60 bg-zinc-950/20">
-                <th class="text-left px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Media Title</th>
-                <th class="text-left px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Format</th>
-                <th class="text-left px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">File Size</th>
-                <th class="text-left px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
-                <th class="text-left px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Uploaded On</th>
-                <th class="text-right px-5 py-3.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Actions</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-zinc-850">
-            {% for media in media_files %}
-            <tr class="hover:bg-zinc-900/30 transition-colors group">
-                <!-- Title & thumbnail preview -->
-                <td class="px-5 py-3.5">
-                    <div class="flex items-center gap-3">
-                        <div onclick="openPreviewModal('{{ media.file.url }}', '{{ media.media_type }}', '{{ media.title|escapejs }}', '{{ media.file_size_mb }} MB', '{{ media.get_media_type_display }}', '{{ media.status }}')" 
-                             class="w-12 h-10 bg-black border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 cursor-zoom-in relative group/thumb">
-                            {% if media.media_type == 'image' %}
-                                <img src="{{ media.file.url }}" class="w-full h-full object-cover group-hover/thumb:scale-105 transition duration-300">
-                            {% else %}
-                                <div class="flex items-center justify-center w-full h-full bg-zinc-950">
-                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="min-w-0">
-                            <p class="font-bold text-white truncate text-xs">{{ media.title }}</p>
-                            {% if media.rejection_reason %}
-                                <p class="text-[10px] text-red-400 mt-0.5 truncate max-w-xs" title="{{ media.rejection_reason }}">Reason: {{ media.rejection_reason }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </td>
-                <!-- Format -->
-                <td class="px-5 py-3.5">
-                    <span class="text-xs font-semibold text-zinc-300">
-                        {{ media.get_media_type_display }}
-                        {% if media.duration_seconds %}
-                            <span class="text-zinc-500 font-mono text-[11px] ml-1">({{ media.duration_seconds }}s)</span>
-                        {% endif %}
+<!-- Filter Tabs -->
+<div class="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/60 pb-4">
+    <div class="flex gap-2">
+        <button onclick="filterMedia('all', this)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-900 border border-zinc-850 hover:border-zinc-800 text-white transition active:scale-95 filter-tab-active">
+            All Media
+        </button>
+        <button onclick="filterMedia('image', this)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white transition active:scale-95">
+            Images
+        </button>
+        <button onclick="filterMedia('video', this)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white transition active:scale-95">
+            Videos
+        </button>
+    </div>
+    <div class="text-[11px] text-zinc-500 font-mono">
+        Showing <span id="visible-count">{{ media_files|length }}</span> of {{ media_files|length }} assets
+    </div>
+</div>
+
+<!-- Responsive Gallery Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <!-- Client-side empty state for filtering -->
+    <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center w-full col-span-full">
+        <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800/80 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-zinc-550" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <p class="text-zinc-350 text-xs font-bold">No assets match this filter</p>
+        <p class="text-zinc-650 text-[11px] mt-1">Try switching to another tab or upload more media.</p>
+    </div>
+
+    {% for media in media_files %}
+    <div onclick="openPreviewModal('{{ media.file.url }}', '{{ media.media_type }}', '{{ media.title|escapejs }}', '{{ media.file_size_mb }} MB', '{{ media.get_media_type_display }}', '{{ media.status }}')"
+         data-media-type="{{ media.media_type }}"
+         class="media-card-item bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700/80 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 relative group cursor-pointer flex flex-col">
+        
+        <!-- Thumbnail / Aspect-Video area -->
+        <div class="aspect-[16/10] bg-black border-b border-zinc-800/50 overflow-hidden relative flex items-center justify-center">
+            {% if media.media_type == 'image' %}
+                <img src="{{ media.file.url }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            {% else %}
+                <!-- For video, show an interactive icon and black poster background -->
+                <div class="absolute inset-0 bg-zinc-950 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-indigo-400 opacity-80 group-hover:opacity-100 transition duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            {% endif %}
+            
+            <!-- Type badge on top left -->
+            <div class="absolute top-3 left-3 z-10">
+                <span class="px-2 py-0.5 rounded text-[8px] font-extrabold bg-black/60 text-zinc-300 uppercase tracking-wider backdrop-blur-sm border border-zinc-800/50">
+                    {{ media.get_media_type_display }}
+                    {% if media.duration_seconds %}({{ media.duration_seconds }}s){% endif %}
+                </span>
+            </div>
+            
+            <!-- Status badge on top right -->
+            <div class="absolute top-3 right-3 z-10">
+                {% if media.status == 'pending' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-950/80 text-amber-400 border border-amber-900/40 backdrop-blur-sm">
+                        <span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span> Pending
                     </span>
-                </td>
-                <!-- File size -->
-                <td class="px-5 py-3.5 text-zinc-400 font-mono text-xs">{{ media.file_size_mb }} MB</td>
-                <!-- Status badge -->
-                <td class="px-5 py-3.5">
-                    {% if media.status == 'pending' %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-950/20 text-amber-400 border border-amber-900/20">
-                            <span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span> Pending Review
-                        </span>
-                    {% elif media.status == 'admin_approved' %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-950/20 text-blue-400 border border-blue-900/20">
-                            <span class="w-1 h-1 rounded-full bg-blue-400"></span> Admin Approved
-                        </span>
-                    {% elif media.status == 'fully_approved' %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950/20 text-emerald-400 border border-emerald-900/20">
-                            <span class="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span> Live
-                        </span>
-                    {% else %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-red-950/20 text-red-400 border border-red-900/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Rejected
-                        </span>
-                    {% endif %}
-                </td>
-                <!-- Uploaded date -->
-                <td class="px-5 py-3.5 text-zinc-550 text-xs font-mono">{{ media.created_at|date:"d M Y" }}</td>
-                <!-- Actions -->
-                <td class="px-5 py-3.5 text-right">
-                    <button onclick="openPreviewModal('{{ media.file.url }}', '{{ media.media_type }}', '{{ media.title|escapejs }}', '{{ media.file_size_mb }} MB', '{{ media.get_media_type_display }}', '{{ media.status }}')"
-                            class="px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-white text-[10px] font-bold rounded-lg transition">
-                        View File
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                {% elif media.status == 'admin_approved' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-950/80 text-blue-400 border border-blue-900/40 backdrop-blur-sm">
+                        <span class="w-1 h-1 rounded-full bg-blue-400"></span> Approved
+                    </span>
+                {% elif media.status == 'fully_approved' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-900/40 backdrop-blur-sm">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-red-950/80 text-red-400 border border-red-900/40 backdrop-blur-sm">
+                        <span class="w-1 h-1 rounded-full bg-red-400"></span> Rejected
+                    </span>
+                {% endif %}
+            </div>
+            
+            <!-- Action overlay hover effect -->
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <span class="px-3 py-1.5 bg-zinc-900/90 border border-zinc-800 text-white text-[10px] font-bold rounded-lg transition transform translate-y-2 group-hover:translate-y-0 duration-300">
+                    View Details
+                </span>
+            </div>
+        </div>
+        
+        <!-- Info area -->
+        <div class="p-4 flex flex-col justify-between flex-grow min-w-0 bg-zinc-950/40">
+            <div>
+                <h3 class="font-bold text-white text-xs truncate" title="{{ media.title }}">{{ media.title }}</h3>
+                {% if media.rejection_reason %}
+                    <p class="text-[10px] text-red-400 mt-1 truncate" title="{{ media.rejection_reason }}">Reason: {{ media.rejection_reason }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center justify-between mt-3 pt-3 border-t border-zinc-900 text-[10px] text-zinc-550 font-mono">
+                <span>{{ media.file_size_mb }} MB</span>
+                <span>{{ media.created_at|date:"d M Y" }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 
 <!-- Creative Preview Modal Overlay -->
@@ -232,6 +259,43 @@
 
     function closePreviewModalOnBackdrop(event) {
         closePreviewModal();
+    }
+
+    function filterMedia(type, btn) {
+        // Toggle active button style
+        const buttons = btn.parentElement.querySelectorAll('button');
+        buttons.forEach(b => {
+            b.classList.remove('bg-zinc-900', 'border-zinc-850', 'text-white', 'filter-tab-active');
+            b.classList.add('bg-zinc-950', 'border-zinc-900', 'text-zinc-400');
+        });
+        
+        btn.classList.remove('bg-zinc-950', 'border-zinc-900', 'text-zinc-400');
+        btn.classList.add('bg-zinc-900', 'border-zinc-850', 'text-white', 'filter-tab-active');
+
+        // Show/hide cards
+        const cards = document.querySelectorAll('.media-card-item');
+        let visibleCount = 0;
+        
+        cards.forEach(card => {
+            const cardType = card.getAttribute('data-media-type');
+            if (type === 'all' || cardType === type) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+        
+        // Update count text
+        document.getElementById('visible-count').textContent = visibleCount;
+        
+        // Handle empty state
+        const emptyState = document.getElementById('gallery-empty-state');
+        if (visibleCount === 0) {
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+        }
     }
 </script>
 {% else %}
