@@ -143,19 +143,6 @@ class MediaUploadSerializer(serializers.ModelSerializer):
         attrs["advertiser"] = self.context["advertiser"]
         return attrs
 
-     # Compute and check hash
-    def clean(self): 
-        super().clean()
-        if self.file and not self.pk: # only on new uploads
-            self.file.seek(0)
-            file_hash = hashlib.sha256(self.file.read()).hexdigest()
-            self.file.seek(0)
-            self.file_hash = file_hash
-
-            if Media.objects.filter(advertiser=self.advertiser, file_hash=file_hash).exists():
-                raise ValidationError(
-                {"file": "You have already uploaded this file. Check your media library."}
-            )
     def create(self, validated_data):
         try:
             return super().create(validated_data)

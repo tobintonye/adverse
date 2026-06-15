@@ -1,11 +1,12 @@
 from django.db import models
 import uuid
+import hashlib
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from common.models import TimeStampedModel
 from django.utils import timezone
 import mimetypes
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import FileExtensionValidator
 from device.models import Billboard
 from django.db.models import UniqueConstraint
@@ -204,6 +205,23 @@ class Media(TimeStampedModel):
                 raise ValidationError({"file": f"Videos cannot exceed {self.MAX_VIDEO_SIZE_MB}MB."})
             if not self.duration_seconds: 
                 raise ValidationError({"duration_seconds": "Duration is required for video media."})
+
+        # Calculate file hash and check for duplicates
+        if hasattr(self, 'advertiser') and self.advertiser:
+            if not self.file_hash:
+                hasher = hashlib.sha256()
+                self.file.seek(0)
+                for chunk in self.file.chunks():
+                    hasher.update(chunk)
+                self.file_hash = hasher.hexdigest()
+                self.file.seek(0)
+            
+            # Check uniqueness
+            duplicate = Media.objects.filter(advertiser=self.advertiser, file_hash=self.file_hash)
+            if self.pk:
+                duplicate = duplicate.exclude(pk=self.pk)
+            if duplicate.exists():
+                raise ValidationError({"file": "You have already uploaded this file. Check your media library."})
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
@@ -292,29 +310,7 @@ class Campaign(TimeStampedModel):
         if not self.advertiser.is_verified:
             raise ValidationError("Your advertiser account must be verified before submitting campaigns.")
         
-        # Block duplicate active campaigns on the same billboards + overlapping dates
-        booked_billboards  = self.campaign_slots.values_list("billboard_id", flat=True)
-        conflict = Campaign.objects.filter(
-            advertiser=self.advertiser,
-            status__in=[
-            self.Status.PENDING_ADMIN_REVIEW,
-            self.Status.PENDING_MANAGER_REVIEW,
-            self.Status.APPROVED,
-            self.Status.ACTIVE,
-            ],
-            campaign_slots__billboard_id__in=booked_billboards,
-        ).exclude(pk=self.pk).filter(
-            # Date overlap check: existing.start <= self.end AND existing.end >= self.start
-            start_date__lte=self.end_date,
-            end_date__gte=self.start_date,
-        ).distinct()
 
-        if conflict.exists():
-            names = ", ".join(conflict.values_list("name", flat=True))
-            raise ValidationError(
-                f"You already have an active campaign on the same billboard(s) "
-                f"during this period: {names}"
-            )
 
         # Enforce budget bounds early
         self.estimated_price = self.calculate_estimated_price()
@@ -404,7 +400,12 @@ class Campaign(TimeStampedModel):
         super().clean()
 
         # Enforce strict media status constraints programmatically
-        if self.media and self.media.status != Media.Status.ADMIN_APPROVED:
+        try:
+            has_media = self.media is not None
+        except ObjectDoesNotExist:
+            has_media = False
+
+        if has_media and self.media.status != Media.Status.ADMIN_APPROVED:
             raise ValidationError({"media": "The chosen media file must be approved before scheduling campaigns."})
         
         if self.start_date and self.end_date:
