@@ -2,7 +2,7 @@ from pathlib import Path
 import os 
 import environ
 from datetime import timedelta
-
+from celery.schedules import crontab
 env = environ.Env(
     DEBUG=(bool, False)
 )
@@ -43,7 +43,10 @@ INSTALLED_APPS = [
     'advertiser', 
     'device',
     'common',
-    
+    'scheduling',
+    'axes',
+    'django_q',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -55,10 +58,12 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 SITE_ID = 3
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
@@ -80,8 +85,10 @@ TEMPLATES = [
     },
 ]
 
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_EMAIL_REQUIRED = True
+#ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+#ACCOUNT_EMAIL_REQUIRED = True
+
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_LOGIN_METHODS = {'email'}
@@ -143,6 +150,18 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
          "device.api.authentication.DeviceTokenAuthentication", 
     ),
+    
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/hour",
+        "user": "100/hour",
+        # Custom scope for sensitive endpoints
+        "auth_sensitive": "5/hour",
+    },
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -200,3 +219,60 @@ RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 
 
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+
+CELERY_BEAT_SCHEDULE = {
+    "activate-campaigns": {
+        "task": "scheduling.tasks.activate_due_campaigns",
+        "schedule": crontab(hour=0, minute=5),
+    },
+    "expire-campaigns": {
+        "task": "scheduling.tasks.expire_old_campaigns", 
+        "schedule": crontab(hour=0, minute=10),
+    },
+}
+
+# CACHE CONFIGURATION 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",  # Database 1 for general app caching
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "axes": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",  # Database 2 exclusively for tracking logins
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+# Tell django-axes to look at the 'axes' cache block defined above
+AXES_CACHE = "axes"
+
+# AXES CONFIGURATION 
+AXES_FAILURE_LIMIT = 5  # Lockout after 5 failed attempts
+AXES_COOLOFF_TIME = 1  # Lockout lasts for 1 hour
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by IP AND username together
+
+AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler' # Uses Redis cache so it's super fast
+
+
+
+# Django-Q2 config — ORM broker 
+Q_CLUSTER = {
+    'name': 'adverseproject',
+    'workers': 2,           # number of worker processes
+    'timeout': 60,          # task timeout in seconds
+    'retry': 120,           # retry failed tasks after 120s
+    'max_attempts': 3,      # give up after 3 tries
+    'orm': 'default',       # use your existing DB as broker
+    'ack_failures': True,   # don't requeue tasks that keep failing
+    'save_limit': 250,      # keep last 250 finished tasks for visibility
+    'bulk': 10,
+    'sync': False,          # set True in tests to run tasks synchronously
+}

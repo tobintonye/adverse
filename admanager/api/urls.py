@@ -1,13 +1,19 @@
 from django.urls import path
-from .views import ( AdManagerCreateView, MyAdManagerProfileView, AdManagerCampaignRequestsListView, 
-                    AdManagerApproveCampaignView, AdManagerRejectCampaignView    
+from .views import (AdManagerCreateView, AdManagerProfileView, AdManagerDashboardView, AdManagerBankAccountView,
+    AdManagerCampaignRequestsListView, AdManagerCampaignDetailView, AdManagerCampaignReviewView, 
+    AdManagerApproveCampaignView, AdManagerRejectCampaignView 
 )
 
 urlpatterns = [
     path("profile/create/", AdManagerCreateView.as_view(), name="admanager-create"),
-    path("profile/me/", MyAdManagerProfileView.as_view(), name="admanager-detail-update"),
-    path("campaign-requests/", AdManagerCampaignRequestsListView.as_view(), name="admanager-campaign-requests"),
+    path("profile/me/", AdManagerProfileView.as_view(), name="admanager-detail-update"),
+    path('bank-account/', AdManagerBankAccountView.as_view(), name='admanager-bank-account'),
 
-    path("campaign-requests/<uuid:pk>/approve/", AdManagerApproveCampaignView.as_view(), name="admanager-campaign-approve"),
-    path("campaign-requests/<uuid:pk>/reject/", AdManagerRejectCampaignView.as_view(), name="admanager-campaign-reject"),
+    path('dashboard/', AdManagerDashboardView.as_view(), name='admanager-dashboard'),
+
+    path("campaign/", AdManagerCampaignRequestsListView.as_view(), name="admanager-campaign-requests"),
+    path("campaign/<uuid:pk>/approve/", AdManagerApproveCampaignView.as_view(), name="admanager-campaign-approve"),
+    path("campaign/<uuid:pk>/reject/", AdManagerRejectCampaignView.as_view(), name="admanager-campaign-reject"),
+    path('campaign/<uuid:pk>/', AdManagerCampaignDetailView.as_view(), name='admanager-campaign-detail'),
+    path('campaigns/<uuid:pk>/review/', AdManagerCampaignReviewView.as_view(), name='admanager-campaign-review'),
 ]   

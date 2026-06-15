@@ -163,3 +163,44 @@ class PlayerDevice(TimeStampedModel):
             models.Index(fields=["last_seen_at"]),
             models.Index(fields=["pairing_code"]),
         ]
+
+class PlaybackLog(TimeStampedModel):
+    # One row per ad play. Drives billing and analytics.
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="playback_logs")
+    media_id = models.UUIDField(db_index=True)
+    started_at = models.DateTimeField()
+    duration_seconds = models.PositiveIntegerField()
+    completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"PlaybackLog [{self.player.device_uid}] media={self.media_id}"
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "media_id", "started_at"],
+                name="unique_playback_per_player_media_start",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["player", "started_at"]),
+            models.Index(fields=["media_id"]),
+        ]
+
+class DeviceMetric(TimeStampedModel):
+    """Point-in-time hardware health snapshot."""
+
+    id  = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="metrics")
+    cpu_usage_pct = models.FloatField(null=True, blank=True)
+    ram_usage_mb = models.PositiveIntegerField(null=True, blank=True)
+    free_storage_mb  = models.PositiveIntegerField(null=True, blank=True)
+    temperature_celsius = models.FloatField(null=True, blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Metric [{self.player.device_uid}] @ {self.recorded_at}"
+
+    class Meta:
+        indexes = [models.Index(fields=["player", "recorded_at"])]

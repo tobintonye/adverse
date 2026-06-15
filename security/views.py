@@ -6,11 +6,7 @@ from .models import CustomUser
 from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ValidationError
 from django.conf import settings
-from django.core.mail import send_mail, BadHeaderError
 from django.core.validators import validate_email
-from django.urls import reverse
-import smtplib
-import socket
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
@@ -18,52 +14,14 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-import threading
-import time
-import random
 from rest_framework.exceptions import APIException
 
+from core.services.email_service import (
+    send_verification_email,
+    send_password_reset_email_safe,
+)
+
 User = get_user_model()
-
-def sendCustomEmail(subject, message, recipient_email): 
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [recipient_email])
-    except BadHeaderError:
-        raise ValidationError("There was a problem with the email header. Please try again later.")
-    except smtplib.SMTPRecipientsRefused:
-        raise ValidationError("This email address is not valid or refused by the email server.")
-    except smtplib.SMTPDataError:
-        raise ValidationError("There was an error sending your email. Please try again.")
-    except smtplib.SMTPException:
-        raise ValidationError("A mail server error occurred. Please try again later.")
-    except socket.error:
-        raise ValidationError("Network error. Please check your internet connection and try again.")
-    except ImproperlyConfigured:
-        raise ValidationError("Email service is currently not configured. Please contact support.")
-    except Exception:
-        raise ValidationError("An unexpected error occurred. Please try again later.")
-
-def sendVerificationEmail(user, request): 
-    token = default_token_generator.make_token(user)
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
-    verification_link = request.build_absolute_uri( 
-        reverse("security:verifyemail", kwargs={"uidb64":uid, "token":token})
-    )
-
-    subject = "Verify your Adverse account"
-    message = f"""Hi {user.first_name},
-
-    Thanks for creating an account with Adverse!
-
-    To verify your email, please click the link below:
-    {verification_link}
-
-    If you didn’t create an account, you can safely ignore this email.
-
-    Best regards,
-    The Adverse Team
-    """
-    sendCustomEmail(subject, message, user.email)
 
 def verifyEmail(request, uidb64, token):
     try:
@@ -106,7 +64,7 @@ def resendVerificationLink(request):
             user = User.objects.get(email=email)
             if not user.is_active:
                 try:
-                    sendVerificationEmail(user, request)
+                    send_verification_email(user, request)  
                 except ValidationError as e: 
                     messages.error(request, str(e))
                     return render(request, 'security/resendVerification.html')
@@ -130,7 +88,7 @@ def registerAccount(request):
             user.set_password(form.cleaned_data["password"])
             user.save()
             try: 
-                sendVerificationEmail(user, request)
+                send_verification_email(user, request)  
                 messages.success(request, "Verification email sent to " + user.email )
                 return render(request, "security/verification_pending.html", {"email":user.email})
             except ValidationError as e:
@@ -171,7 +129,7 @@ def loginAccount(request):
             if not user.is_active:
                 request.session['pending_verification_email'] = user.email
                 messages.error(request, "Please verify your email address before logging in.")
-                sendVerificationEmail(user, request)
+                send_verification_email(user, request)  
                 return redirect('security:verificationpending')
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             remember_me = form.cleaned_data.get("remember_me")
@@ -197,17 +155,7 @@ def logoutAccount(request):
     else:
         return redirect("adverse:home")
     
-def delayed_send_email(user, request):
-    def _send_with_delay():
-        time.sleep(random.uniform(1.0, 2.0)) 
-        try:
-            if user is not None:
-                sendPasswordResetLink(user, request)
-        except ValidationError:
-            pass 
-    thread = threading.Thread(target=_send_with_delay)
-    thread.daemon = True # in prod use django-Q
-    thread.start()
+
 
 # handle password reset request
 def passwordReset(request): 
@@ -217,9 +165,9 @@ def passwordReset(request):
             email = form.cleaned_data['email']
             try: 
                 user = User.objects.get(email=email)
-                delayed_send_email(user, request)
+                send_password_reset_email_safe(user, request)
             except User.DoesNotExist: 
-                delayed_send_email(None, request)
+                send_password_reset_email_safe(None, request)
            # messages.success(request, "If an account with that email exists, a password")
             return redirect("security:passwordresetdone")
     else:
@@ -229,27 +177,6 @@ def passwordReset(request):
 @require_http_methods(["GET"])
 def password_reset_done(request):
     return render(request, 'security/passwordResetDone.html')
-
-
-def sendPasswordResetLink(user, request):
-    token = default_token_generator.make_token(user)
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-    reset_link = request.build_absolute_uri(
-        reverse('security:newpasswordReset', kwargs={"uidb64":uid, "token":token})
-    )
-
-    subject = "Password Reset"
-    message = f"""Hello {user.first_name}
-    You requested a password reset for your account. Please click the link below to reset your password:
-
-    {reset_link}
-
-    If you didn't request this, you can safely ignore this email.
-
-    This link will expire in 24 hours.
-"""
-    sendCustomEmail(subject, message, user.email)
 
 @require_http_methods(["GET", "POST"])
 def new_password_request(request, uidb64, token):
@@ -290,9 +217,9 @@ def resend_passwordreset_link(request):
             return render(request, "security/passwordReset.html")
         try:
             user = User.objects.get(email=email)
-            delayed_send_email(user, request)
+            send_password_reset_email_safe(user, request)
         except User.DoesNotExist:
-            delayed_send_email(None, request)
+            send_password_reset_email_safe(None, request)
 
        # messages.success(request, "If an security with that email exists, a password reset link has been sent.")
         return redirect("security:passwordresetdone")
