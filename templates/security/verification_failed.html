@@ -4,17 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Verification Failed</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
-<body class="bg-black flex items-center justify-center min-h-screen text-white">
-    <div class="text-center space-y-4">
+<body class="bg-base-100 flex items-center justify-center min-h-screen">
+    <div class="text-center space-y-4 card card-border bg-base-200 border-base-300 rounded-2xl p-8 shadow-2xl max-w-sm">
         <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-2">
-        <h2 class="text-xl font-bold text-red-500">Verification Failed</h2>
-        <p class="text-zinc-400 text-sm">This link is invalid or has expired.</p>
-        <a href="{% url 'security:register' %}" 
-           class="inline-block mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold">
+        <h2 class="text-xl font-bold text-error">Verification Failed</h2>
+        <p class="text-base-content/50 text-sm">This link is invalid or has expired.</p>
+        <a href="{% url 'security:register' %}" class="btn btn-primary mt-4">
             Register Again
         </a>
     </div>
+    {% include "partials/theme_toggle.html" %}
 </body>
 </html>

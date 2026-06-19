@@ -6,31 +6,31 @@
 {% block content %}
 
 <!-- Search and Filter Bar -->
-<div class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-900/40 p-4 border border-zinc-800/60 rounded-xl backdrop-blur-md">
+<div class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between card bg-base-200 border border-base-300 p-4">
     <div class="relative w-full md:w-72">
-        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
         </span>
         <input type="text" id="campaignSearch" placeholder="Search campaign, advertiser or media..."
-               class="w-full pl-9 pr-4 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-red-650 focus:border-red-650 transition">
+               class="input w-full pl-9">
     </div>
 
-    <div class="flex flex-wrap gap-1 p-1 bg-black/60 border border-zinc-800 rounded-lg">
-        <button onclick="filterStatus('all')" id="btn-filter-all" class="px-3 py-1.5 rounded-md text-xs font-semibold transition bg-zinc-800 text-white">All</button>
-        <button onclick="filterStatus('pending_admin_review')" id="btn-filter-pending_admin_review" class="px-3 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Pending Admin</button>
-        <button onclick="filterStatus('pending_manager_review')" id="btn-filter-pending_manager_review" class="px-3 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Pending Manager</button>
-        <button onclick="filterStatus('live')" id="btn-filter-live" class="px-3 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Approved/Live</button>
-        <button onclick="filterStatus('completed')" id="btn-filter-completed" class="px-3 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Completed</button>
-        <button onclick="filterStatus('rejected')" id="btn-filter-rejected" class="px-3 py-1.5 rounded-md text-xs font-semibold text-zinc-400 hover:text-white transition">Rejected/Cancelled</button>
+    <div class="flex flex-wrap gap-1 p-1 bg-base-300/60 border border-base-300 rounded-lg">
+        <button onclick="filterStatus('all')" id="btn-filter-all" class="px-3 py-1.5 rounded-md text-xs font-semibold transition bg-base-100 text-base-content">All</button>
+        <button onclick="filterStatus('pending_admin_review')" id="btn-filter-pending_admin_review" class="px-3 py-1.5 rounded-md text-xs font-semibold text-base-content/60 hover:text-base-content transition">Pending Admin</button>
+        <button onclick="filterStatus('pending_manager_review')" id="btn-filter-pending_manager_review" class="px-3 py-1.5 rounded-md text-xs font-semibold text-base-content/60 hover:text-base-content transition">Pending Manager</button>
+        <button onclick="filterStatus('live')" id="btn-filter-live" class="px-3 py-1.5 rounded-md text-xs font-semibold text-base-content/60 hover:text-base-content transition">Approved/Live</button>
+        <button onclick="filterStatus('completed')" id="btn-filter-completed" class="px-3 py-1.5 rounded-md text-xs font-semibold text-base-content/60 hover:text-base-content transition">Completed</button>
+        <button onclick="filterStatus('rejected')" id="btn-filter-rejected" class="px-3 py-1.5 rounded-md text-xs font-semibold text-base-content/60 hover:text-base-content transition">Rejected/Cancelled</button>
     </div>
 </div>
 
 {% if campaigns %}
 <div class="space-y-6" id="campaignContainer">
     {% for campaign in campaigns %}
-    <div class="campaign-card bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl p-5 md:p-6 shadow-xl hover:border-zinc-700/80 transition duration-300 group"
+    <div class="campaign-card card bg-base-200 border border-base-300/80 rounded-xl p-5 md:p-6 shadow-xl hover:border-base-300 transition duration-300 group"
          data-status="{{ campaign.status }}"
          data-name="{{ campaign.name|lower }}"
          data-advertiser="{{ campaign.advertiser.business_name|lower }}"
@@ -40,15 +40,15 @@
             
             <!-- Left Column: Visual Media Preview (5 cols) -->
             <div class="md:col-span-5">
-                <div class="relative overflow-hidden bg-black border border-zinc-800/80 rounded-xl aspect-video flex items-center justify-center shadow-inner">
+                <div class="relative overflow-hidden bg-base-100 border border-base-300/80 rounded-xl aspect-video flex items-center justify-center shadow-inner">
                     {% if campaign.media.media_type == 'image' %}
                         <img src="{{ campaign.media.file.url }}" alt="{{ campaign.media.title }}" class="w-full h-full object-contain select-none">
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Image Copy</span>
+                        <span class="badge badge-ghost badge-sm absolute top-2 left-2">Image Copy</span>
                     {% elif campaign.media.media_type == 'video' %}
                         <video src="{{ campaign.media.file.url }}" class="w-full h-full object-contain" controls preload="metadata"></video>
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Video Copy</span>
+                        <span class="badge badge-ghost badge-sm absolute top-2 left-2">Video Copy</span>
                     {% else %}
-                        <div class="text-zinc-600 text-xs italic">Format not previewable</div>
+                        <div class="text-base-content/40 text-xs italic">Format not previewable</div>
                     {% endif %}
                 </div>
             </div>
@@ -57,65 +57,48 @@
             <div class="md:col-span-7 flex flex-col justify-between h-full space-y-4">
                 <div class="space-y-2">
                     <div class="flex items-start justify-between gap-4">
-                        <h3 class="text-base font-bold text-white tracking-tight leading-tight group-hover:text-red-500 transition-colors">{{ campaign.name }}</h3>
+                        <h3 class="text-base font-bold tracking-tight leading-tight group-hover:text-primary transition-colors">{{ campaign.name }}</h3>
                         
                         {% if campaign.status == 'pending_admin_review' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-950/40 text-yellow-450 border border-yellow-800/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Pending Admin Review
-                            </span>
+                            <span class="badge badge-warning badge-sm gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span> Pending Admin Review</span>
                         {% elif campaign.status == 'pending_manager_review' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/40 text-amber-400 border border-amber-800/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending Manager
-                            </span>
+                            <span class="badge badge-warning badge-sm gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-warning"></span> Pending Manager</span>
                         {% elif campaign.status == 'approved' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-950/40 text-green-400 border border-green-800/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Approved
-                            </span>
+                            <span class="badge badge-success badge-sm gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-success"></span> Approved</span>
                         {% elif campaign.status == 'active' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active (Live)
-                            </span>
+                            <span class="badge badge-success badge-sm gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> Active (Live)</span>
                         {% elif campaign.status == 'completed' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
-                                Completed
-                            </span>
+                            <span class="badge badge-ghost badge-sm">Completed</span>
                         {% elif campaign.status == 'rejected' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-950/40 text-red-400 border border-red-800/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Rejected
-                            </span>
+                            <span class="badge badge-error badge-sm gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-error"></span> Rejected</span>
                         {% elif campaign.status == 'cancelled' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-850 text-zinc-500 border border-zinc-800">
-                                Cancelled
-                            </span>
+                            <span class="badge badge-ghost badge-sm">Cancelled</span>
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800/60 text-zinc-400 border border-zinc-700/30">
-                                {{ campaign.get_status_display }}
-                            </span>
+                            <span class="badge badge-ghost badge-sm">{{ campaign.get_status_display }}</span>
                         {% endif %}
                     </div>
                     
                     <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1 text-xs">
-                        <p class="text-zinc-400">
-                            <span class="text-zinc-500 mr-1.5 font-medium">Advertiser:</span> 
-                            <span class="text-white font-medium">
+                        <p class="text-base-content/60">
+                            <span class="text-base-content/40 mr-1.5 font-medium">Advertiser:</span> 
+                            <span class="font-medium">
                                 {{ campaign.advertiser.business_name }}
                                 {% if campaign.advertiser.is_verified %}
-                                    <span class="text-[9px] text-green-400 font-bold ml-0.5">✓</span>
+                                    <span class="text-[9px] text-success font-bold ml-0.5">✓</span>
                                 {% endif %}
                             </span>
                         </p>
-                        <p class="text-zinc-400"><span class="text-zinc-500 mr-1.5 font-medium">Budget:</span> <span class="text-white font-semibold">₦{{ campaign.budget|floatformat:0 }}</span></p>
-                        <p class="text-zinc-400"><span class="text-zinc-500 mr-1.5 font-medium">Schedule:</span> <span class="text-zinc-300">{{ campaign.start_date }} — {{ campaign.end_date }}</span></p>
-                        <p class="text-zinc-400"><span class="text-zinc-500 mr-1.5 font-medium">Est. Cost:</span> <span class="text-zinc-300 font-medium">₦{{ campaign.estimated_price|floatformat:0 }}</span></p>
-                        <p class="text-zinc-400"><span class="text-zinc-500 mr-1.5 font-medium">Duration:</span> <span class="text-zinc-300">{{ campaign.duration_days }} Days</span></p>
-                        <p class="text-zinc-400"><span class="text-zinc-500 mr-1.5 font-medium">Media Copy:</span> <span class="text-zinc-350 truncate block max-w-[150px] inline">{{ campaign.media.title }}</span></p>
+                        <p class="text-base-content/60"><span class="text-base-content/40 mr-1.5 font-medium">Budget:</span> <span class="font-semibold">₦{{ campaign.budget|floatformat:0 }}</span></p>
+                        <p class="text-base-content/60"><span class="text-base-content/40 mr-1.5 font-medium">Schedule:</span> <span>{{ campaign.start_date }} — {{ campaign.end_date }}</span></p>
+                        <p class="text-base-content/60"><span class="text-base-content/40 mr-1.5 font-medium">Est. Cost:</span> <span class="font-medium">₦{{ campaign.estimated_price|floatformat:0 }}</span></p>
+                        <p class="text-base-content/60"><span class="text-base-content/40 mr-1.5 font-medium">Duration:</span> <span>{{ campaign.duration_days }} Days</span></p>
+                        <p class="text-base-content/60"><span class="text-base-content/40 mr-1.5 font-medium">Media Copy:</span> <span class="truncate block max-w-[150px] inline">{{ campaign.media.title }}</span></p>
                     </div>
                 </div>
 
-                <div class="pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-3">
-                    <p class="text-[10px] text-zinc-500">Submitted on {{ campaign.created_at|date:"d M Y \a\t H:i" }}</p>
-                    <a href="{% url 'admin_panel:campaign_detail' campaign.pk %}"
-                       class="px-4 py-1.5 bg-red-700 hover:bg-red-600 active:scale-97 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-950/20">
+                <div class="pt-3 border-t border-base-300/80 flex items-center justify-between gap-3">
+                    <p class="text-[10px] text-base-content/50">Submitted on {{ campaign.created_at|date:"d M Y \a\t H:i" }}</p>
+                    <a href="{% url 'admin_panel:campaign_detail' campaign.pk %}" class="btn btn-primary btn-sm">
                         {% if campaign.status == 'pending_admin_review' %}Review Request{% else %}View Details{% endif %}
                     </a>
                 </div>
@@ -127,13 +110,13 @@
 </div>
 {% else %}
 <div class="flex flex-col items-center justify-center py-24 text-center">
-    <div class="w-16 h-16 rounded-full bg-zinc-950 border border-zinc-800/80 flex items-center justify-center mb-4 text-zinc-600">
+    <div class="w-16 h-16 rounded-full bg-base-200 border border-base-300/80 flex items-center justify-center mb-4 text-base-content/40">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
     </div>
-    <p class="text-zinc-400 font-medium">All clear</p>
-    <p class="text-zinc-500 text-sm mt-1">No campaigns currently awaiting review.</p>
+    <p class="text-base-content/60 font-medium">All clear</p>
+    <p class="text-base-content/50 text-sm mt-1">No campaigns currently awaiting review.</p>
 </div>
 {% endif %}
 
@@ -150,11 +133,11 @@
             const btn = document.getElementById(`btn-filter-${s}`);
             if (btn) {
                 if (s === status) {
-                    btn.classList.add('bg-zinc-800', 'text-white');
-                    btn.classList.remove('text-zinc-400');
+                    btn.classList.add('bg-base-100', 'text-base-content');
+                    btn.classList.remove('text-base-content/60');
                 } else {
-                    btn.classList.remove('bg-zinc-800', 'text-white');
-                    btn.classList.add('text-zinc-400');
+                    btn.classList.remove('bg-base-100', 'text-base-content');
+                    btn.classList.add('text-base-content/60');
                 }
             }
         });

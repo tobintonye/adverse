@@ -4,39 +4,31 @@
 {% block page_title %}Withdrawals{% endblock %}
 
 {% block content %}
-<style>
-    .glass-kpi-card {
-        background: rgba(24, 24, 27, 0.45);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(63, 63, 70, 0.4);
-    }
-</style>
 
 {# ── Messages ─────────────────────────────────────────────────────── #}
 {% for msg in messages %}
-<div class="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg text-xs font-medium
-    {% if 'success' in msg.tags %}bg-emerald-950/30 border border-emerald-900/40 text-emerald-400
-    {% elif 'error' in msg.tags %}bg-red-950/30 border border-red-900/40 text-red-400
-    {% else %}bg-zinc-800 border border-zinc-700 text-zinc-300{% endif %}">
+<div class="alert mb-4 text-sm
+    {% if 'success' in msg.tags %}alert-success
+    {% elif 'error' in msg.tags %}alert-error
+    {% else %}alert-info{% endif %}">
     {{ msg }}
 </div>
 {% endfor %}
 
 {# ── No Bank Account — Hard Block ─────────────────────────────────── #}
 {% if not has_bank_account %}
-<div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4 bg-orange-950/20 border border-orange-900/35 rounded-xl text-sm text-orange-300">
+<div class="alert alert-warning mb-6 flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex items-start gap-3">
         <svg class="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
         <div>
-            <p class="font-semibold text-white">Bank account required</p>
-            <p class="text-xs text-orange-400 mt-0.5">You must add a bank account before you can submit withdrawal requests. Funds will be disbursed to your default account.</p>
+        <p class="font-semibold">Bank account required</p>
+        <p class="text-xs mt-0.5">You must add a bank account before you can submit withdrawal requests. Funds will be disbursed to your default account.</p>
         </div>
     </div>
     <a href="{% url 'admanager:settings' %}?tab=bank"
-       class="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold rounded-lg transition whitespace-nowrap">
+       class="btn btn-warning btn-sm flex-shrink-0 whitespace-nowrap">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -47,25 +39,25 @@
 
 {# ── KPI Cards ────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-    <div class="glass-kpi-card rounded-xl p-5 border border-zinc-800">
-        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Available Balance</span>
-        <p class="text-2xl font-extrabold text-emerald-400">₦{{ available_balance|floatformat:2 }}</p>
-        <p class="text-[10px] text-zinc-500 mt-2">Ready for withdrawal</p>
+    <div class="stat bg-base-200 border border-base-300 rounded-xl">
+        <div class="stat-title">Available Balance</div>
+        <div class="stat-value text-success">₦{{ available_balance|floatformat:2 }}</div>
+        <div class="stat-desc">Ready for withdrawal</div>
     </div>
-    <div class="glass-kpi-card rounded-xl p-5 border border-zinc-800">
-        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Lifetime Revenue</span>
-        <p class="text-2xl font-extrabold text-white">₦{{ revenue|floatformat:2 }}</p>
-        <p class="text-[10px] text-zinc-500 mt-2">Total share from campaigns</p>
+    <div class="stat bg-base-200 border border-base-300 rounded-xl">
+        <div class="stat-title">Lifetime Revenue</div>
+        <div class="stat-value">₦{{ revenue|floatformat:2 }}</div>
+        <div class="stat-desc">Total share from campaigns</div>
     </div>
-    <div class="glass-kpi-card rounded-xl p-5 border border-zinc-800">
-        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Total Paid Out</span>
-        <p class="text-2xl font-extrabold text-zinc-300">₦{{ total_withdrawn|floatformat:2 }}</p>
-        <p class="text-[10px] text-zinc-500 mt-2">Approved withdrawals</p>
+    <div class="stat bg-base-200 border border-base-300 rounded-xl">
+        <div class="stat-title">Total Paid Out</div>
+        <div class="stat-value">₦{{ total_withdrawn|floatformat:2 }}</div>
+        <div class="stat-desc">Approved withdrawals</div>
     </div>
-    <div class="glass-kpi-card rounded-xl p-5 border border-zinc-800">
-        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Pending Request</span>
-        <p class="text-2xl font-extrabold text-amber-500">₦{{ pending_withdrawal|floatformat:2 }}</p>
-        <p class="text-[10px] text-zinc-500 mt-2">Awaiting admin approval</p>
+    <div class="stat bg-base-200 border border-base-300 rounded-xl">
+        <div class="stat-title">Pending Request</div>
+        <div class="stat-value text-warning">₦{{ pending_withdrawal|floatformat:2 }}</div>
+        <div class="stat-desc">Awaiting admin approval</div>
     </div>
 </div>
 
@@ -76,40 +68,43 @@
 
         {# Default Account Info Card #}
         {% if default_account %}
-        <div class="bg-zinc-950 border border-emerald-900/30 rounded-xl p-4">
-            <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Disbursement Account</p>
+        <div class="card card-border bg-base-200 border-base-300">
+            <div class="card-body">
+            <p class="card-title text-xs">Disbursement Account</p>
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-9 h-9 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                     </svg>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-white">{{ default_account.bank_name }}</p>
-                    <p class="text-xs text-zinc-400 truncate">{{ default_account.account_name }}</p>
-                    <p class="text-xs text-zinc-500 font-mono">{{ default_account.account_number }}</p>
+                    <p class="text-sm font-semibold">{{ default_account.bank_name }}</p>
+                    <p class="text-xs text-base-content/50 truncate">{{ default_account.account_name }}</p>
+                    <p class="text-xs text-base-content/50 font-mono">{{ default_account.account_number }}</p>
                 </div>
             </div>
-            <a href="{% url 'admanager:settings' %}?tab=bank" class="mt-3 block text-center text-[10px] text-zinc-600 hover:text-zinc-400 transition">
+            <a href="{% url 'admanager:settings' %}?tab=bank" class="mt-3 block text-center text-xs text-base-content/50 hover:text-base-content/70 transition">
                 Change account →
             </a>
+        </div>
         </div>
         {% endif %}
 
         {# Request Form #}
-        <div class="bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-xl">
-            <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Request Withdrawal</h3>
+        <div class="card card-border bg-base-200 border-base-300">
+            <div class="card-body">
+            <h3 class="card-title text-xs">Request Withdrawal</h3>
 
             {% if not has_bank_account %}
             {# Blocked state #}
-            <div class="p-5 text-center border border-dashed border-zinc-800 rounded-xl">
-                <svg class="w-8 h-8 text-zinc-700 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-5 text-center border border-dashed border-base-300 rounded-xl">
+                <svg class="w-8 h-8 text-base-content/30 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>
-                <p class="text-xs text-zinc-500 font-semibold">No Bank Account</p>
-                <p class="text-[10px] text-zinc-600 mt-1">Add a bank account in Settings to unlock withdrawals.</p>
+                <p class="text-xs font-semibold">No Bank Account</p>
+                <p class="text-xs text-base-content/50 mt-1">Add a bank account in Settings to unlock withdrawals.</p>
                 <a href="{% url 'admanager:settings' %}?tab=bank"
-                   class="mt-3 inline-block px-4 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-bold rounded-lg transition">
+                   class="mt-3 btn btn-warning btn-xs">
                     Go to Settings
                 </a>
             </div>
@@ -119,42 +114,45 @@
                 {% csrf_token %}
 
                 <div class="space-y-1.5">
-                    <label for="amount" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Amount (₦)</label>
-                    <input type="number"
-                           step="0.01"
-                           min="1"
-                           max="{{ available_balance }}"
-                           name="amount"
-                           id="amount"
-                           placeholder="e.g. 10,000"
-                           class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-xs font-bold text-white placeholder-zinc-700 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition"
-                           required>
-                    <p class="text-[10px] text-zinc-600">Max: ₦{{ available_balance|floatformat:2 }}</p>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">Amount (₦)</legend>
+                        <input type="number"
+                               step="0.01"
+                               min="1"
+                               max="{{ available_balance }}"
+                               name="amount"
+                               id="amount"
+                               placeholder="e.g. 10,000"
+                               class="input w-full"
+                               required>
+                        <p class="text-xs text-base-content/50">Max: ₦{{ available_balance|floatformat:2 }}</p>
+                    </fieldset>
                 </div>
 
                 <div class="space-y-1.5">
-                    <label for="notes" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Notes <span class="text-zinc-600 font-normal">(Optional)</span></label>
-                    <textarea name="notes"
-                              id="notes"
-                              rows="2"
-                              placeholder="Any instructions or comments..."
-                              class="w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-lg text-xs font-bold text-white placeholder-zinc-700 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition"></textarea>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">Notes <span class="text-base-content/50 font-normal">(Optional)</span></legend>
+                        <textarea name="notes"
+                                  id="notes"
+                                  rows="2"
+                                  placeholder="Any instructions or comments..."
+                                  class="textarea w-full"></textarea>
+                    </fieldset>
                 </div>
 
-                <p class="text-[10px] text-zinc-600 border-t border-zinc-800/60 pt-3">
-                    Funds will be sent to <span class="text-zinc-400 font-semibold">{{ default_account.bank_name }} — {{ default_account.account_number }}</span>
+                <p class="text-xs text-base-content/50 border-t border-base-300/60 pt-3">
+                    Funds will be sent to <span class="font-semibold">{{ default_account.bank_name }} — {{ default_account.account_number }}</span>
                 </p>
 
-                <button type="submit"
-                        class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-lg shadow-red-950/20">
+                <button type="submit" class="btn btn-primary w-full">
                     Submit Request
                 </button>
             </form>
 
             {% else %}
-            <div class="p-6 text-center border border-dashed border-zinc-800 rounded-xl">
-                <p class="text-xs text-zinc-500 font-bold">₦0.00 Available Balance</p>
-                <p class="text-[10px] text-zinc-600 mt-1">Serve approved campaigns to earn revenue shares.</p>
+            <div class="p-6 text-center border border-dashed border-base-300 rounded-xl">
+                <p class="text-xs font-bold">₦0.00 Available Balance</p>
+                <p class="text-xs text-base-content/50 mt-1">Serve approved campaigns to earn revenue shares.</p>
             </div>
             {% endif %}
         </div>
@@ -162,14 +160,15 @@
 
     {# ── Transaction History ──────────────────────────────────────── #}
     <div class="lg:col-span-2">
-        <div class="bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-xl flex flex-col min-h-[300px]">
-            <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Transaction History</h3>
+        <div class="card card-border bg-base-200 border-base-300 flex flex-col min-h-[300px]">
+            <div class="card-body">
+            <h3 class="card-title text-xs">Transaction History</h3>
 
             {% if withdrawals %}
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
-                        <tr class="border-b border-zinc-900 text-zinc-500 font-bold">
+                        <tr class="border-b border-base-300 text-base-content/50 font-bold">
                             <th class="py-3 px-3 uppercase tracking-wider text-[9px]">Date</th>
                             <th class="py-3 px-3 uppercase tracking-wider text-[9px]">Amount</th>
                             <th class="py-3 px-3 uppercase tracking-wider text-[9px]">Account</th>
@@ -177,37 +176,38 @@
                             <th class="py-3 px-3 uppercase tracking-wider text-[9px]">Admin Notes</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-zinc-900/50">
+                    <tbody class="divide-y divide-base-300/50">
                         {% for w in withdrawals %}
-                        <tr class="hover:bg-zinc-900/10 transition-colors">
-                            <td class="py-3 px-3 font-mono text-zinc-400 text-[10px]">{{ w.created_at|date:"d M Y" }}</td>
-                            <td class="py-3 px-3 font-extrabold text-white">₦{{ w.amount|floatformat:2 }}</td>
-                            <td class="py-3 px-3 text-zinc-500 text-[10px] leading-tight">{{ w.bank_details }}</td>
+                        <tr class="hover:bg-base-300/10 transition-colors">
+                            <td class="py-3 px-3 font-mono text-base-content/50 text-xs">{{ w.created_at|date:"d M Y" }}</td>
+                            <td class="py-3 px-3 font-extrabold">₦{{ w.amount|floatformat:2 }}</td>
+                            <td class="py-3 px-3 text-base-content/50 text-xs leading-tight">{{ w.bank_details }}</td>
                             <td class="py-3 px-3">
                                 {% if w.status == 'pending' %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-950/20 text-amber-400 border border-amber-900/20 uppercase">Pending</span>
+                                    <span class="badge badge-warning badge-xs uppercase">Pending</span>
                                 {% elif w.status == 'approved' %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950/20 text-emerald-400 border border-emerald-900/20 uppercase">Approved</span>
+                                    <span class="badge badge-success badge-xs uppercase">Approved</span>
                                 {% else %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-950/20 text-red-400 border border-red-900/20 uppercase">Rejected</span>
+                                    <span class="badge badge-error badge-xs uppercase">Rejected</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-3 text-zinc-400 text-[10px]">{{ w.admin_notes|default:"—" }}</td>
+                            <td class="py-3 px-3 text-base-content/50 text-xs">{{ w.admin_notes|default:"—" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-zinc-800 rounded-xl">
-                <svg class="w-10 h-10 text-zinc-800 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-base-300 rounded-xl">
+                <svg class="w-10 h-10 text-base-content/30 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
-                <p class="text-zinc-400 text-xs font-bold">No transactions yet</p>
-                <p class="text-[10px] text-zinc-600 mt-1">Your withdrawal history will appear here.</p>
+                <p class="text-xs font-bold">No transactions yet</p>
+                <p class="text-xs text-base-content/50 mt-1">Your withdrawal history will appear here.</p>
             </div>
             {% endif %}
         </div>
+    </div>
     </div>
 </div>
 {% endblock %}

@@ -5,40 +5,40 @@
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">Dashboard</a>
-    <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
+    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-white font-semibold truncate">Campaign Requests</span>
+    <span class="font-semibold truncate">Campaign Requests</span>
 </nav>
 {% endblock %}
 
 {% block content %}
 
 {% if campaigns %}
-<div class="relative overflow-hidden bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl shadow-xl">
+<div class="card card-border bg-base-200 border-base-300">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
             <thead>
-                <tr class="border-b border-zinc-800/80 bg-zinc-950/20 select-none">
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest w-20">Creative</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Campaign Name</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Advertiser</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Schedule</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Budget</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
+                <tr class="border-b border-base-300 bg-base-200/50 select-none">
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-20">Creative</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Campaign Name</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Advertiser</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Schedule</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Budget</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Status</th>
                     <th class="px-6 py-4 w-24"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-zinc-800/60">
+            <tbody class="divide-y divide-base-300/60">
                 {% for campaign in campaigns %}
-                <tr class="hover:bg-zinc-800/30 transition-all duration-200 group">
+                <tr class="hover:bg-base-300/20 transition-all duration-200 group">
                     <td class="px-6 py-4 align-middle">
                         {% if campaign.media.file %}
-                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-black border border-zinc-800/80 flex items-center justify-center relative flex-shrink-0 shadow-md">
+                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-base-100 border border-base-300 flex items-center justify-center relative flex-shrink-0 shadow-md">
                                 {% if campaign.media.media_type == 'video' %}
                                     <video src="{{ campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <div class="absolute inset-0 bg-base-100/40 flex items-center justify-center">
                                         <svg class="w-3.5 h-3.5 text-white opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
                                         </svg>
@@ -48,69 +48,69 @@
                                 {% endif %}
                             </div>
                         {% else %}
-                            <div class="w-16 h-10 rounded-lg bg-zinc-950 border border-zinc-800/60 flex items-center justify-center text-zinc-650 flex-shrink-0">
-                                <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-16 h-10 rounded-lg bg-base-100 border border-base-300/60 flex items-center justify-center text-base-content/40 flex-shrink-0">
+                                <svg class="w-4 h-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle">
-                        <div class="font-semibold text-white tracking-tight group-hover:text-red-500 transition-colors">{{ campaign.name }}</div>
-                        <div class="text-xs text-zinc-500 mt-1 truncate max-w-[200px]" title="{{ campaign.media.title }}">{{ campaign.media.title }}</div>
+                        <div class="font-semibold tracking-tight group-hover:text-primary transition-colors">{{ campaign.name }}</div>
+                        <div class="text-xs text-base-content/50 mt-1 truncate max-w-[200px]" title="{{ campaign.media.title }}">{{ campaign.media.title }}</div>
                     </td>
-                    <td class="px-6 py-4 align-middle text-zinc-350 font-medium">
+                    <td class="px-6 py-4 align-middle font-medium">
                         {{ campaign.advertiser.business_name }}
                     </td>
                     <td class="px-6 py-4 align-middle">
                         <div class="flex flex-col">
-                            <span class="text-zinc-200 font-medium text-xs">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
-                            <span class="text-zinc-500 text-[11px] mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                            <span class="font-medium text-xs">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
+                            <span class="text-base-content/50 text-xs mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 align-middle font-mono font-medium text-zinc-200">
+                    <td class="px-6 py-4 align-middle font-mono font-medium">
                         ₦{{ campaign.budget|floatformat:2 }}
                     </td>
                     <td class="px-6 py-4 align-middle">
                         {% if campaign.status == 'pending_manager_review' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                            <span class="badge badge-warning badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
                                 Pending Review
                             </span>
                         {% elif campaign.status == 'approved' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                            <span class="badge badge-success badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
                                 Approved
                             </span>
                         {% elif campaign.status == 'active' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="badge badge-success badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                                 Active
                             </span>
                         {% elif campaign.status == 'completed' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+                            <span class="badge badge-ghost badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full"></span>
                                 Completed
                             </span>
                         {% elif campaign.status == 'rejected' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                            <span class="badge badge-error badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
                                 Rejected
                             </span>
                         {% elif campaign.status == 'cancelled' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-500 border border-zinc-700/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-650"></span>
+                            <span class="badge badge-ghost badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full"></span>
                                 Cancelled
                             </span>
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
+                            <span class="badge badge-ghost badge-sm">
                                 {{ campaign.status|title }}
                             </span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle text-right">
                         <a href="{% url 'admanager:campaign_request_detail' campaign.pk %}"
-                           class="inline-flex items-center justify-center px-3 py-1 bg-zinc-800/60 hover:bg-zinc-700 border border-zinc-700/60 hover:border-zinc-600 text-zinc-300 hover:text-white text-xs font-semibold rounded-md transition-all">
+                           class="btn btn-ghost btn-xs">
                             {% if campaign.status == 'pending_manager_review' %}Review{% else %}View{% endif %}
                         </a>
                     </td>
@@ -121,13 +121,13 @@
     </div>
 </div>
 {% else %}
-<div class="flex flex-col items-center justify-center py-24 text-center bg-zinc-900/20 border border-zinc-800/80 rounded-xl backdrop-blur-sm">
-    <div class="w-14 h-14 bg-zinc-900/80 border border-zinc-800/80 rounded-full flex items-center justify-center text-zinc-650 mb-4 shadow-lg">
+<div class="flex flex-col items-center justify-center py-24 text-center bg-base-200/20 border border-base-300 rounded-xl backdrop-blur-sm">
+    <div class="w-14 h-14 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-base-content/30 mb-4 shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
     </div>
-    <p class="text-zinc-300 font-semibold tracking-tight text-base">No campaign requests yet</p>
+    <p class="font-semibold tracking-tight text-base">No campaign requests yet</p>
     <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">When advertisers book slots on your screens, campaign requests will appear here for review.</p>
 </div>
 {% endif %}

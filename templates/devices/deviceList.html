@@ -1,50 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Devices</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Billboard Devices</h2>
+<body class="bg-base-100 min-h-screen p-6">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-bold tracking-tight">Billboard Devices</h2>
             <a href="#" class="btn btn-primary">+ Register New Device</a>
         </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                <div class="alert alert-{{ message.tags }} mb-4">{{ message }}</div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <table class="table table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Name</th>
-                            <th>Location</th>
-                            <th>Device ID</th>
-                            <th>Status</th>
-                            <th>Last Heartbeat</th>
+        <div class="card card-border bg-base-200 border-base-300 rounded-xl shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="table table-xs w-full">
+                    <thead>
+                        <tr class="border-b border-base-300 bg-base-300/20">
+                            <th class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Name</th>
+                            <th class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Location</th>
+                            <th class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Device ID</th>
+                            <th class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Status</th>
+                            <th class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Last Heartbeat</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-base-300/50">
                         {% for device in devices %}
-                        <tr>
+                        <tr class="hover:bg-base-300/10 transition">
                             <td><strong>{{ device.name }}</strong></td>
-                            <td>{{ device.location_name }}</td>
-                            <td><code>{{ device.device_id }}</code></td>
+                            <td class="text-base-content/60">{{ device.location_name }}</td>
+                            <td><code class="text-xs">{{ device.device_id }}</code></td>
                             <td>
-                                <span class="badge {% if device.status == 'online' %}bg-success{% else %}bg-secondary{% endif %}">
-                                    {{ device.get_status_display }}
-                                </span>
+                                {% if device.status == 'online' %}
+                                    <span class="badge badge-success badge-sm">{{ device.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge badge-ghost badge-sm">{{ device.get_status_display }}</span>
+                                {% endif %}
                             </td>
-                            <td>{{ device.last_heartbeat|default:"Never" }}</td>
+                            <td class="text-xs text-base-content/50">{{ device.last_heartbeat|default:"Never" }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center">No devices registered yet.</td>
+                            <td colspan="5" class="text-center py-12 text-base-content/50">No devices registered yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -52,5 +63,6 @@
             </div>
         </div>
     </div>
+    {% include "partials/theme_toggle.html" %}
 </body>
 </html>

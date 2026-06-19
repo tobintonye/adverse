@@ -5,17 +5,17 @@
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">Dashboard</a>
-    <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
+    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-white font-semibold truncate">My Billboards</span>
+    <span class="font-semibold truncate">My Billboards</span>
 </nav>
 {% endblock %}
 
 {% block topbar_actions %}
 <a href="{% url 'admanager:billboard_create' %}"
-   class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-900/30 active:scale-95">
+   class="btn btn-primary btn-sm">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
@@ -26,29 +26,29 @@
 {% block content %}
 
 {% if billboards %}
-<div class="relative overflow-hidden bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 rounded-xl shadow-xl">
+<div class="card card-border bg-base-200 border-base-300">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
             <thead>
-                <tr class="border-b border-zinc-800/80 bg-zinc-950/20">
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest w-20">Preview</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Name / Location</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Screen specs</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Price / Rate</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
+                <tr class="border-b border-base-300 bg-base-200/50">
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-20">Preview</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Name / Location</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Screen specs</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Price / Rate</th>
+                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Status</th>
                     <th class="px-6 py-4"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-zinc-800/60">
+            <tbody class="divide-y divide-base-300/60">
                 {% for bb in billboards %}
-                <tr class="hover:bg-zinc-800/30 transition-all duration-200 group">
+                <tr class="hover:bg-base-300/20 transition-all duration-200 group">
                     <td class="px-6 py-4 align-middle">
                         {% if bb.media_file %}
-                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-black border border-zinc-800/80 flex items-center justify-center relative flex-shrink-0 shadow-md">
+                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-base-100 border border-base-300 flex items-center justify-center relative flex-shrink-0 shadow-md">
                                 {% with url_str=bb.media_file.url|lower %}
                                     {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
                                         <video src="{{ bb.media_file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <div class="absolute inset-0 bg-base-100/40 flex items-center justify-center">
                                             <svg class="w-3.5 h-3.5 text-white opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M8 5v14l11-7z"/>
                                             </svg>
@@ -59,20 +59,20 @@
                                 {% endwith %}
                             </div>
                         {% else %}
-                            <div class="w-16 h-10 rounded-lg bg-zinc-950 border border-zinc-800/60 flex items-center justify-center text-zinc-650 flex-shrink-0">
-                                <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-16 h-10 rounded-lg bg-base-100 border border-base-300/60 flex items-center justify-center text-base-content/40 flex-shrink-0">
+                                <svg class="w-4 h-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle">
-                        <div class="font-semibold text-white tracking-tight group-hover:text-red-500 transition-colors">{{ bb.name }}</div>
-                        <div class="text-xs text-zinc-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                        <div class="font-semibold tracking-tight group-hover:text-primary transition-colors">{{ bb.name }}</div>
+                        <div class="text-xs text-base-content/50 mt-1 flex items-center gap-1.5 flex-wrap">
                             <span class="truncate max-w-[250px]" title="{{ bb.location_name }}">{{ bb.location_name }}</span>
                             {% if bb.latitude and bb.longitude %}
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-900/60 text-[10px] text-zinc-500 border border-zinc-800/80 font-mono">
-                                    <svg class="w-2.5 h-2.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-base-300/60 text-[10px] text-base-content/50 border border-base-300 font-mono">
+                                    <svg class="w-2.5 h-2.5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     </svg>
@@ -83,34 +83,34 @@
                     </td>
                     <td class="px-6 py-4 align-middle">
                         <div class="flex flex-col">
-                            <span class="text-zinc-200 font-medium text-xs">{{ bb.get_screen_type_display }}</span>
-                            <span class="text-zinc-500 text-[11px] mt-0.5">{{ bb.resolution }}</span>
+                            <span class="font-medium text-xs">{{ bb.get_screen_type_display }}</span>
+                            <span class="text-base-content/50 text-xs mt-0.5">{{ bb.resolution }}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 align-middle font-mono font-medium text-zinc-200">
+                    <td class="px-6 py-4 align-middle font-mono font-medium">
                         ₦{{ bb.price_per_slot|floatformat:2 }} / {% if bb.charge_unit == 'hourly' %}hr{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle">
                         {% if bb.availability == 'available' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="badge badge-success badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                                 Available
                             </span>
                         {% elif bb.availability == 'maintenance' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span class="badge badge-warning badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
                                 Maintenance
                             </span>
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-zinc-800/40 text-zinc-400 border border-zinc-700/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+                            <span class="badge badge-ghost badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full"></span>
                                 Unavailable
                             </span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle text-right">
                         <a href="{% url 'admanager:billboard_edit' bb.pk %}"
-                           class="inline-flex items-center justify-center px-3 py-1 bg-zinc-800/60 hover:bg-zinc-700 border border-zinc-700/60 hover:border-zinc-600 text-zinc-300 hover:text-white text-xs font-semibold rounded-md transition-all">
+                           class="btn btn-ghost btn-xs">
                             Edit
                         </a>
                     </td>
@@ -121,13 +121,13 @@
     </div>
 </div>
 {% else %}
-<div class="flex flex-col items-center justify-center py-24 text-center bg-zinc-900/20 border border-zinc-800/80 rounded-xl backdrop-blur-sm">
-    <div class="w-14 h-14 bg-zinc-900/80 border border-zinc-800/80 rounded-full flex items-center justify-center text-zinc-600 mb-4 shadow-lg">
+<div class="flex flex-col items-center justify-center py-24 text-center bg-base-200/20 border border-base-300 rounded-xl backdrop-blur-sm">
+    <div class="w-14 h-14 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-base-content/30 mb-4 shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
     </div>
-    <p class="text-zinc-300 font-semibold tracking-tight text-base">No billboards yet</p>
+    <p class="font-semibold tracking-tight text-base">No billboards yet</p>
     <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Register your first physical billboard screen to start setting rates and serving campaigns.</p>
     <a href="{% url 'admanager:billboard_create' %}"
        class="mt-5 px-5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-900/30 active:scale-95">

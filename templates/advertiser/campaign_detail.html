@@ -4,12 +4,11 @@
 {% block page_title %}Campaign Detail{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'advertiser:campaign_list' %}" class="text-zinc-400 hover:text-white transition whitespace-nowrap flex-shrink-0">Campaigns</a>
-    <svg class="w-3 h-3 text-zinc-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span class="text-white font-semibold truncate">{{ campaign.name|default:"Campaign Detail" }}</span>
+<nav class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{% url 'advertiser:campaign_list' %}" class="text-base-content/60 hover:text-base-content">Campaigns</a></li>
+        <li><span class="text-base-content font-semibold truncate">{{ campaign.name|default:"Campaign Detail" }}</span></li>
+    </ul>
 </nav>
 {% endblock %}
 
@@ -17,83 +16,85 @@
 <div class="max-w-3xl space-y-6">
 
     <!-- Header card -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div class="px-6 py-5 flex items-start justify-between">
-            <div>
-                <h2 class="text-lg font-bold text-white">{{ campaign.name }}</h2>
-                <p class="text-xs text-zinc-500 mt-0.5">Created {{ campaign.created_at|date:"d M Y" }}</p>
-            </div>
-            {% if campaign.status == 'draft' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-400">Draft</span>
-            {% elif campaign.status == 'pending_admin_review' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-yellow-900/30 text-yellow-400">Pending Admin Review</span>
-            {% elif campaign.status == 'pending_manager_review' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-yellow-900/30 text-yellow-400">Pending Manager Review</span>
-            {% elif campaign.status == 'approved' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-green-900/30 text-green-400">Approved</span>
-            {% elif campaign.status == 'active' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-900/30 text-blue-400">Active</span>
-            {% elif campaign.status == 'rejected' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-red-900/30 text-red-400">Rejected</span>
-            {% elif campaign.status == 'cancelled' %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-500">Cancelled</span>
-            {% else %}
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-400">{{ campaign.get_status_display }}</span>
-            {% endif %}
-        </div>
-
-        {% if campaign.rejection_reason %}
-        <div class="mx-6 mb-5 px-4 py-3 bg-red-900/20 border border-red-500/40 rounded-lg text-sm text-red-400">
-            <strong>Rejection reason:</strong> {{ campaign.rejection_reason }}
-        </div>
-        {% endif %}
-
-        <div class="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-            <!-- Left Side: Campaign Metadata Details -->
-            <div class="md:col-span-2 grid grid-cols-2 gap-y-4 gap-x-8">
+    <div class="card card-border bg-base-200 border-base-300">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Media Info</p>
-                    <p class="text-white font-semibold">{{ campaign.media.title }}</p>
-                    <p class="text-xs text-zinc-500">{{ campaign.media.get_media_type_display }} · {{ campaign.media.file_size_mb }} MB</p>
+                    <h2 class="card-title text-lg">{{ campaign.name }}</h2>
+                    <p class="text-xs text-base-content/50">Created {{ campaign.created_at|date:"d M Y" }}</p>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Schedule</p>
-                    <p class="text-white">{{ campaign.start_date }} — {{ campaign.end_date }}</p>
-                    <p class="text-xs text-zinc-500">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }} daily</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Duration</p>
-                    <p class="text-white">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Budget</p>
-                    <p class="text-white font-semibold">₦{{ campaign.budget|floatformat:2 }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Estimated Cost</p>
-                    <p class="{% if campaign.estimated_price > campaign.budget %}text-red-400 font-bold{% else %}text-emerald-400 font-semibold{% endif %}">₦{{ campaign.estimated_price|floatformat:2 }}</p>
-                </div>
-                {% if campaign.estimated_price > campaign.budget %}
-                <div class="col-span-2 mt-1">
-                    <div class="flex items-start gap-2 px-3 py-2 bg-red-950/30 border border-red-800/40 rounded-lg">
-                        <svg class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                        <p class="text-xs text-red-400">Your budget (₦{{ campaign.budget|floatformat:2 }}) is below the estimated cost (₦{{ campaign.estimated_price|floatformat:2 }}). <a href="{% url 'advertiser:campaign_edit' campaign.pk %}" class="underline font-bold">Edit campaign</a> to increase your budget.</p>
-                    </div>
-                </div>
+                {% if campaign.status == 'draft' %}
+                    <span class="badge badge-ghost">Draft</span>
+                {% elif campaign.status == 'pending_admin_review' %}
+                    <span class="badge badge-warning">Pending Admin Review</span>
+                {% elif campaign.status == 'pending_manager_review' %}
+                    <span class="badge badge-warning">Pending Manager Review</span>
+                {% elif campaign.status == 'approved' %}
+                    <span class="badge badge-success">Approved</span>
+                {% elif campaign.status == 'active' %}
+                    <span class="badge badge-info">Active</span>
+                {% elif campaign.status == 'rejected' %}
+                    <span class="badge badge-error">Rejected</span>
+                {% elif campaign.status == 'cancelled' %}
+                    <span class="badge badge-ghost">Cancelled</span>
+                {% else %}
+                    <span class="badge badge-ghost">{{ campaign.get_status_display }}</span>
                 {% endif %}
             </div>
 
-            <!-- Right Side: Graphic/Video Copy Preview -->
-            <div class="md:col-span-1 flex flex-col justify-end">
-                <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Advertisement Copy</p>
-                <div class="relative overflow-hidden bg-black border border-zinc-800 rounded-xl aspect-video md:aspect-square flex items-center justify-center shadow-inner group">
-                    {% if campaign.media.media_type == 'image' %}
-                        <img src="{{ campaign.media.file.url }}" alt="{{ campaign.media.title }}" class="w-full h-full object-contain select-none">
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Image</span>
-                    {% elif campaign.media.media_type == 'video' %}
-                        <video src="{{ campaign.media.file.url }}" class="w-full h-full object-contain" controls preload="metadata"></video>
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Video</span>
+            {% if campaign.rejection_reason %}
+            <div class="alert alert-error mt-4 text-sm">
+                <strong>Rejection reason:</strong> {{ campaign.rejection_reason }}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <!-- Left Side: Campaign Metadata Details -->
+                <div class="md:col-span-2 grid grid-cols-2 gap-y-4 gap-x-8">
+                    <div>
+                        <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Media Info</p>
+                        <p class="font-semibold">{{ campaign.media.title }}</p>
+                        <p class="text-xs text-base-content/50">{{ campaign.media.get_media_type_display }} · {{ campaign.media.file_size_mb }} MB</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Schedule</p>
+                        <p>{{ campaign.start_date }} — {{ campaign.end_date }}</p>
+                        <p class="text-xs text-base-content/50">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }} daily</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Duration</p>
+                        <p>{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Budget</p>
+                        <p class="font-semibold">₦{{ campaign.budget|floatformat:2 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Estimated Cost</p>
+                        <p class="{% if campaign.estimated_price > campaign.budget %}text-error font-bold{% else %}text-success font-semibold{% endif %}">₦{{ campaign.estimated_price|floatformat:2 }}</p>
+                    </div>
+                    {% if campaign.estimated_price > campaign.budget %}
+                    <div class="col-span-2 mt-1">
+                        <div class="alert alert-error text-xs">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                            <span>Your budget (₦{{ campaign.budget|floatformat:2 }}) is below the estimated cost (₦{{ campaign.estimated_price|floatformat:2 }}). <a href="{% url 'advertiser:campaign_edit' campaign.pk %}" class="link font-bold">Edit campaign</a> to increase your budget.</span>
+                        </div>
+                    </div>
                     {% endif %}
+                </div>
+
+                <!-- Right Side: Graphic/Video Copy Preview -->
+                <div class="md:col-span-1 flex flex-col justify-end">
+                    <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-2">Advertisement Copy</p>
+                    <div class="relative overflow-hidden bg-base-100 border border-base-300 rounded-xl aspect-video md:aspect-square flex items-center justify-center shadow-inner">
+                        {% if campaign.media.media_type == 'image' %}
+                            <img src="{{ campaign.media.file.url }}" alt="{{ campaign.media.title }}" class="w-full h-full object-contain select-none">
+                            <span class="badge badge-xs badge-ghost absolute top-2 left-2">Image</span>
+                        {% elif campaign.media.media_type == 'video' %}
+                            <video src="{{ campaign.media.file.url }}" class="w-full h-full object-contain" controls preload="metadata"></video>
+                            <span class="badge badge-xs badge-ghost absolute top-2 left-2">Video</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,79 +102,75 @@
 
     <!-- Booked Billboards -->
     {% if slots %}
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div class="px-6 py-4 border-b border-zinc-800">
-            <h3 class="text-sm font-semibold text-white">Booked Billboards ({{ slots.count }})</h3>
+    <div class="card card-border bg-base-200 border-base-300">
+        <div class="card-body">
+            <h3 class="card-title text-sm">Booked Billboards ({{ slots.count }})</h3>
+            <div class="divide-y divide-base-300">
+                {% for slot in slots %}
+                <div class="py-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium">{{ slot.billboard.name }}</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">{{ slot.billboard.location_name }} · {{ slot.billboard.get_screen_type_display }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm">
+                            {{ slot.slots_per_day }}
+                            {% if slot.billboard.charge_unit == 'hourly' %}hr{% elif slot.billboard.charge_unit == 'daily' %}play{% else %}slot{% endif %}{{ slot.slots_per_day|pluralize }}/day
+                        </p>
+                        <p class="text-xs text-base-content/50">₦{{ slot.slot_price|floatformat:2 }} total</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        <ul class="divide-y divide-zinc-800">
-            {% for slot in slots %}
-            <li class="px-6 py-4 flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-white">{{ slot.billboard.name }}</p>
-                    <p class="text-xs text-zinc-500 mt-0.5">{{ slot.billboard.location_name }} · {{ slot.billboard.get_screen_type_display }}</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-sm text-zinc-300">
-                        {{ slot.slots_per_day }}
-                        {% if slot.billboard.charge_unit == 'hourly' %}hr{% elif slot.billboard.charge_unit == 'daily' %}play{% else %}slot{% endif %}{{ slot.slots_per_day|pluralize }}/day
-                    </p>
-                    <p class="text-xs text-zinc-500">₦{{ slot.slot_price|floatformat:2 }} total</p>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
     </div>
     {% endif %}
 
     <!-- Actions -->
     {% if campaign.status == 'draft' or campaign.status == 'rejected' %}
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center gap-3 flex-wrap">
-        {% if campaign.estimated_price <= campaign.budget %}
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit" name="action" value="submit"
-                    class="px-8 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-sm font-bold rounded-lg transition active:scale-95 shadow-lg shadow-red-900/20">
+    <div class="card card-border bg-base-200 border-base-300">
+        <div class="card-body p-5 flex-row flex-wrap items-center gap-3">
+            {% if campaign.estimated_price <= campaign.budget %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="action" value="submit" class="btn btn-primary">
+                    Submit for Review
+                </button>
+            </form>
+            {% else %}
+            <button disabled class="btn btn-disabled" title="Increase your budget to match the estimated cost first.">
                 Submit for Review
             </button>
-        </form>
-        {% else %}
-        <button disabled
-                class="px-8 py-2.5 bg-zinc-800 text-zinc-500 text-sm font-bold rounded-lg cursor-not-allowed" title="Increase your budget to match the estimated cost first.">
-            Submit for Review
-        </button>
-        {% endif %}
-        <a href="{% url 'advertiser:campaign_edit' campaign.pk %}"
-           class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition">
-            Edit Campaign
-        </a>
-        <form method="post" onsubmit="return confirm('Cancel this campaign?')">
-            {% csrf_token %}
-            <button type="submit" name="action" value="cancel"
-                    class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-sm font-medium rounded-lg transition">
-                Cancel Campaign
-            </button>
-        </form>
+            {% endif %}
+            <a href="{% url 'advertiser:campaign_edit' campaign.pk %}" class="btn btn-ghost">Edit Campaign</a>
+            <form method="post" onsubmit="return confirm('Cancel this campaign?')">
+                {% csrf_token %}
+                <button type="submit" name="action" value="cancel" class="btn btn-ghost text-base-content/50">
+                    Cancel Campaign
+                </button>
+            </form>
+        </div>
     </div>
     {% elif campaign.status in 'approved,active' %}
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <form method="post" onsubmit="return confirm('Cancel this campaign?')">
-            {% csrf_token %}
-            <button type="submit" name="action" value="cancel"
-                    {% if campaign.status == 'approved' %}
-                    disabled
-                    title="Approved campaigns cannot be cancelled."
-                    class="px-5 py-2.5 bg-zinc-950 text-zinc-600 border border-zinc-900 rounded-lg cursor-not-allowed"
-                    {% else %}
-                    class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-sm font-medium rounded-lg transition"
-                    {% endif %}>
-                Cancel Campaign
-            </button>
-        </form>
+    <div class="card card-border bg-base-200 border-base-300">
+        <div class="card-body p-5">
+            <form method="post" onsubmit="return confirm('Cancel this campaign?')">
+                {% csrf_token %}
+                <button type="submit" name="action" value="cancel"
+                        {% if campaign.status == 'approved' %}
+                        disabled class="btn btn-disabled"
+                        {% else %}
+                        class="btn btn-ghost text-base-content/50"
+                        {% endif %}>
+                    Cancel Campaign
+                </button>
+            </form>
+        </div>
     </div>
     {% endif %}
 
     <div>
-        <a href="{% url 'advertiser:campaign_list' %}" class="text-sm text-zinc-500 hover:text-zinc-300 transition">← Back to Campaigns</a>
+        <a href="{% url 'advertiser:campaign_list' %}" class="link link-hover text-sm text-base-content/50 hover:text-base-content">← Back to Campaigns</a>
     </div>
 
 </div>

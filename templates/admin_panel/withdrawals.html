@@ -4,62 +4,62 @@
 {% block page_title %}Withdrawal Requests{% endblock %}
 
 {% block content %}
-<div class="bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-xl">
-    <div class="mb-6 pb-4 border-b border-zinc-800/60 flex items-center justify-between">
+<div class="card card-border bg-base-200 border-base-300 rounded-xl p-5 shadow-xl">
+    <div class="mb-6 pb-4 border-b border-base-300/60 flex items-center justify-between">
         <div>
-            <h2 class="text-sm font-bold text-white tracking-wide uppercase">Manage Withdrawal Requests</h2>
-            <p class="text-[10px] text-zinc-500 mt-1">Review and approve payout requests from billboard screen owners. Conduct manual bank payments offline before approving requests.</p>
+            <h2 class="text-sm font-bold tracking-wide uppercase">Manage Withdrawal Requests</h2>
+            <p class="text-[10px] text-base-content/50 mt-1">Review and approve payout requests from billboard screen owners. Conduct manual bank payments offline before approving requests.</p>
         </div>
     </div>
 
     {% if withdrawals %}
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
+        <table class="table table-xs w-full">
             <thead>
-                <tr class="border-b border-zinc-900 text-zinc-550 font-bold">
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px]">Request Date</th>
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px]">Ad Manager</th>
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px]">Amount</th>
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px]">Bank Details</th>
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px]">Status</th>
-                    <th class="py-3 px-4 uppercase tracking-wider text-[9px] text-right">Actions</th>
+                <tr class="text-base-content/50 font-bold">
+                    <th class="uppercase tracking-wider text-[9px]">Request Date</th>
+                    <th class="uppercase tracking-wider text-[9px]">Ad Manager</th>
+                    <th class="uppercase tracking-wider text-[9px]">Amount</th>
+                    <th class="uppercase tracking-wider text-[9px]">Bank Details</th>
+                    <th class="uppercase tracking-wider text-[9px]">Status</th>
+                    <th class="uppercase tracking-wider text-[9px] text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-zinc-900/50">
+            <tbody class="divide-y divide-base-300/50">
                 {% for w in withdrawals %}
-                <tr class="hover:bg-zinc-900/10 transition-colors">
-                    <td class="py-3 px-4 font-mono text-zinc-400 text-[10px]">{{ w.created_at|date:"Y-m-d H:i" }}</td>
-                    <td class="py-3 px-4">
-                        <span class="font-bold text-white block">{{ w.ad_manager.business_name }}</span>
-                        <span class="text-[10px] text-zinc-500">{{ w.ad_manager.business_email }}</span>
+                <tr class="hover:bg-base-300/10 transition-colors">
+                    <td class="font-mono text-base-content/60 text-[10px]">{{ w.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        <span class="font-bold block">{{ w.ad_manager.business_name }}</span>
+                        <span class="text-[10px] text-base-content/50">{{ w.ad_manager.business_email }}</span>
                     </td>
-                    <td class="py-3 px-4 font-extrabold text-white">₦{{ w.amount|floatformat:2 }}</td>
-                    <td class="py-3 px-4 text-zinc-400 font-mono text-[10px] whitespace-pre-line leading-tight">{{ w.bank_details }}</td>
-                    <td class="py-3 px-4">
+                    <td class="font-extrabold">₦{{ w.amount|floatformat:2 }}</td>
+                    <td class="text-base-content/60 font-mono text-[10px] whitespace-pre-line leading-tight">{{ w.bank_details }}</td>
+                    <td>
                         {% if w.status == 'pending' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold bg-amber-950/20 text-amber-400 border border-amber-900/20 uppercase">Pending</span>
+                            <span class="badge badge-warning badge-sm uppercase">Pending</span>
                         {% elif w.status == 'approved' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold bg-emerald-950/20 text-emerald-400 border border-emerald-900/20 uppercase">Approved</span>
+                            <span class="badge badge-success badge-sm uppercase">Approved</span>
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold bg-red-950/20 text-red-400 border border-red-900/20 uppercase">Rejected</span>
+                            <span class="badge badge-error badge-sm uppercase">Rejected</span>
                         {% endif %}
                     </td>
-                    <td class="py-3 px-4 text-right">
+                    <td class="text-right">
                         {% if w.status == 'pending' %}
                             <div class="inline-flex gap-2">
                                 <button type="button" 
                                         onclick="openActionModal('approve', '{{ w.pk }}', '{{ w.ad_manager.business_name }}', '{{ w.amount }}')"
-                                        class="px-2.5 py-1 bg-emerald-900/10 hover:bg-emerald-900/20 border border-emerald-900/30 text-emerald-400 font-bold text-[10px] rounded-lg transition active:scale-95">
+                                        class="btn btn-success btn-xs">
                                     Approve
                                 </button>
                                 <button type="button" 
                                         onclick="openActionModal('reject', '{{ w.pk }}', '{{ w.ad_manager.business_name }}', '{{ w.amount }}')"
-                                        class="px-2.5 py-1 bg-red-900/10 hover:bg-red-900/20 border border-red-900/30 text-red-400 font-bold text-[10px] rounded-lg transition active:scale-95">
+                                        class="btn btn-error btn-xs">
                                     Reject
                                 </button>
                             </div>
                         {% else %}
-                            <span class="text-zinc-600 text-[10px] italic">Processed</span>
+                            <span class="text-base-content/40 text-[10px] italic">Processed</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -68,55 +68,37 @@
         </table>
     </div>
     {% else %}
-    <div class="p-8 text-center flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-xl my-4">
-        <p class="text-zinc-400 text-xs font-bold">No withdrawal requests found</p>
-        <p class="text-[10px] text-zinc-600 mt-1">When an AdManager submits a withdrawal request, it will appear here for processing.</p>
+    <div class="p-8 text-center flex flex-col items-center justify-center border border-dashed border-base-300 rounded-xl my-4">
+        <p class="text-base-content/60 text-xs font-bold">No withdrawal requests found</p>
+        <p class="text-[10px] text-base-content/40 mt-1">When an AdManager submits a withdrawal request, it will appear here for processing.</p>
     </div>
     {% endif %}
 </div>
 
-<!-- Approval/Rejection Modal -->
-<div id="action-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
-    <div class="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-xl p-6 shadow-2xl space-y-4">
-        <div class="flex items-start justify-between">
-            <h3 id="modal-title" class="text-sm font-bold text-white uppercase tracking-wider"></h3>
-            <button onclick="closeActionModal()" class="text-zinc-500 hover:text-white transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        
-        <p id="modal-description" class="text-xs text-zinc-400 leading-normal"></p>
+<!-- Action Modal -->
+<dialog id="action-modal" class="modal">
+    <div class="modal-box bg-base-200 border border-base-300">
+        <h3 id="modal-title" class="font-bold text-sm uppercase tracking-wider"></h3>
+        <p id="modal-description" class="text-xs text-base-content/60 leading-normal py-4"></p>
 
         <form method="post" action="{% url 'admin_panel:withdrawal_list' %}" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="pk" id="modal-pk">
             <input type="hidden" name="action" id="modal-action">
 
-            <div class="space-y-1.5">
-                <label for="admin_notes" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Admin Notes / Remarks</label>
-                <textarea name="admin_notes" 
-                          id="admin_notes" 
-                          rows="3"
-                          placeholder="Provide transaction details, transaction reference, or rejection reason..."
-                          class="w-full px-4.5 py-2.5 bg-black border border-zinc-850 rounded-lg text-xs font-bold text-white placeholder-zinc-700 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition"
-                          required></textarea>
-            </div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend text-[10px] uppercase tracking-wider">Admin Notes / Remarks</legend>
+                <textarea name="admin_notes" id="admin_notes" rows="3" class="textarea w-full" required></textarea>
+            </fieldset>
 
-            <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" 
-                        onclick="closeActionModal()" 
-                        class="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white text-xs font-bold rounded-lg transition">
-                    Cancel
-                </button>
-                <button type="submit" 
-                        id="modal-submit-btn"
-                        class="px-4 py-2 text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-lg"></button>
+            <div class="modal-action">
+                <button type="button" onclick="document.getElementById('action-modal').close()" class="btn btn-ghost">Cancel</button>
+                <button type="submit" id="modal-submit-btn" class="btn"></button>
             </div>
         </form>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <script>
     function openActionModal(action, pk, businessName, amount) {
@@ -135,24 +117,17 @@
             modalTitle.textContent = "Approve Withdrawal";
             modalDescription.textContent = `You are approving a withdrawal request of ₦${parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2})} for ${businessName}. Please ensure you have transferred the funds before confirming.`;
             modalSubmitBtn.textContent = "Confirm Approval";
-            modalSubmitBtn.className = "px-4 py-2 bg-emerald-650 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-lg shadow-emerald-950/20";
+            modalSubmitBtn.className = "btn btn-success";
             adminNotes.placeholder = "Enter Bank Transfer Reference, date of payout, etc.";
         } else {
             modalTitle.textContent = "Reject Withdrawal";
             modalDescription.textContent = `You are rejecting a withdrawal request of ₦${parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2})} for ${businessName}.`;
             modalSubmitBtn.textContent = "Confirm Rejection";
-            modalSubmitBtn.className = "px-4 py-2 bg-red-655 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-lg shadow-red-950/20";
+            modalSubmitBtn.className = "btn btn-error";
             adminNotes.placeholder = "Reason for rejecting this request (required)...";
         }
 
-        modal.classList.remove('pointer-events-none');
-        modal.classList.remove('opacity-0');
-    }
-
-    function closeActionModal() {
-        const modal = document.getElementById('action-modal');
-        modal.classList.add('pointer-events-none');
-        modal.classList.add('opacity-0');
+        modal.showModal();
     }
 </script>
 {% endblock %}

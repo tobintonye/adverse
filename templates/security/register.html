@@ -5,104 +5,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register — Advers</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
-<body class="bg-black flex items-center justify-center min-h-screen p-4 text-white">
+<body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-sm bg-black p-6 rounded-xl border border-zinc-800 shadow-2xl">
+    <div class="w-full max-w-sm card card-border bg-base-200 border-base-300 rounded-xl p-6 shadow-2xl">
 
         <div class="text-center mb-6">
             <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-3">
-            <h2 class="text-xl font-bold tracking-tight text-white">Create Account</h2>
-            <p class="text-zinc-500 text-xs mt-1">Join the Advers platform</p>
+            <h2 class="text-xl font-bold tracking-tight">Create Account</h2>
+            <p class="text-base-content/50 text-xs mt-1">Join the Advers platform</p>
         </div>
 
         <!-- Messages -->
         {% if messages %}
         <div class="mb-4 space-y-2">
             {% for message in messages %}
-            <div class="p-3 text-sm rounded-lg {% if message.tags == 'error' %}bg-red-900/20 border border-red-500/50 text-red-400{% else %}bg-green-900/20 border border-green-500/50 text-green-400{% endif %}">
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %} text-xs py-2">
                 {{ message }}
             </div>
             {% endfor %}
         </div>
         {% endif %}
 
-
         <!-- Form -->
         <form method="post" class="space-y-4" id="registerForm">
             {% csrf_token %}
 
             <!-- Role Selection -->
-            <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-2 ml-1">I am a...</label>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend text-[10px] uppercase">I am a...</legend>
                 <div class="grid grid-cols-2 gap-2">
-                    <label id="label-advertiser" class="flex flex-col items-center gap-1 p-3 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-600 transition">
-                        <input type="radio" name="role" value="advertiser" class="sr-only" required>
-                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label id="label-advertiser" class="flex flex-col items-center gap-1 p-3 border border-base-300 rounded-lg cursor-pointer hover:border-primary transition">
+                        <input type="radio" name="role" value="advertiser" class="hidden" required>
+                        <svg class="w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                         </svg>
-                        <span class="text-sm font-semibold text-white">Advertiser</span>
-                        <span class="text-[10px] text-zinc-500 text-center leading-tight">Run ad campaigns</span>
+                        <span class="text-sm font-semibold">Advertiser</span>
+                        <span class="text-[10px] text-base-content/50 text-center leading-tight">Run ad campaigns</span>
                     </label>
-                    <label id="label-ad_manager" class="flex flex-col items-center gap-1 p-3 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-600 transition">
-                        <input type="radio" name="role" value="ad_manager" class="sr-only">
-                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label id="label-ad_manager" class="flex flex-col items-center gap-1 p-3 border border-base-300 rounded-lg cursor-pointer hover:border-primary transition">
+                        <input type="radio" name="role" value="ad_manager" class="hidden">
+                        <svg class="w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
-                        <span class="text-sm font-semibold text-white">Ad Manager</span>
-                        <span class="text-[10px] text-zinc-500 text-center leading-tight">Own billboard screens</span>
+                        <span class="text-sm font-semibold">Ad Manager</span>
+                        <span class="text-[10px] text-base-content/50 text-center leading-tight">Own billboard screens</span>
                     </label>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- First Name & Last Name -->
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1 ml-1">First Name</label>
-                    <input type="text" name="first_name" placeholder="Jane" required
-                           class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1 ml-1">Last Name</label>
-                    <input type="text" name="last_name" placeholder="Doe" required
-                           class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-                </div>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend text-[10px] uppercase">First Name</legend>
+                    <input type="text" name="first_name" placeholder="Jane" required class="input w-full">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend text-[10px] uppercase">Last Name</legend>
+                    <input type="text" name="last_name" placeholder="Doe" required class="input w-full">
+                </fieldset>
             </div>
 
             <!-- Email -->
-            <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1 ml-1">Email</label>
-                <input type="email" name="{{ form.email.name }}" placeholder="you@example.com" required
-                       class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend text-[10px] uppercase">Email</legend>
+                <input type="email" name="{{ form.email.name }}" placeholder="you@example.com" required class="input w-full">
                 {% for error in form.email.errors %}
-                    <p class="text-red-400 text-[10px] mt-1">{{ error }}</p>
+                    <p class="text-error text-[10px] mt-1">{{ error }}</p>
                 {% endfor %}
-            </div>
+            </fieldset>
 
             <!-- Password -->
-            <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1 ml-1">Password</label>
-                <input type="password" name="{{ form.password.name }}" placeholder="••••••••" required
-                       class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-            </div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend text-[10px] uppercase">Password</legend>
+                <input type="password" name="{{ form.password.name }}" placeholder="••••••••" required class="input w-full">
+            </fieldset>
 
             <!-- Confirm Password -->
-            <div>
-                <label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1 ml-1">Confirm Password</label>
-                <input type="password" name="{{ form.password2.name }}" placeholder="••••••••" required
-                       class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition">
-            </div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend text-[10px] uppercase">Confirm Password</legend>
+                <input type="password" name="{{ form.password2.name }}" placeholder="••••••••" required class="input w-full">
+            </fieldset>
 
-            <button type="submit"
-                    class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all duration-200 mt-2 shadow-lg shadow-red-900/20 active:scale-95">
+            <button type="submit" class="btn btn-primary w-full mt-2">
                 Create Account
             </button>
 
             <div class="text-center mt-4">
-                <p class="text-zinc-500 text-xs">
+                <p class="text-base-content/50 text-xs">
                     Already have an account?
-                    <a href="{% url 'security:login' %}" class="text-red-500 font-bold hover:text-red-400">Log in</a>
+                    <a href="{% url 'security:login' %}" class="link link-hover text-primary font-bold">Log in</a>
                 </p>
             </div>
         </form>
@@ -114,15 +114,15 @@
 
         function updateStyles() {
             Object.values(labels).forEach(l => {
-                l.classList.remove('border-red-600', 'bg-red-600/10');
-                l.classList.add('border-zinc-800');
+                l.classList.remove('border-primary', 'bg-primary/10');
+                l.classList.add('border-base-300');
             });
             const checked = document.querySelector('input[name="role"]:checked');
             if (checked) {
                 const lbl = labels[checked.value];
                 if (lbl) {
-                    lbl.classList.remove('border-zinc-800');
-                    lbl.classList.add('border-red-600', 'bg-red-600/10');
+                    lbl.classList.remove('border-base-300');
+                    lbl.classList.add('border-primary', 'bg-primary/10');
                 }
             }
         }
@@ -130,5 +130,6 @@
         radios.forEach(r => r.addEventListener('change', updateStyles));
     </script>
 
+    {% include "partials/theme_toggle.html" %}
 </body>
 </html>
