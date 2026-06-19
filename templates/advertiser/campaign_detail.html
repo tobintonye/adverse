@@ -2,6 +2,7 @@
 
 {% block title %}{{ campaign.name }}{% endblock %}
 {% block page_title %}Campaign Detail{% endblock %}
+{% block page_description %}View campaign details, status, and performance information.{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="breadcrumbs text-sm">
@@ -12,8 +13,10 @@
 </nav>
 {% endblock %}
 
+{% block page_container_class %}max-w-6xl mx-auto{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl space-y-6">
+<div class="space-y-6">
 
     <!-- Header card -->
     <div class="card card-border bg-base-200 border-base-300">

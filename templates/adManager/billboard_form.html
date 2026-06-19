@@ -2,6 +2,7 @@
 
 {% block title %}{{ action }} Billboard{% endblock %}
 {% block page_title %}{{ action }} Billboard{% endblock %}
+{% block page_description %}Register or update a physical billboard screen on the platform.{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
@@ -17,19 +18,18 @@
 </nav>
 {% endblock %}
 
+{% block page_container_class %}max-w-5xl mx-auto{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div>
     <div class="card card-border bg-base-200 border-base-300">
         <div class="card-body">
-            <h2 class="card-title">{{ action }} Billboard</h2>
-            <p class="text-xs text-base-content/50">Register a physical screen on the platform</p>
 
-        <form method="post" enctype="multipart/form-data" class="space-y-5">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
 
-            <!-- Name & Location -->
-            <div>
-                <fieldset class="fieldset">
+            <!-- Billboard Name -->
+            <fieldset class="fieldset">
                 <legend class="fieldset-legend">Billboard Name</legend>
                 <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. VI Main Screen" required
                        class="input w-full">
@@ -38,28 +38,26 @@
 
             <!-- Country & State -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Country</legend>
-                        <select id="country-input" name="country" data-initial="{{ form.country.value|default:'' }}" required
-                                class="select w-full">
-                            <option value="">Select Country...</option>
-                        </select>
-                        {% if form.country.errors %}<p class="text-error text-xs mt-1">{{ form.country.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">State</legend>
-                        <select id="state-input" name="state" data-initial="{{ form.state.value|default:'' }}" required
-                                class="select w-full">
-                            <option value="">Select State...</option>
-                        </select>
-                        {% if form.state.errors %}<p class="text-error text-xs mt-1">{{ form.state.errors.0 }}</p>{% endif %}
-                    </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Country</legend>
+                    <select id="country-input" name="country" data-initial="{{ form.country.value|default:'' }}" required
+                            class="select w-full">
+                        <option value="">Select Country...</option>
+                    </select>
+                    {% if form.country.errors %}<p class="text-error text-xs mt-1">{{ form.country.errors.0 }}</p>{% endif %}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">State</legend>
+                    <select id="state-input" name="state" data-initial="{{ form.state.value|default:'' }}" required
+                            class="select w-full">
+                        <option value="">Select State...</option>
+                    </select>
+                    {% if form.state.errors %}<p class="text-error text-xs mt-1">{{ form.state.errors.0 }}</p>{% endif %}
+                </fieldset>
             </div>
 
             <!-- Location Name -->
-            <div class="relative">
-                <fieldset class="fieldset">
+            <fieldset class="fieldset">
                 <legend class="fieldset-legend">Location Name</legend>
                 <div class="flex gap-2">
                     <div class="relative flex-1">
@@ -68,7 +66,6 @@
                                placeholder="Start typing or use auto-detect..." required
                                autocomplete="off"
                                class="input w-full">
-                        <!-- Autocomplete dropdown -->
                         <div id="location-dropdown"
                              class="absolute left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-lg shadow-2xl z-50 hidden overflow-hidden max-h-60 overflow-y-auto">
                         </div>
@@ -87,32 +84,28 @@
                 {% if form.location_name.errors %}<p class="text-error text-xs mt-1">{{ form.location_name.errors.0 }}</p>{% endif %}
             </fieldset>
 
-            <!-- Coordinates (Latitude & Longitude) -->
+            <!-- Latitude & Longitude -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Latitude</legend>
-                        <input type="number" step="any" id="lat-input" name="latitude" value="{{ form.latitude.value|default:'' }}" placeholder="e.g. 6.4281" required
-                               class="input w-full">
-                        {% if form.latitude.errors %}<p class="text-error text-xs mt-1">{{ form.latitude.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Longitude</legend>
-                        <input type="number" step="any" id="lng-input" name="longitude" value="{{ form.longitude.value|default:'' }}" placeholder="e.g. 3.4219" required
-                               class="input w-full">
-                        {% if form.longitude.errors %}<p class="text-error text-xs mt-1">{{ form.longitude.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                </div>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Latitude</legend>
+                    <input type="number" step="any" id="lat-input" name="latitude" value="{{ form.latitude.value|default:'' }}" placeholder="e.g. 6.4281" required
+                           class="input w-full">
+                    {% if form.latitude.errors %}<p class="text-error text-xs mt-1">{{ form.latitude.errors.0 }}</p>{% endif %}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Longitude</legend>
+                    <input type="number" step="any" id="lng-input" name="longitude" value="{{ form.longitude.value|default:'' }}" placeholder="e.g. 3.4219" required
+                           class="input w-full">
+                    {% if form.longitude.errors %}<p class="text-error text-xs mt-1">{{ form.longitude.errors.0 }}</p>{% endif %}
+                </fieldset>
+            </div>
 
-            <!-- Billboard Image/Video Media Upload -->
-            <div class="card card-border bg-base-200 border-base-300">
-                <div class="card-body space-y-4">
-                <div>
-                    <label class="fieldset-legend">Billboard Media File</label>
-                    <p class="text-xs text-base-content/50 mb-3">Upload a photo or a video of this billboard to preview its physical presentation.</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                        <div class="relative overflow-hidden bg-base-100 border border-base-300 rounded-lg w-full md:w-64 h-36 flex items-center justify-center group/preview">
+            <!-- Billboard Media Upload -->
+            <div class="bg-base-300/30 border border-base-300/60 rounded-xl p-5">
+                <label class="fieldset-legend text-sm">Billboard Media File</label>
+                <p class="text-xs text-base-content/50 mb-4">Upload a photo or a video of this billboard to preview its physical presentation.</p>
+                    <div class="flex flex-col md:flex-row gap-5 items-start md:items-center">
+                        <div class="relative overflow-hidden bg-base-100 border border-base-300 rounded-lg w-full md:w-72 h-44 flex items-center justify-center group/preview shrink-0">
                             {% if billboard and billboard.media_file %}
                                 <div id="media-preview-container" class="w-full h-full">
                                     {% with url_str=billboard.media_file.url|lower %}
@@ -136,7 +129,6 @@
                                 </div>
                             {% endif %}
                         </div>
-
                         <div class="flex-1 w-full space-y-2">
                             <label class="relative cursor-pointer flex flex-col items-center justify-center border border-dashed border-base-300 hover:border-base-content/30 bg-base-200 hover:bg-base-300 rounded-lg p-6 text-center transition group">
                                 <svg class="w-6 h-6 text-base-content/40 group-hover:text-base-content/60 transition mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,71 +138,64 @@
                                 <span class="text-xs text-base-content/30 mt-1">Image (JPG, PNG) or Video (MP4, WebM)</span>
                                 <input type="file" name="media_file" id="media-file-input" class="hidden" accept="image/*,video/*" onchange="previewSelectedMedia(this)">
                             </label>
-                            {% if form.media_file.errors %}
-                                <p class="text-error text-xs mt-1">{{ form.media_file.errors.0 }}</p>
-                            {% endif %}
+                            {% if form.media_file.errors %}<p class="text-error text-xs mt-1">{{ form.media_file.errors.0 }}</p>{% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-            </div>
 
-            <!-- Screen Type & Resolution -->
+            <!-- Screen Type, Width, Height -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Screen Type</legend>
-                        {{ form.screen_type }}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Width (px)</legend>
-                        <input type="number" name="screen_width_px" value="{{ form.screen_width_px.value|default:'1920' }}" required
-                               class="input w-full">
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Height (px)</legend>
-                        <input type="number" name="screen_height_px" value="{{ form.screen_height_px.value|default:'1080' }}" required
-                               class="input w-full">
-                    </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Screen Type</legend>
+                    {{ form.screen_type }}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Width (px)</legend>
+                    <input type="number" name="screen_width_px" value="{{ form.screen_width_px.value|default:'1920' }}" required
+                           class="input w-full">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Height (px)</legend>
+                    <input type="number" name="screen_height_px" value="{{ form.screen_height_px.value|default:'1080' }}" required
+                           class="input w-full">
+                </fieldset>
             </div>
 
-            <!-- Price & Hours -->
+            <!-- Charge Unit, Price, Opens At, Closes At -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Charge Unit</legend>
-                        {{ form.charge_unit }}
-                        {% if form.charge_unit.errors %}<p class="text-error text-xs mt-1">{{ form.charge_unit.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend id="price-label" class="fieldset-legend">Price (₦)</legend>
-                        <input type="number" name="price_per_slot" value="{{ form.price_per_slot.value|default:'' }}" step="0.01" placeholder="5000.00" required
-                               class="input w-full">
-                        {% if form.price_per_slot.errors %}<p class="text-error text-xs mt-1">{{ form.price_per_slot.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Opens At</legend>
-                        <input type="time" name="operating_hours_start" value="{{ form.operating_hours_start.value|default:'06:00' }}" required
-                               class="input w-full">
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Closes At</legend>
-                        <input type="time" name="operating_hours_end" value="{{ form.operating_hours_end.value|default:'22:00' }}" required
-                               class="input w-full">
-                    </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Charge Unit</legend>
+                    {{ form.charge_unit }}
+                    {% if form.charge_unit.errors %}<p class="text-error text-xs mt-1">{{ form.charge_unit.errors.0 }}</p>{% endif %}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend id="price-label" class="fieldset-legend">Price (₦)</legend>
+                    <input type="number" name="price_per_slot" value="{{ form.price_per_slot.value|default:'' }}" step="0.01" placeholder="5000.00" required
+                           class="input w-full">
+                    {% if form.price_per_slot.errors %}<p class="text-error text-xs mt-1">{{ form.price_per_slot.errors.0 }}</p>{% endif %}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Opens At</legend>
+                    <input type="time" name="operating_hours_start" value="{{ form.operating_hours_start.value|default:'06:00' }}" required
+                           class="input w-full">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Closes At</legend>
+                    <input type="time" name="operating_hours_end" value="{{ form.operating_hours_end.value|default:'22:00' }}" required
+                           class="input w-full">
+                </fieldset>
             </div>
 
             <!-- Availability -->
-            <fieldset class="fieldset w-48">
+            <fieldset class="fieldset w-full sm:w-72">
                 <legend class="fieldset-legend">Availability</legend>
                 {{ form.availability }}
             </fieldset>
 
-            <div class="flex items-center gap-3 pt-4 border-t border-base-300">
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-300">
+                <a href="{% url 'admanager:billboard_list' %}" class="link link-hover text-base-content/50">Cancel</a>
                 <button type="submit" class="btn btn-primary">
                     {{ action }} Billboard
                 </button>
-                <a href="{% url 'admanager:billboard_list' %}" class="link link-hover text-base-content/50">Cancel</a>
             </div>
         </form>
     </div>

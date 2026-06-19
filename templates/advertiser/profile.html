@@ -16,16 +16,25 @@
 </head>
 <body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-lg card card-border bg-base-200 border-base-300 shadow-2xl">
-        <div class="card-body p-8">
-            <div class="mb-8 flex items-center gap-4">
-                <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-10 h-10 object-contain flex-shrink-0">
-                <div>
-                    <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Advers · Advertiser</span>
-                    <h2 class="text-2xl font-bold mt-1">Complete your profile</h2>
-                    <p class="text-base-content/50 text-sm mt-0.5">Tell us about your business before you start running campaigns.</p>
-                </div>
+    <div class="w-full max-w-lg">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <nav class="flex items-center gap-1.5 text-sm">
+                <span class="font-semibold">Profile Setup</span>
+            </nav>
+            <div class="mt-1">
+                <h1 class="text-xl font-bold tracking-tight">Complete Your Profile</h1>
+                <p class="text-sm text-base-content/50 mt-1">Tell us about your business before you start running campaigns.</p>
             </div>
+        </div>
+        <div class="card card-border bg-base-200 border-base-300 shadow-2xl">
+            <div class="card-body p-8">
+                <div class="mb-8 flex items-center gap-4 pb-6 border-b border-base-300">
+                    <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-10 h-10 object-contain flex-shrink-0">
+                    <div>
+                        <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Advers · Advertiser</span>
+                    </div>
+                </div>
 
             {% if messages %}
             <div class="mb-6 space-y-2">

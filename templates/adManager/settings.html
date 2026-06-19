@@ -2,6 +2,7 @@
 
 {% block title %}Settings{% endblock %}
 {% block page_title %}Settings{% endblock %}
+{% block page_description %}Manage your business profile, bank accounts, and account security.{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
@@ -13,9 +14,10 @@
 </nav>
 {% endblock %}
 
-{% block content %}
+{% block page_container_class %}max-w-5xl mx-auto{% endblock %}
 
-<div class="max-w-2xl mx-auto space-y-6">
+{% block content %}
+<div class="space-y-6">
 
     {# ── Tab Nav ──────────────────────────────────────────────────── #}
     <div role="tablist" class="tabs tabs-border">
@@ -157,6 +159,7 @@
                 </a>
             </div>
         </div>
+    </div>
         <input type="radio" name="settings_tabs" role="tab" class="tab font-semibold"
                aria-label="Bank Details"
                {% if active_tab == 'bank' %}checked{% endif %} />

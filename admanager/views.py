@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
+from django.db import models
 from .models import Admanager, BankAccount, WithdrawalRequest
 from .forms import AdManagerProfileForm, BillboardForm, BankAccountForm
 from device.models import Billboard
@@ -254,9 +255,42 @@ def bank_account_delete(request, pk):
 def billboard_list(request):
     ad_manager = request.user.ad_manager
     billboards = Billboard.objects.filter(ad_manager=ad_manager).order_by('-created_at')
+
+    # ── Search & filter ──────────────────────────────────────────────
+    search_query     = request.GET.get('search', '').strip()
+    availability_f   = request.GET.get('availability', '')
+    screen_type_f    = request.GET.get('screen_type', '')
+    state_f          = request.GET.get('state', '')
+
+    if search_query:
+        billboards = billboards.filter(
+            models.Q(name__icontains=search_query) |
+            models.Q(location_name__icontains=search_query)
+        )
+    if availability_f:
+        billboards = billboards.filter(availability=availability_f)
+    if screen_type_f:
+        billboards = billboards.filter(screen_type=screen_type_f)
+    if state_f:
+        billboards = billboards.filter(state=state_f)
+
+    # Distinct states for the filter dropdown
+    states = (
+        Billboard.objects
+        .filter(ad_manager=ad_manager)
+        .values_list('state', flat=True)
+        .distinct()
+        .order_by('state')
+    )
+
     return render(request, 'adManager/billboard_list.html', {
         'ad_manager': ad_manager,
         'billboards': billboards,
+        'search_query': search_query,
+        'selected_availability': availability_f,
+        'selected_screen_type': screen_type_f,
+        'selected_state': state_f,
+        'states': states,
     })
 
 
@@ -319,9 +353,25 @@ def campaign_requests(request):
     ).exclude(
         status__in=[Campaign.Status.DRAFT, Campaign.Status.PENDING_ADMIN_REVIEW]
     ).distinct().select_related('advertiser', 'media').order_by('-updated_at')
+
+    # ── Search & filter ──────────────────────────────────────────────
+    search_query = request.GET.get('search', '').strip()
+    status_f     = request.GET.get('status', '')
+
+    if search_query:
+        campaigns = campaigns.filter(
+            models.Q(name__icontains=search_query) |
+            models.Q(advertiser__business_name__icontains=search_query) |
+            models.Q(media__title__icontains=search_query)
+        )
+    if status_f:
+        campaigns = campaigns.filter(status=status_f)
+
     return render(request, 'adManager/campaign_requests.html', {
         'ad_manager': ad_manager,
         'campaigns': campaigns,
+        'search_query': search_query,
+        'selected_status': status_f,
     })
 
 

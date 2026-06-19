@@ -2,9 +2,13 @@
 
 {% block title %}Withdrawal Requests{% endblock %}
 {% block page_title %}Withdrawal Requests{% endblock %}
+{% block page_description %}Review and approve payout requests from billboard screen owners.{% endblock %}
+
+{% block page_container_class %}max-w-6xl mx-auto{% endblock %}
 
 {% block content %}
-<div class="card card-border bg-base-200 border-base-300 rounded-xl p-5 shadow-xl">
+<div class="card card-border bg-base-200 border-base-300 rounded-xl shadow-xl">
+    <div class="card-body">
     <div class="mb-6 pb-4 border-b border-base-300/60 flex items-center justify-between">
         <div>
             <h2 class="text-sm font-bold tracking-wide uppercase">Manage Withdrawal Requests</h2>
@@ -73,6 +77,7 @@
         <p class="text-[10px] text-base-content/40 mt-1">When an AdManager submits a withdrawal request, it will appear here for processing.</p>
     </div>
     {% endif %}
+    </div>
 </div>
 
 <!-- Action Modal -->

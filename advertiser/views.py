@@ -252,11 +252,27 @@ def upload_media(request):
 @login_required(login_url='security:login')
 @advertiser_required
 def campaign_list(request):
+    from django.db import models
     advertiser = request.user.advertiser_profile
     campaigns = advertiser.campaigns.order_by('-created_at')
+
+    # ── Search & filter ──────────────────────────────────────────────
+    search_query = request.GET.get('search', '').strip()
+    status_f     = request.GET.get('status', '')
+
+    if search_query:
+        campaigns = campaigns.filter(
+            models.Q(name__icontains=search_query) |
+            models.Q(media__title__icontains=search_query)
+        )
+    if status_f:
+        campaigns = campaigns.filter(status=status_f)
+
     return render(request, 'advertiser/campaign_list.html', {
         'advertiser': advertiser,
         'campaigns': campaigns,
+        'search_query': search_query,
+        'selected_status': status_f,
     })
 
 

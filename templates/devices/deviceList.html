@@ -15,9 +15,18 @@
 </head>
 <body class="bg-base-100 min-h-screen p-6">
     <div class="max-w-5xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-lg font-bold tracking-tight">Billboard Devices</h2>
-            <a href="#" class="btn btn-primary">+ Register New Device</a>
+        <!-- Page Header -->
+        <div class="mb-6">
+            <nav class="flex items-center gap-1.5 text-sm">
+                <span class="font-semibold">Devices</span>
+            </nav>
+            <div class="flex items-center justify-between gap-4 mt-1">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Billboard Devices</h1>
+                    <p class="text-sm text-base-content/50 mt-1">Monitor and manage all registered billboard screens and their status.</p>
+                </div>
+                <a href="#" class="btn btn-primary">+ Register New Device</a>
+            </div>
         </div>
 
         {% if messages %}

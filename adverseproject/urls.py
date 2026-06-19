@@ -6,7 +6,7 @@ from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/adverse-auth/login/', permanent=False)),
+    path('', include('adverse.urls')),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('adverse-auth/', include('security.urls')),

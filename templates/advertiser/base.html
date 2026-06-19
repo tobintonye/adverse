@@ -144,13 +144,8 @@
                 </svg>
             </button>
             <div class="flex-1 min-w-0">
-                {% block breadcrumbs %}
-                <nav class="flex items-center gap-1.5 text-sm min-w-0">
-                    <span class="text-sm font-semibold text-base-content truncate">{% block page_title %}{% endblock %}</span>
-                </nav>
-                {% endblock %}
+                <span class="text-sm font-semibold truncate">Advers Advertiser</span>
             </div>
-            {% block topbar_actions %}{% endblock %}
 
             <!-- Theme Toggle -->
             <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-square flex-shrink-0" title="Toggle theme">
@@ -205,17 +200,35 @@
             </div>
         </header>
 
-        <main class="flex-1 p-4 md:p-6">
-            {% if messages %}
-            <div class="mb-6 space-y-2">
-                {% for message in messages %}
-                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} text-sm">
-                    {{ message }}
+        <main class="flex-1">
+            <div class="p-4 md:p-6 {% block page_container_class %}{% endblock %}">
+                {% block page_header %}
+                <div class="mb-6">
+                    <nav class="flex items-center gap-1.5 text-sm min-w-0">
+                        {% block breadcrumbs %}{% endblock %}
+                    </nav>
+                    <div class="flex items-center justify-between gap-4 mt-1">
+                        <div>
+                            <h1 class="text-xl font-bold tracking-tight">{% block page_title %}{% endblock %}</h1>
+                            {% block page_description %}
+                            <p class="text-sm text-base-content/50 mt-1"></p>
+                            {% endblock %}
+                        </div>
+                        {% block page_header_actions %}{% endblock %}
+                    </div>
                 </div>
-                {% endfor %}
+                {% endblock %}
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} text-sm">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% block content %}{% endblock %}
             </div>
-            {% endif %}
-            {% block content %}{% endblock %}
         </main>
     </div>
 

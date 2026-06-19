@@ -88,28 +88,28 @@ class BillboardForm(forms.ModelForm):
             'location_name': forms.TextInput(attrs={'placeholder': 'e.g. Adeola Odeku Street, VI, Lagos'}),
             'country': forms.TextInput(attrs={
                 'placeholder': 'e.g. Nigeria',
-                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'class': 'input w-full',
                 'id': 'country-input'
             }),
             'state': forms.TextInput(attrs={
                 'placeholder': 'e.g. Lagos State',
-                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'class': 'input w-full',
                 'id': 'state-input'
             }),
             'screen_width_px': forms.NumberInput(attrs={'placeholder': '1920'}),
             'screen_height_px': forms.NumberInput(attrs={'placeholder': '1080'}),
             'charge_unit': forms.Select(attrs={
-                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition',
+                'class': 'select w-full',
                 'id': 'charge-unit-select'
             }),
             'price_per_slot': forms.NumberInput(attrs={'placeholder': '5000.00', 'step': '0.01'}),
             'operating_hours_start': forms.TimeInput(attrs={'type': 'time'}),
             'operating_hours_end': forms.TimeInput(attrs={'type': 'time'}),
             'screen_type': forms.Select(attrs={
-                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition'
+                'class': 'select w-full'
             }),
             'availability': forms.Select(attrs={
-                'class': 'w-full px-4 py-2.5 bg-black border border-zinc-800/80 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition'
+                'class': 'select w-full'
             }),
         }
 

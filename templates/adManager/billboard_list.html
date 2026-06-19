@@ -1,7 +1,9 @@
 {% extends "adManager/base.html" %}
+{% load static %}
 
 {% block title %}Billboards{% endblock %}
 {% block page_title %}My Billboards{% endblock %}
+{% block page_description %}Manage your registered billboard screens, availability, and pricing.{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
@@ -13,7 +15,7 @@
 </nav>
 {% endblock %}
 
-{% block topbar_actions %}
+{% block page_header_actions %}
 <a href="{% url 'admanager:billboard_create' %}"
    class="btn btn-primary btn-sm">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,101 +27,209 @@
 
 {% block content %}
 
+{# ── Search & Filter Bar ─────────────────────────────────────────── #}
+<form method="get" class="mb-6">
+    <div class="flex flex-wrap items-end gap-3">
+        {# Search #}
+        <div class="form-control flex-1 min-w-[200px] max-w-md">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">Search billboards</span>
+            </label>
+            <div class="relative">
+                <input type="text" name="search" value="{{ search_query }}"
+                       placeholder="Search by name or location…"
+                       class="input input-bordered input-sm w-full pl-8">
+                <svg class="w-3.5 h-3.5 text-base-content/40 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+                </svg>
+            </div>
+        </div>
+
+        {# Availability #}
+        <div class="form-control w-36">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">Availability</span>
+            </label>
+            <select name="availability" class="select select-bordered select-sm"
+                    onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="available"  {% if selected_availability == 'available'  %}selected{% endif %}>Available</option>
+                <option value="maintenance"{% if selected_availability == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                <option value="unavailable"{% if selected_availability == 'unavailable' %}selected{% endif %}>Unavailable</option>
+            </select>
+        </div>
+
+        {# Screen type #}
+        <div class="form-control w-36">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">Screen type</span>
+            </label>
+            <select name="screen_type" class="select select-bordered select-sm"
+                    onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="led"     {% if selected_screen_type == 'led'     %}selected{% endif %}>LED</option>
+                <option value="lcd"     {% if selected_screen_type == 'lcd'     %}selected{% endif %}>LCD</option>
+                <option value="digital" {% if selected_screen_type == 'digital' %}selected{% endif %}>Digital</option>
+                <option value="static"  {% if selected_screen_type == 'static'  %}selected{% endif %}>Static</option>
+            </select>
+        </div>
+
+        {# State #}
+        {% if states %}
+        <div class="form-control w-36">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">State</span>
+            </label>
+            <select name="state" class="select select-bordered select-sm"
+                    onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for s in states %}
+                <option value="{{ s }}" {% if selected_state == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {# Clear #}
+        {% if search_query or selected_availability or selected_screen_type or selected_state %}
+        <div class="form-control">
+            <label class="label py-0.5"><span class="label-text opacity-0"> </span></label>
+            <a href="{% url 'admanager:billboard_list' %}"
+               class="btn btn-ghost btn-sm text-base-content/60 hover:text-base-content">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+{# ── Billboard Cards Grid ───────────────────────────────────────── #}
 {% if billboards %}
-<div class="card card-border bg-base-200 border-base-300">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-            <thead>
-                <tr class="border-b border-base-300 bg-base-200/50">
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-20">Preview</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Name / Location</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Screen specs</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Price / Rate</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Status</th>
-                    <th class="px-6 py-4"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-base-300/60">
-                {% for bb in billboards %}
-                <tr class="hover:bg-base-300/20 transition-all duration-200 group">
-                    <td class="px-6 py-4 align-middle">
-                        {% if bb.media_file %}
-                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-base-100 border border-base-300 flex items-center justify-center relative flex-shrink-0 shadow-md">
-                                {% with url_str=bb.media_file.url|lower %}
-                                    {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
-                                        <video src="{{ bb.media_file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                                        <div class="absolute inset-0 bg-base-100/40 flex items-center justify-center">
-                                            <svg class="w-3.5 h-3.5 text-white opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-                                    {% else %}
-                                        <img src="{{ bb.media_file.url }}" alt="{{ bb.name }}" class="w-full h-full object-cover">
-                                    {% endif %}
-                                {% endwith %}
-                            </div>
-                        {% else %}
-                            <div class="w-16 h-10 rounded-lg bg-base-100 border border-base-300/60 flex items-center justify-center text-base-content/40 flex-shrink-0">
-                                <svg class="w-4 h-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+
+{% if search_query or selected_availability or selected_screen_type or selected_state %}
+<p class="text-xs text-base-content/50 mb-4">
+    {{ billboards|length }} billboard{{ billboards|pluralize }} found.
+</p>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    {% for bb in billboards %}
+    <div class="card card-border bg-base-200 border-base-300 overflow-hidden group transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+        {# ── Card Preview ── #}
+        <figure class="relative h-40 bg-base-100 overflow-hidden">
+            {% if bb.media_file %}
+                {% with url_str=bb.media_file.url|lower %}
+                    {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
+                        <video src="{{ bb.media_file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
+                        <div class="absolute inset-0 bg-base-100/30 flex items-center justify-center">
+                            <div class="w-10 h-10 rounded-full bg-base-100/70 flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-5 h-5 text-base-content ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
                                 </svg>
                             </div>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="font-semibold tracking-tight group-hover:text-primary transition-colors">{{ bb.name }}</div>
-                        <div class="text-xs text-base-content/50 mt-1 flex items-center gap-1.5 flex-wrap">
-                            <span class="truncate max-w-[250px]" title="{{ bb.location_name }}">{{ bb.location_name }}</span>
-                            {% if bb.latitude and bb.longitude %}
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-base-300/60 text-[10px] text-base-content/50 border border-base-300 font-mono">
-                                    <svg class="w-2.5 h-2.5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-                                    {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}
-                                </span>
-                            {% endif %}
                         </div>
-                    </td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex flex-col">
-                            <span class="font-medium text-xs">{{ bb.get_screen_type_display }}</span>
-                            <span class="text-base-content/50 text-xs mt-0.5">{{ bb.resolution }}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 align-middle font-mono font-medium">
-                        ₦{{ bb.price_per_slot|floatformat:2 }} / {% if bb.charge_unit == 'hourly' %}hr{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
-                    </td>
-                    <td class="px-6 py-4 align-middle">
-                        {% if bb.availability == 'available' %}
-                            <span class="badge badge-success badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                                Available
-                            </span>
-                        {% elif bb.availability == 'maintenance' %}
-                            <span class="badge badge-warning badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
-                                Maintenance
-                            </span>
-                        {% else %}
-                            <span class="badge badge-ghost badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full"></span>
-                                Unavailable
-                            </span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 align-middle text-right">
-                        <a href="{% url 'admanager:billboard_edit' bb.pk %}"
-                           class="btn btn-ghost btn-xs">
-                            Edit
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% else %}
+                        <img src="{{ bb.media_file.url }}" alt="{{ bb.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    {% endif %}
+                {% endwith %}
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center text-base-content/20">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            {% endif %}
+
+            {# Status badge overlay #}
+            <div class="absolute top-3 right-3">
+                {% if bb.availability == 'available' %}
+                    <span class="badge badge-success badge-xs gap-1 shadow-md">
+                        <span class="w-1 h-1 rounded-full bg-success animate-pulse"></span>
+                        Available
+                    </span>
+                {% elif bb.availability == 'maintenance' %}
+                    <span class="badge badge-warning badge-xs gap-1 shadow-md">
+                        <span class="w-1 h-1 rounded-full bg-warning"></span>
+                        Maintenance
+                    </span>
+                {% else %}
+                    <span class="badge badge-ghost badge-xs gap-1 shadow-md">
+                        <span class="w-1 h-1 rounded-full"></span>
+                        Unavailable
+                    </span>
+                {% endif %}
+            </div>
+        </figure>
+
+        {# ── Card Body ── #}
+        <div class="card-body p-4 gap-2">
+            {# Name & Location #}
+            <h3 class="card-title text-sm font-bold leading-tight group-hover:text-primary transition-colors">
+                {{ bb.name }}
+            </h3>
+            <p class="text-xs text-base-content/60 flex items-start gap-1.5">
+                <svg class="w-3 h-3 mt-0.5 flex-shrink-0 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span title="{{ bb.location_name }}">{{ bb.location_name }}</span>
+            </p>
+
+            {# Meta row: screen type, resolution, charge #}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-base-content/50">
+                <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    {{ bb.get_screen_type_display }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
+                    </svg>
+                    {{ bb.resolution }}
+                </span>
+                <span class="inline-flex items-center gap-1 font-mono font-medium text-base-content/70">
+                    ₦{{ bb.price_per_slot|floatformat:2 }}/
+                    {% if bb.charge_unit == 'hourly' %}hr
+                    {% elif bb.charge_unit == 'daily' %}day
+                    {% else %}slot{% endif %}
+                </span>
+            </div>
+
+            {# Coordinates (if any) #}
+            {% if bb.latitude and bb.longitude %}
+            <div class="mt-1">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-base-300/50 text-[10px] text-base-content/50 border border-base-300 font-mono">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}
+                </span>
+            </div>
+            {% endif %}
+
+            {# Card actions #}
+            <div class="card-actions justify-end mt-2 pt-2 border-t border-base-300/50">
+                <a href="{% url 'admanager:billboard_edit' bb.pk %}"
+                   class="btn btn-ghost btn-xs">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Edit
+                </a>
+            </div>
+        </div>
     </div>
+    {% endfor %}
 </div>
+
 {% else %}
 <div class="flex flex-col items-center justify-center py-24 text-center bg-base-200/20 border border-base-300 rounded-xl backdrop-blur-sm">
     <div class="w-14 h-14 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-base-content/30 mb-4 shadow-lg">
@@ -127,12 +237,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
     </div>
-    <p class="font-semibold tracking-tight text-base">No billboards yet</p>
-    <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Register your first physical billboard screen to start setting rates and serving campaigns.</p>
-    <a href="{% url 'admanager:billboard_create' %}"
-       class="mt-5 px-5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-900/30 active:scale-95">
-        Add Billboard
-    </a>
+    {% if search_query or selected_availability or selected_screen_type or selected_state %}
+        <p class="font-semibold tracking-tight text-base">No matching billboards</p>
+        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Try adjusting your search or filter criteria.</p>
+        <a href="{% url 'admanager:billboard_list' %}"
+           class="mt-5 btn btn-ghost btn-sm">Clear all filters</a>
+    {% else %}
+        <p class="font-semibold tracking-tight text-base">No billboards yet</p>
+        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Register your first physical billboard screen to start setting rates and serving campaigns.</p>
+        <a href="{% url 'admanager:billboard_create' %}"
+           class="mt-5 px-5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-900/30 active:scale-95">
+            Add Billboard
+        </a>
+    {% endif %}
 </div>
 {% endif %}
 

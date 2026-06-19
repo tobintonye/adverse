@@ -2,6 +2,7 @@
 
 {% block title %}Campaign Requests{% endblock %}
 {% block page_title %}Campaign Requests{% endblock %}
+{% block page_description %}Review and manage campaign scheduling requests from advertisers.{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="flex items-center gap-1.5 text-sm min-w-0">
@@ -14,6 +15,67 @@
 {% endblock %}
 
 {% block content %}
+
+{# ── Search & Filter Bar ─────────────────────────────────────────── #}
+<form method="get" class="mb-6">
+    <div class="flex flex-wrap items-end gap-3">
+        {# Search #}
+        <div class="form-control flex-1 min-w-[220px] max-w-md">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">Search campaigns</span>
+            </label>
+            <div class="relative">
+                <input type="text" name="search" value="{{ search_query }}"
+                       placeholder="Search by name, advertiser, or media…"
+                       class="input input-bordered input-sm w-full pl-8">
+                <svg class="w-3.5 h-3.5 text-base-content/40 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+                </svg>
+            </div>
+        </div>
+
+        {# Status #}
+        <div class="form-control w-40">
+            <label class="label py-0.5">
+                <span class="label-text text-xs text-base-content/60">Status</span>
+            </label>
+            <select name="status" class="select select-bordered select-sm"
+                    onchange="this.form.submit()">
+                <option value="">All statuses</option>
+                <option value="pending_manager_review" {% if selected_status == 'pending_manager_review' %}selected{% endif %}>Pending Review</option>
+                <option value="approved"  {% if selected_status == 'approved'  %}selected{% endif %}>Approved</option>
+                <option value="active"    {% if selected_status == 'active'    %}selected{% endif %}>Active</option>
+                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="rejected"  {% if selected_status == 'rejected'  %}selected{% endif %}>Rejected</option>
+                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                <option value="paused"    {% if selected_status == 'paused'    %}selected{% endif %}>Paused</option>
+            </select>
+        </div>
+
+        {# Clear #}
+        {% if search_query or selected_status %}
+        <div class="form-control">
+            <label class="label py-0.5"><span class="label-text opacity-0"> </span></label>
+            <a href="{% url 'admanager:campaign_requests' %}"
+               class="btn btn-ghost btn-sm text-base-content/60 hover:text-base-content">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+{# ── Results count ──────────────────────────────────────────────── #}
+{% if search_query or selected_status %}
+<p class="text-xs text-base-content/50 mb-4">
+    {{ campaigns|length }} campaign{{ campaigns|pluralize }} found.
+</p>
+{% endif %}
 
 {% if campaigns %}
 <div class="card card-border bg-base-200 border-base-300">
@@ -127,8 +189,15 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
     </div>
-    <p class="font-semibold tracking-tight text-base">No campaign requests yet</p>
-    <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">When advertisers book slots on your screens, campaign requests will appear here for review.</p>
+    {% if search_query or selected_status %}
+        <p class="font-semibold tracking-tight text-base">No matching campaigns</p>
+        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Try adjusting your search or filter criteria.</p>
+        <a href="{% url 'admanager:campaign_requests' %}"
+           class="mt-5 btn btn-ghost btn-sm">Clear all filters</a>
+    {% else %}
+        <p class="font-semibold tracking-tight text-base">No campaign requests yet</p>
+        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">When advertisers book slots on your screens, campaign requests will appear here for review.</p>
+    {% endif %}
 </div>
 {% endif %}
 

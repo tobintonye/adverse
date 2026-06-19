@@ -2,6 +2,7 @@
 
 {% block title %}Withdrawals{% endblock %}
 {% block page_title %}Withdrawals{% endblock %}
+{% block page_description %}Request withdrawals and view your transaction history.{% endblock %}
 
 {% block content %}
 
@@ -61,10 +62,10 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
     {# ── Withdrawal Request Form ──────────────────────────────────── #}
-    <div class="lg:col-span-1 space-y-4">
+    <div class="md:col-span-1 space-y-4">
 
         {# Default Account Info Card #}
         {% if default_account %}
@@ -157,9 +158,10 @@
             {% endif %}
         </div>
     </div>
+</div>
 
     {# ── Transaction History ──────────────────────────────────────── #}
-    <div class="lg:col-span-2">
+    <div class="md:col-span-2">
         <div class="card card-border bg-base-200 border-base-300 flex flex-col min-h-[300px]">
             <div class="card-body">
             <h3 class="card-title text-xs">Transaction History</h3>

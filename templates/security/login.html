@@ -13,14 +13,76 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <style>
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
+        }
+        @keyframes float-medium {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(-4deg); }
+        }
+        @keyframes float-fast {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(6deg); }
+        }
+        .animate-float-slow {
+            animation: float-slow 10s ease-in-out infinite;
+        }
+        .animate-float-medium {
+            animation: float-medium 8s ease-in-out infinite;
+        }
+        .animate-float-fast {
+            animation: float-fast 6s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-base-100 flex items-center justify-center min-h-screen p-4 relative">
 
-    <div class="w-full max-w-sm card card-border bg-base-200 border-base-300 rounded-xl p-6 shadow-2xl">
+<!-- Floating Background Elements -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <!-- Hexagon Top Left -->
+    <div class="absolute top-[10%] left-[10%] mouse-follow transition-transform duration-300 ease-out" data-speed="0.03">
+        <div class="animate-float-slow">
+            <svg fill="none" height="120" viewBox="0 0 100 100" width="120" xmlns="http://www.w3.org/2000/svg">
+                <path class="text-primary/20" d="M50 0 L93.3 25 L93.3 75 L50 100 L6.7 75 L6.7 25 Z" stroke="currentColor" stroke-width="0.5"></path>
+            </svg>
+        </div>
+    </div>
+    <!-- Circle Bottom Left -->
+    <div class="absolute bottom-[15%] left-[15%] mouse-follow transition-transform duration-300 ease-out" data-speed="-0.02">
+        <div class="animate-float-medium">
+            <svg fill="none" height="150" viewBox="0 0 100 100" width="150" xmlns="http://www.w3.org/2000/svg">
+                <circle class="text-secondary/15" cx="50" cy="50" r="40" stroke="currentColor" stroke-width="0.5"></circle>
+            </svg>
+        </div>
+    </div>
+    <!-- Square Top Right -->
+    <div class="absolute top-[20%] right-[15%] mouse-follow transition-transform duration-300 ease-out" data-speed="0.04">
+        <div class="animate-float-fast">
+            <svg fill="none" height="80" viewBox="0 0 100 100" width="80" xmlns="http://www.w3.org/2000/svg">
+                <rect class="text-primary/20" height="80" rx="12" stroke="currentColor" stroke-width="0.5" transform="rotate(15, 50, 50)" width="80" x="10" y="10"></rect>
+            </svg>
+        </div>
+    </div>
+    <!-- Circle Bottom Right -->
+    <div class="absolute bottom-[10%] right-[10%] mouse-follow transition-transform duration-300 ease-out" data-speed="-0.03">
+        <div class="animate-float-slow">
+            <svg fill="none" height="100" viewBox="0 0 100 100" width="100" xmlns="http://www.w3.org/2000/svg">
+                <circle class="text-secondary/20" cx="50" cy="50" r="35" stroke="currentColor" stroke-width="0.5"></circle>
+            </svg>
+        </div>
+    </div>
+</div>
+
+    <div class="w-full max-w-md mx-auto relative z-10">
+        <div class="card card-border bg-base-200 border-base-300 rounded-xl p-6 md:p-8 shadow-2xl">
 
         <!-- Header -->
         <div class="text-center mb-6">
-            <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-3">
+            <a href="{% url 'adverse:home' %}" class="inline-block transition-transform hover:scale-105 active:scale-95 duration-200">
+                <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-3">
+            </a>
             <h2 class="text-xl font-bold tracking-tight">Welcome Back</h2>
             <p class="text-base-content/50 text-xs mt-1">Sign in to your Advers account</p>
         </div>
@@ -56,11 +118,24 @@
             <!-- Password -->
             <fieldset class="fieldset">
                 <legend class="fieldset-legend text-[10px] uppercase">Password</legend>
-                <input type="password"
-                       name="{{ form.password.name }}"
-                       placeholder="••••••••"
-                       required
-                       class="input w-full">
+                <div class="relative">
+                    <input type="password"
+                           name="{{ form.password.name }}"
+                           id="login-password"
+                           placeholder="••••••••"
+                           required
+                           class="input w-full pr-10">
+                    <button type="button" onclick="togglePassword()"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-base-300/50 transition text-base-content/40 hover:text-base-content cursor-pointer">
+                        <svg id="pw-eye-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <svg id="pw-eye-closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                        </svg>
+                    </button>
+                </div>
                 {% for error in form.password.errors %}
                     <div class="text-error text-[10px] mt-1">{{ error }}</div>
                 {% endfor %}
@@ -95,6 +170,35 @@
     </div>
 
     {% include "partials/theme_toggle.html" %}
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('login-password');
+            const openIcon = document.getElementById('pw-eye-open');
+            const closedIcon = document.getElementById('pw-eye-closed');
+            if (input.type === 'password') {
+                input.type = 'text';
+                openIcon.classList.add('hidden');
+                closedIcon.classList.remove('hidden');
+            } else {
+                input.type = 'password';
+                openIcon.classList.remove('hidden');
+                closedIcon.classList.add('hidden');
+            }
+        }
+
+        // Mouse follow parallax effect for background SVGs
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            document.querySelectorAll('.mouse-follow').forEach(el => {
+                const speed = parseFloat(el.getAttribute('data-speed')) || 0.02;
+                const offsetX = (window.innerWidth / 2 - x) * speed;
+                const offsetY = (window.innerHeight / 2 - y) * speed;
+                el.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+            });
+        });
+    </script>
 
 </body>
 </html>

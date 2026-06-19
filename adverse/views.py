@@ -1,6 +1,13 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 # Create your views here.
-@login_required
 def home(request):
     return render (request, 'adverse/home.html')
+
+def about(request):
+    return render(request, 'adverse/about.html')
+
+def how_it_works(request):
+    return render(request, 'adverse/how_it_works.html')
+
+def contact(request):
+    return render(request, 'adverse/contact.html')
