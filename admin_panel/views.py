@@ -325,3 +325,24 @@ def admin_withdrawal_list(request):
     return render(request, 'admin_panel/withdrawals.html', {'withdrawals': withdrawals})
 
 
+@login_required(login_url='security:login')
+@admin_required
+def message_inbox(request):
+    from adverse.models import Message
+    messages_list = Message.objects.all().order_by('-created_at')
+    selected_message = None
+    selected_id = request.GET.get('id')
+    
+    if selected_id:
+        selected_message = get_object_or_404(Message, pk=selected_id)
+        if not selected_message.is_read:
+            selected_message.is_read = True
+            selected_message.save(update_fields=['is_read'])
+            
+    return render(request, 'admin_panel/messages.html', {
+        'messages_list': messages_list,
+        'selected_message': selected_message,
+    })
+
+
+

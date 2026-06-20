@@ -12,4 +12,5 @@ urlpatterns = [
     path("ad-managers/", views.ad_manager_list, name="ad_manager_list"),
     path("revenue-settings/", views.revenue_settings, name="revenue_settings"),
     path("withdrawals/", views.admin_withdrawal_list, name="withdrawal_list"),
+    path("messages/", views.message_inbox, name="message_inbox"),
 ]

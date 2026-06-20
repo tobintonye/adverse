@@ -641,7 +641,7 @@
             <!-- Footer -->
             <footer id="contact" class="relative z-10 bg-base-200 border-t border-base-300/40 w-full py-20">
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-[1200px] mx-auto px-6">
-                    <div class="col-span-2 lg:col-span-1">
+                    <div class="col-span-2 lg:col-span-2">
                         <div class="font-headline-sm text-headline-sm font-bold text-base-content mb-6">Advers</div>
                         <p class="font-body-md text-body-md text-base-content/65 max-w-xs">
                             The modern operating system for outdoor advertising across West Africa.
@@ -651,11 +651,9 @@
                         <h5 class="font-bold text-base-content font-body-md text-body-md">Platform</h5>
                         <ul class="space-y-2">
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
-                                    href="#features">Features</a></li>
+                                    href="{% url 'adverse:home' %}">Home</a></li>
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
                                     href="{% url 'adverse:how_it_works' %}">How It Works</a></li>
-                            <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
-                                    href="#">Pricing</a></li>
                         </ul>
                     </div>
                     <div class="space-y-4">
@@ -664,8 +662,6 @@
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
                                     href="{% url 'adverse:about' %}">About Us</a></li>
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
-                                    href="#">Careers</a></li>
-                            <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
                                     href="{% url 'adverse:contact' %}">Contact</a></li>
                         </ul>
                     </div>
@@ -673,9 +669,9 @@
                         <h5 class="font-bold text-base-content font-body-md text-body-md">Legal</h5>
                         <ul class="space-y-2">
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
-                                    href="#">Terms</a></li>
+                                    href="{% url 'adverse:terms' %}">Terms</a></li>
                             <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md"
-                                    href="#">Privacy</a></li>
+                                    href="{% url 'adverse:privacy' %}">Privacy</a></li>
                         </ul>
                     </div>
                 </div>

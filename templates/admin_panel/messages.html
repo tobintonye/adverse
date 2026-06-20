@@ -1,0 +1,95 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Inbox{% endblock %}
+{% block page_title %}Inbox{% endblock %}
+{% block page_description %}Manage and read incoming messages from the contact page.{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 bg-base-200 border border-base-300 rounded-2xl overflow-hidden shadow-xl h-[calc(100vh-12rem)] min-h-[500px]">
+    
+    {# ── Left Column: Scrollable Messages List ──────────────────────── #}
+    <div class="{% if selected_message %}hidden md:flex{% else %}flex{% endif %} md:col-span-4 lg:col-span-4 border-r border-base-300 flex-col h-full bg-base-100">
+        <div class="p-4 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+            <span class="font-bold text-sm text-base-content/85">All Messages</span>
+            <span class="badge badge-neutral badge-sm">{{ messages_list|length }}</span>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto divide-y divide-base-300/40">
+            {% if messages_list %}
+                {% for msg in messages_list %}
+                <a href="?id={{ msg.pk }}" class="block p-4 transition-colors hover:bg-base-200/50 {% if selected_message.pk == msg.pk %}bg-base-300/60 hover:bg-base-300/80{% endif %} {% if not msg.is_read %}border-l-4 border-primary{% endif %}">
+                    <div class="flex justify-between items-start gap-2">
+                        <span class="font-semibold text-sm truncate max-w-[150px] {% if not msg.is_read %}text-base-content font-bold{% else %}text-base-content/75{% endif %}">
+                            {{ msg.full_name }}
+                        </span>
+                        <span class="text-[10px] text-base-content/50 whitespace-nowrap pt-0.5">
+                            {{ msg.created_at|date:"b d, Y" }}
+                        </span>
+                    </div>
+                    {% if msg.company %}
+                    <p class="text-[11px] text-primary/70 font-medium truncate mt-0.5">{{ msg.company }}</p>
+                    {% endif %}
+                    <p class="text-xs text-base-content/50 line-clamp-2 mt-1">{{ msg.message }}</p>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="p-8 text-center text-base-content/40 text-xs">
+                    No messages received yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Right Column: Selected Message Content or Empty State ─────────── #}
+    <div class="{% if selected_message %}flex{% else %}hidden md:flex{% endif %} md:col-span-8 lg:col-span-8 flex-col h-full bg-base-100/50">
+        {% if selected_message %}
+            <!-- Message detail toolbar -->
+            <div class="p-4 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+                <a href="{% url 'admin_panel:message_inbox' %}" class="btn btn-ghost btn-sm gap-1 md:hidden">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back
+                </a>
+                <span class="text-xs text-base-content/50">Received {{ selected_message.created_at|date:"F d, Y @ H:i" }}</span>
+            </div>
+
+            <!-- Message view body -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                <div class="flex flex-wrap justify-between items-start gap-4 pb-6 border-b border-base-300/40">
+                    <div>
+                        <h2 class="text-xl font-bold text-base-content">{{ selected_message.full_name }}</h2>
+                        <a href="mailto:{{ selected_message.email }}" class="text-sm text-primary hover:underline block mt-1 font-medium">{{ selected_message.email }}</a>
+                    </div>
+                    {% if selected_message.company %}
+                    <div class="badge badge-outline badge-primary px-3 py-3 text-xs">
+                        🏢 {{ selected_message.company }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-4">
+                    <span class="text-[10px] uppercase font-bold text-base-content/40 tracking-wider block">Message Details</span>
+                    <div class="bg-base-200/40 rounded-xl p-6 border border-base-300/50">
+                        <p class="whitespace-pre-line text-sm text-base-content/85 leading-relaxed">{{ selected_message.message }}</p>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Desktop Empty State -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-base-200/20">
+                <div class="w-16 h-16 rounded-full bg-base-300 flex items-center justify-center text-base-content/30 mb-4 border border-base-300/50">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="font-bold text-base text-base-content">No Message Selected</h3>
+                <p class="text-xs text-base-content/40 max-w-sm mt-1 mx-auto leading-relaxed">
+                    Select a message from the scrollable inbox list on the left to read its complete content.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

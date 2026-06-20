@@ -129,6 +129,19 @@
                 </a>
                 <span class="nav-tooltip">Withdrawals</span>
             </div>
+            <div class="nav-item relative">
+                <a href="{% url 'admin_panel:message_inbox' %}"
+                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition {% if 'message' in request.resolver_match.url_name %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/50{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span class="nav-label whitespace-nowrap">Inbox</span>
+                    </div>
+                    {% if unread_messages_count > 0 %}
+                    <span class="badge badge-error badge-sm text-[10px] h-4 min-h-0 px-1.5 font-bold text-white nav-label">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
+                <span class="nav-tooltip">Inbox {% if unread_messages_count > 0 %}({{ unread_messages_count }}){% endif %}</span>
+            </div>
         </nav>
 
         <!-- Footer: sign out -->

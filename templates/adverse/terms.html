@@ -1,0 +1,546 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Terms of Service | Advers — Outdoor Advertising Platform</title>
+    <meta name="description" content="Read the Terms of Service for the Advers outdoor advertising platform. Understand your rights, obligations, and content policies when using our services.">
+
+    <!-- daisyUI 5 & Tailwind CSS v4 -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-entrance { animation: fadeIn 0.8s ease-out forwards; }
+
+        .glass-card {
+            background: color-mix(in oklch, var(--color-base-100) 70%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in oklch, var(--color-base-content) 15%, transparent);
+        }
+
+        .floating-shape {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(1px);
+            opacity: 0.25;
+        }
+
+        .font-body-lg, .font-body-md, .font-headline-sm, .font-headline-md,
+        .font-display-lg-mobile, .font-display-lg { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .text-body-lg { font-size: 18px; line-height: 1.8; font-weight: 400; }
+        .text-body-md { font-size: 16px; line-height: 1.7; font-weight: 400; }
+        .text-headline-sm { font-size: 24px; line-height: 1.4; font-weight: 700; }
+        .text-headline-md { font-size: 36px; line-height: 1.3; letter-spacing: -0.01em; font-weight: 700; }
+        .text-display-lg-mobile { font-size: 40px; line-height: 1.2; letter-spacing: -0.02em; font-weight: 800; }
+        .text-display-lg { font-size: 64px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 800; }
+        .text-label-caps { font-size: 12px; line-height: 1; letter-spacing: 0.05em; font-weight: 700; }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .reveal-section {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+        .reveal-section.revealed { opacity: 1; transform: translateY(0); }
+
+        /* Legal content styles */
+        .legal-content h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            color: var(--color-base-content);
+            border-left: 4px solid var(--color-primary);
+            padding-left: 1rem;
+        }
+        .legal-content h3 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-base-content);
+        }
+        .legal-content p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: color-mix(in oklch, var(--color-base-content) 75%, transparent);
+            margin-bottom: 1.25rem;
+        }
+        .legal-content ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.25rem;
+        }
+        .legal-content ul li {
+            font-size: 16px;
+            line-height: 1.8;
+            color: color-mix(in oklch, var(--color-base-content) 75%, transparent);
+            padding-left: 1.5rem;
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+        .legal-content ul li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--color-primary);
+            font-weight: 700;
+        }
+
+        /* Sticky TOC */
+        .toc-link {
+            display: block;
+            padding: 0.35rem 1rem;
+            font-size: 14px;
+            color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+            border-left: 2px solid transparent;
+            transition: all 0.25s ease;
+            border-radius: 0 4px 4px 0;
+        }
+        .toc-link:hover, .toc-link.active {
+            color: var(--color-primary);
+            border-left-color: var(--color-primary);
+            background: color-mix(in oklch, var(--color-primary) 8%, transparent);
+        }
+    </style>
+</head>
+<body class="bg-base-100 text-base-content min-h-screen">
+
+<!-- Floating Background Elements -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="floating-shape top-[8%] right-[8%]">
+        <svg fill="none" height="160" viewBox="0 0 100 100" width="160" xmlns="http://www.w3.org/2000/svg">
+            <path class="text-primary/20" d="M50 0 L93.3 25 L93.3 75 L50 100 L6.7 75 L6.7 25 Z" stroke="currentColor" stroke-width="0.5"></path>
+        </svg>
+    </div>
+    <div class="floating-shape bottom-[15%] right-[5%]">
+        <svg fill="none" height="200" viewBox="0 0 100 100" width="200" xmlns="http://www.w3.org/2000/svg">
+            <circle class="text-secondary/15" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="0.5"></circle>
+        </svg>
+    </div>
+    <div class="floating-shape top-[50%] left-[3%]">
+        <svg fill="none" height="100" viewBox="0 0 100 100" width="100" xmlns="http://www.w3.org/2000/svg">
+            <rect class="text-primary/20" height="80" rx="10" stroke="currentColor" stroke-width="0.5" transform="rotate(20, 50, 50)" width="80" x="10" y="10"></rect>
+        </svg>
+    </div>
+</div>
+
+<!-- Drawer for mobile nav -->
+<div class="drawer">
+    <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col min-h-screen relative z-10">
+
+        <!-- TopNavBar -->
+        <header class="fixed top-0 w-full z-[100] bg-base-100/60 backdrop-blur-xl border-b border-base-300/40">
+            <div class="flex justify-between items-center max-w-[1200px] mx-auto px-6 h-20">
+                <div class="flex items-center gap-2">
+                    <label for="mobile-drawer" class="btn btn-ghost btn-square drawer-button lg:hidden">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </label>
+                    <a href="{% url 'adverse:home' %}" class="flex items-center gap-2">
+                        <img alt="Advers Logo" class="h-10 w-auto" src="{% static 'images/logo.png' %}">
+                        <div class="font-headline-sm text-headline-sm font-bold text-base-content">Advers</div>
+                    </a>
+                </div>
+
+                <nav class="hidden lg:flex items-center space-x-8">
+                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:home' %}">Home</a>
+                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:about' %}">About</a>
+                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:how_it_works' %}">How It Works</a>
+                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:contact' %}">Contact</a>
+                </nav>
+
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'security:login' %}" class="btn btn-ghost btn-md font-medium hover:text-primary transition-colors font-body-md text-body-md">Log In</a>
+                    <a href="{% url 'security:register' %}" class="btn btn-primary btn-md rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all">Get Started</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="relative z-10 pt-20">
+            <!-- Hero Section -->
+            <header class="relative pt-40 pb-16 overflow-hidden">
+                <div class="relative max-w-[1200px] px-6 mx-auto animate-entrance">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
+                        <span class="material-symbols-outlined text-primary text-sm">gavel</span>
+                        <span class="text-primary font-bold text-label-caps text-xs tracking-widest">LEGAL DOCUMENT</span>
+                    </div>
+                    <h1 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-6 leading-tight max-w-4xl">
+                        Terms of <span class="text-gradient">Service</span>
+                    </h1>
+                    <p class="font-body-lg text-body-lg text-base-content/70 max-w-2xl mb-6">
+                        These terms govern your use of the Advers platform. Please read carefully before creating an account or booking advertising space.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-base-content/50">
+                        <span class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-base text-primary">calendar_today</span>
+                            Effective Date: June 1, 2025
+                        </span>
+                        <span class="w-1 h-1 rounded-full bg-base-content/30"></span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-base text-primary">update</span>
+                            Last Updated: June 19, 2025
+                        </span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <section class="py-12 pb-32">
+                <div class="max-w-[1200px] mx-auto px-6 flex flex-col lg:flex-row gap-12 items-start">
+
+                    <!-- Sticky Table of Contents -->
+                    <aside class="hidden lg:block w-72 flex-shrink-0 sticky top-28 self-start">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h2 class="text-sm font-bold text-base-content/50 tracking-widest mb-4 text-label-caps uppercase">Contents</h2>
+                            <nav id="toc" class="space-y-1">
+                                <a href="#acceptance" class="toc-link">1. Acceptance of Terms</a>
+                                <a href="#services" class="toc-link">2. Description of Services</a>
+                                <a href="#eligibility" class="toc-link">3. Eligibility</a>
+                                <a href="#accounts" class="toc-link">4. User Accounts</a>
+                                <a href="#content-policy" class="toc-link">5. Content Policy</a>
+                                <a href="#prohibited" class="toc-link">6. Prohibited Content</a>
+                                <a href="#advertiser" class="toc-link">7. Advertiser Responsibilities</a>
+                                <a href="#media-owner" class="toc-link">8. Media Owner Responsibilities</a>
+                                <a href="#payments" class="toc-link">9. Payments & Refunds</a>
+                                <a href="#ip" class="toc-link">10. Intellectual Property</a>
+                                <a href="#liability" class="toc-link">11. Limitation of Liability</a>
+                                <a href="#termination" class="toc-link">12. Termination</a>
+                                <a href="#governing" class="toc-link">13. Governing Law</a>
+                                <a href="#changes" class="toc-link">14. Changes to Terms</a>
+                                <a href="#contact-us" class="toc-link">15. Contact Us</a>
+                            </nav>
+                        </div>
+                    </aside>
+
+                    <!-- Legal Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="glass-card rounded-2xl p-8 md:p-12 legal-content reveal-section">
+
+                            <div id="acceptance">
+                                <h2>1. Acceptance of Terms</h2>
+                                <p>By accessing or using the Advers platform (the "Platform"), available at <strong>advers.ng</strong> and all related applications and services, you ("User") agree to be bound by these Terms of Service ("Terms") and our Privacy Policy, which is incorporated herein by reference.</p>
+                                <p>If you do not agree to these Terms, you must immediately cease using the Platform. These Terms constitute a legally binding agreement between you and <strong>Advers Technology Limited</strong> ("Advers," "we," "us," or "our"), a company incorporated in Nigeria.</p>
+                            </div>
+
+                            <div id="services">
+                                <h2>2. Description of Services</h2>
+                                <p>Advers is a digital marketplace and management platform for Out-of-Home (OOH) advertising in Nigeria and West Africa. Our services include:</p>
+                                <ul>
+                                    <li>A searchable inventory of billboards, LED boards, transit ads, and other OOH assets</li>
+                                    <li>A booking and campaign scheduling engine for advertisers</li>
+                                    <li>A media owner management panel for listing and managing ad inventory</li>
+                                    <li>Campaign performance analytics and reporting tools</li>
+                                    <li>Secure payment processing and invoicing</li>
+                                    <li>Customer support and dispute resolution services</li>
+                                </ul>
+                                <p>We reserve the right to modify, suspend, or discontinue any feature of the Platform at any time, with or without notice, without liability to you.</p>
+                            </div>
+
+                            <div id="eligibility">
+                                <h2>3. Eligibility</h2>
+                                <p>You must be at least <strong>18 years of age</strong> and have the legal capacity to enter into binding contracts to use the Platform. By registering, you represent that you meet these requirements.</p>
+                                <p>If you are registering on behalf of a company or other legal entity, you represent that you have the authority to bind that entity to these Terms, and references to "you" shall refer to both you and that entity.</p>
+                            </div>
+
+                            <div id="accounts">
+                                <h2>4. User Accounts</h2>
+                                <h3>4.1 Registration</h3>
+                                <p>To access the Platform's features, you must create an account and provide accurate, current, and complete information. You are solely responsible for all activities that occur under your account.</p>
+
+                                <h3>4.2 Account Security</h3>
+                                <p>You are responsible for maintaining the confidentiality of your login credentials. You agree to notify Advers immediately at <strong>security@advers.ng</strong> of any unauthorized use of your account or any other breach of security.</p>
+
+                                <h3>4.3 Account Types</h3>
+                                <ul>
+                                    <li><strong>Advertiser Account:</strong> For brands, agencies, and individuals who wish to book advertising space.</li>
+                                    <li><strong>Media Owner Account:</strong> For individuals and companies who own or operate OOH advertising assets.</li>
+                                    <li><strong>Admin Account:</strong> Reserved for Advers staff with elevated platform management rights.</li>
+                                </ul>
+                            </div>
+
+                            <div id="content-policy">
+                                <h2>5. Content Policy</h2>
+                                <p>All creative materials, images, videos, text, and other content ("Creative Content") submitted by users for display through the Platform must comply with this Content Policy, all applicable Nigerian laws and regulations, and the standards of the Advertising Practitioners Council of Nigeria (APCON).</p>
+                                <p>Advers reserves the right to review, approve, reject, or remove any Creative Content at our sole discretion, at any time, and without prior notice. Approval of content in the past does not guarantee future approvals of similar content.</p>
+                                <p>Advertisers are solely responsible for ensuring they hold all necessary rights, licenses, and permissions for the content they upload, including rights to any third-party intellectual property such as logos, images, music, or trademarks.</p>
+                            </div>
+
+                            <div id="prohibited">
+                                <h2>6. Prohibited Content</h2>
+                                <p>The following categories of content are <strong>strictly prohibited</strong> on the Advers Platform. Violation of this policy may result in immediate content removal, account suspension, and potential legal action:</p>
+
+                                <h3>6.1 Sexually Explicit & Indecent Material</h3>
+                                <ul>
+                                    <li>Content containing nudity, pornography, or sexually explicit material of any kind</li>
+                                    <li>Content that is sexually suggestive and targeted at minors or displayed in areas frequented by minors</li>
+                                    <li>Advertising for adult entertainment services, escort services, or similar</li>
+                                </ul>
+
+                                <h3>6.2 Violent & Disturbing Content</h3>
+                                <ul>
+                                    <li>Depictions of human slaughter, graphic torture, or gore</li>
+                                    <li>Content that glorifies, incites, or promotes violence against any individual or group</li>
+                                    <li>Content that promotes self-harm, suicide, or dangerous activities without appropriate context</li>
+                                </ul>
+
+                                <h3>6.3 Hateful & Discriminatory Content</h3>
+                                <ul>
+                                    <li>Content that promotes hatred or discrimination based on race, ethnicity, religion, gender, sexual orientation, disability, or national origin</li>
+                                    <li>Content that demeans or dehumanizes individuals or groups</li>
+                                    <li>Propaganda for terrorist organizations or extremist ideologies</li>
+                                </ul>
+
+                                <h3>6.4 Illegal & Fraudulent Content</h3>
+                                <ul>
+                                    <li>Advertising for illegal products, services, or activities under Nigerian or international law</li>
+                                    <li>Misleading or fraudulent claims, including false testimonials or fabricated statistics</li>
+                                    <li>Counterfeit goods or unauthorized use of third-party trademarks</li>
+                                    <li>Unlicensed financial promotions, investment schemes, or get-rich-quick scams</li>
+                                </ul>
+
+                                <h3>6.5 Restricted Categories (Require Pre-Approval)</h3>
+                                <ul>
+                                    <li>Tobacco, cigarettes, and related products (must comply with Nigerian tobacco advertising regulations)</li>
+                                    <li>Alcoholic beverages (must not target minors and must carry responsible drinking messaging)</li>
+                                    <li>Gambling and lottery services (must be licensed by the National Lottery Regulatory Commission)</li>
+                                    <li>Pharmaceutical products and medical devices (must carry appropriate disclaimers)</li>
+                                    <li>Political campaign advertising (subject to electoral commission guidelines)</li>
+                                </ul>
+                            </div>
+
+                            <div id="advertiser">
+                                <h2>7. Advertiser Responsibilities</h2>
+                                <p>As an advertiser on the Advers Platform, you agree to:</p>
+                                <ul>
+                                    <li>Provide accurate campaign briefs, timelines, and creative materials</li>
+                                    <li>Submit all creatives in the required format and resolution as specified during booking</li>
+                                    <li>Make payment in full and on time as per the invoiced terms</li>
+                                    <li>Not attempt to contact media owners or arrange bookings outside the Platform to circumvent our fees</li>
+                                    <li>Immediately notify Advers of any display issues, damage, or unauthorized use of your campaign</li>
+                                </ul>
+                                <p>Advers acts as an intermediary between advertisers and media owners. We do not guarantee specific campaign outcomes, foot traffic, or impressions unless explicitly stated in a signed campaign agreement.</p>
+                            </div>
+
+                            <div id="media-owner">
+                                <h2>8. Media Owner Responsibilities</h2>
+                                <p>As a media owner listing assets on the Advers Platform, you agree to:</p>
+                                <ul>
+                                    <li>Provide accurate and up-to-date information about your assets, including location, dimensions, and technical specifications</li>
+                                    <li>Hold all necessary government permits, APCON licenses, and local authority approvals for your advertising structures</li>
+                                    <li>Display approved campaigns within the agreed timeframe and maintain the physical asset in good condition</li>
+                                    <li>Immediately report any vandalism, damage, or force majeure events that affect campaign display</li>
+                                    <li>Not discriminate against advertisers based on protected characteristics</li>
+                                </ul>
+                            </div>
+
+                            <div id="payments">
+                                <h2>9. Payments & Refunds</h2>
+                                <h3>9.1 Payment Terms</h3>
+                                <p>All transactions on the Platform are processed in Nigerian Naira (NGN) unless otherwise agreed. Payment must be completed before a booking is confirmed. Advers uses secure, third-party payment processors.</p>
+
+                                <h3>9.2 Service Fees</h3>
+                                <p>Advers charges a platform service fee on each successful transaction. The current fee schedule is displayed during checkout. Advers reserves the right to revise its fees with 30 days' notice.</p>
+
+                                <h3>9.3 Cancellation & Refunds</h3>
+                                <ul>
+                                    <li><strong>Cancelled more than 14 days before campaign start:</strong> Full refund of the booking value (excluding service fees).</li>
+                                    <li><strong>Cancelled 7–14 days before campaign start:</strong> 50% refund of the booking value.</li>
+                                    <li><strong>Cancelled fewer than 7 days before campaign start:</strong> No refund. The full booking value is forfeited.</li>
+                                    <li><strong>Cancellations due to Media Owner error or asset unavailability:</strong> Full refund including all fees.</li>
+                                </ul>
+                                <p>All refund requests must be submitted via the Platform's support system. Refunds are processed within 10 business days.</p>
+                            </div>
+
+                            <div id="ip">
+                                <h2>10. Intellectual Property</h2>
+                                <p>All content on the Advers Platform — including but not limited to the logo, brand name, design, software, and documentation — is the exclusive property of Advers Technology Limited and is protected by Nigerian and international copyright and trademark laws.</p>
+                                <p>By submitting Creative Content to the Platform, you grant Advers a non-exclusive, royalty-free, worldwide license to display, reproduce, and distribute your content solely for the purpose of providing our services. You retain full ownership of your Creative Content.</p>
+                                <p>You may not reproduce, distribute, reverse-engineer, or create derivative works of our Platform without our express written permission.</p>
+                            </div>
+
+                            <div id="liability">
+                                <h2>11. Limitation of Liability</h2>
+                                <p>To the maximum extent permitted by Nigerian law, Advers and its directors, officers, employees, and agents shall not be liable for any indirect, incidental, special, punitive, or consequential damages arising from your use or inability to use the Platform.</p>
+                                <p>Advers's total aggregate liability to you for any claim arising out of or relating to these Terms or your use of the Platform shall not exceed the total amount you paid to Advers in the 12-month period preceding the claim.</p>
+                                <p>The Platform is provided "as is" and "as available" without warranties of any kind, express or implied, including but not limited to warranties of merchantability or fitness for a particular purpose.</p>
+                            </div>
+
+                            <div id="termination">
+                                <h2>12. Termination</h2>
+                                <p>Advers may suspend or terminate your account and access to the Platform, without notice or liability, if we believe in good faith that you have violated these Terms, applicable law, or pose a risk to other users or our Platform.</p>
+                                <p>You may close your account at any time by contacting support. Upon termination, your right to access the Platform ceases immediately. Provisions of these Terms that by their nature should survive termination shall survive, including intellectual property rights, payment obligations, and limitations of liability.</p>
+                            </div>
+
+                            <div id="governing">
+                                <h2>13. Governing Law</h2>
+                                <p>These Terms shall be governed by and construed in accordance with the laws of the <strong>Federal Republic of Nigeria</strong>. Any disputes arising out of or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts of Nigeria.</p>
+                                <p>Before initiating formal legal proceedings, the parties agree to attempt to resolve disputes through good-faith negotiation for a period of 30 days.</p>
+                            </div>
+
+                            <div id="changes">
+                                <h2>14. Changes to Terms</h2>
+                                <p>We reserve the right to update or modify these Terms at any time. Material changes will be communicated to you via email or a prominent notice on the Platform at least 14 days before they take effect. Your continued use of the Platform after the effective date of revised Terms constitutes your acceptance of the changes.</p>
+                            </div>
+
+                            <div id="contact-us">
+                                <h2>15. Contact Us</h2>
+                                <p>If you have questions, concerns, or requests regarding these Terms of Service, please reach out to us:</p>
+                                <ul>
+                                    <li><strong>Email:</strong> legal@advers.ng</li>
+                                    <li><strong>Address:</strong> Advers Technology Limited, Victoria Island, Lagos, Nigeria</li>
+                                    <li><strong>Support Portal:</strong> <a href="{% url 'adverse:contact' %}" class="text-primary hover:underline">advers.ng/contact</a></li>
+                                </ul>
+                            </div>
+
+                        </div>
+
+                        <!-- Quick Nav Buttons -->
+                        <div class="flex gap-4 mt-8">
+                            <a href="{% url 'adverse:privacy' %}" class="btn btn-primary rounded-xl font-bold">
+                                <span class="material-symbols-outlined">policy</span>
+                                View Privacy Policy
+                            </a>
+                            <a href="{% url 'adverse:home' %}" class="btn btn-ghost rounded-xl font-medium">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                                Back to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer id="footer" class="relative z-10 bg-base-200 border-t border-base-300/40 w-full py-20">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-[1200px] mx-auto px-6">
+                <div class="col-span-2 lg:col-span-2">
+                    <div class="font-headline-sm text-headline-sm font-bold text-base-content mb-6">Advers</div>
+                    <p class="font-body-md text-body-md text-base-content/65 max-w-xs">
+                        The modern operating system for outdoor advertising across West Africa.
+                    </p>
+                </div>
+                <div class="space-y-4">
+                    <h5 class="font-bold text-base-content font-body-md text-body-md">Platform</h5>
+                    <ul class="space-y-2">
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:home' %}">Home</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:how_it_works' %}">How It Works</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-4">
+                    <h5 class="font-bold text-base-content font-body-md text-body-md">Company</h5>
+                    <ul class="space-y-2">
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:about' %}">About Us</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:contact' %}">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-4">
+                    <h5 class="font-bold text-base-content font-body-md text-body-md">Legal</h5>
+                    <ul class="space-y-2">
+                        <li><a class="text-primary font-bold" href="{% url 'adverse:terms' %}">Terms</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:privacy' %}">Privacy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="max-w-[1200px] mx-auto px-6 mt-20 pt-8 border-t border-base-300/40">
+                <p class="text-base-content/50 font-body-md text-body-md">© {% now "Y" %} Advers. All rights reserved.</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Drawer sidebar for mobile nav -->
+    <div class="drawer-side z-[200]">
+        <label for="mobile-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+        <div class="bg-base-200 min-h-full w-72 p-5 border-r border-base-300/30 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center gap-3 pb-5 mb-5 border-b border-base-300/30">
+                    <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-8 h-8 object-contain">
+                    <span class="text-lg font-bold text-base-content">Advers</span>
+                </div>
+                <ul class="menu gap-1 p-0">
+                    <li><a href="{% url 'adverse:home' %}" class="text-sm text-base-content/80 font-medium">Home</a></li>
+                    <li><a href="{% url 'adverse:about' %}" class="text-sm text-base-content/80 font-medium">About</a></li>
+                    <li><a href="{% url 'adverse:how_it_works' %}" class="text-sm text-base-content/80 font-medium">How It Works</a></li>
+                    <li><a href="{% url 'adverse:contact' %}" class="text-sm text-base-content/80 font-medium">Contact</a></li>
+                </ul>
+            </div>
+            <div class="pt-5 border-t border-base-300/30 space-y-2">
+                <a href="{% url 'security:login' %}" class="btn btn-ghost btn-block btn-sm">Log In</a>
+                <a href="{% url 'security:register' %}" class="btn btn-primary btn-block btn-sm">Get Started</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "partials/theme_toggle.html" %}
+
+<script>
+    // Scroll reveal
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+    document.querySelectorAll('.reveal-section').forEach(s => revealObserver.observe(s));
+
+    // Active TOC link on scroll
+    const sections = document.querySelectorAll('.legal-content [id]');
+    const tocLinks = document.querySelectorAll('#toc .toc-link');
+
+    const tocObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                tocLinks.forEach(link => link.classList.remove('active'));
+                const active = document.querySelector(`#toc a[href="#${entry.target.id}"]`);
+                if (active) active.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => tocObserver.observe(s));
+</script>
+
+</body>
+</html>

@@ -192,23 +192,24 @@
                     <!-- Contact Form (Left) -->
                     <div class="lg:col-span-7 bg-base-200 border border-base-300/40 rounded-3xl p-8 md:p-12 shadow-md">
                         <form class="space-y-6" id="contactForm">
+                            {% csrf_token %}
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="space-y-2">
                                     <label class="block font-label-caps text-label-caps text-base-content/60 uppercase">Full Name</label>
-                                    <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="John Doe" type="text" required>
+                                    <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="John Doe" type="text" name="full_name" required>
                                 </div>
                                 <div class="space-y-2">
                                     <label class="block font-label-caps text-label-caps text-base-content/60 uppercase">Company</label>
-                                    <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="Company Name" type="text">
+                                    <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="Company Name" type="text" name="company">
                                 </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="block font-label-caps text-label-caps text-base-content/60 uppercase">Email Address</label>
-                                <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="john@company.com" type="email" required>
+                                <input class="input input-bordered focus:border-primary w-full bg-base-100 font-body-md h-12" placeholder="john@company.com" type="email" name="email" required>
                             </div>
                             <div class="space-y-2">
                                 <label class="block font-label-caps text-label-caps text-base-content/60 uppercase">Message</label>
-                                <textarea class="textarea textarea-bordered focus:border-primary w-full bg-base-100 font-body-md resize-none" placeholder="Tell us about your project or inquiry..." rows="5" required></textarea>
+                                <textarea class="textarea textarea-bordered focus:border-primary w-full bg-base-100 font-body-md resize-none" placeholder="Tell us about your project or inquiry..." rows="5" name="message" required></textarea>
                             </div>
                             <button class="w-full md:w-auto btn btn-primary px-10 py-4 font-bold rounded-lg flex items-center justify-center gap-2 group md:ml-auto" type="submit">
                                 Send Message
@@ -270,7 +271,7 @@
         <!-- Footer -->
         <footer id="contact-footer" class="relative z-10 bg-base-200 border-t border-base-300/40 w-full py-20">
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-[1200px] mx-auto px-6">
-                <div class="col-span-2 lg:col-span-1">
+                <div class="col-span-2 lg:col-span-2">
                     <div class="font-headline-sm text-headline-sm font-bold text-base-content mb-6">Advers</div>
                     <p class="font-body-md text-body-md text-base-content/65 max-w-xs">
                         The modern operating system for outdoor advertising across West Africa.
@@ -279,24 +280,22 @@
                 <div class="space-y-4">
                     <h5 class="font-bold text-base-content font-body-md text-body-md">Platform</h5>
                     <ul class="space-y-2">
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:home' %}#features">Features</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:home' %}">Home</a></li>
                         <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:how_it_works' %}">How It Works</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Pricing</a></li>
                     </ul>
                 </div>
                 <div class="space-y-4">
                     <h5 class="font-bold text-base-content font-body-md text-body-md">Company</h5>
                     <ul class="space-y-2">
                         <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:about' %}">About Us</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Careers</a></li>
                         <li><a class="text-primary font-bold" href="{% url 'adverse:contact' %}">Contact</a></li>
                     </ul>
                 </div>
                 <div class="space-y-4">
                     <h5 class="font-bold text-base-content font-body-md text-body-md">Legal</h5>
                     <ul class="space-y-2">
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Terms</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Privacy</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:terms' %}">Terms</a></li>
+                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:privacy' %}">Privacy</a></li>
                     </ul>
                 </div>
             </div>
@@ -339,23 +338,49 @@
     // Form submit interactive feedback handler
     document.getElementById('contactForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
-        const btn = e.target.querySelector('button');
+        const form = e.target;
+        const btn = form.querySelector('button');
         const originalText = btn.innerHTML;
         
         btn.disabled = true;
         btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Sending...';
         
-        setTimeout(() => {
+        const formData = new FormData(form);
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Form submission failed.');
+        })
+        .then(data => {
             btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Sent Successfully';
             btn.classList.replace('btn-primary', 'btn-success');
-            e.target.reset();
+            form.reset();
             
             setTimeout(() => {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 btn.classList.replace('btn-success', 'btn-primary');
             }, 3000);
-        }, 1500);
+        })
+        .catch(error => {
+            btn.innerHTML = '<span class="material-symbols-outlined">error</span> Failed to Send';
+            btn.classList.replace('btn-primary', 'btn-error');
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.classList.replace('btn-error', 'btn-primary');
+            }, 3000);
+        });
     });
 
     // Intersection Observer for entrance animations (e.g. Hero title on load)
