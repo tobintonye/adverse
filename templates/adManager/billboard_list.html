@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Billboards{% endblock %}
-{% block page_title %}My Billboards{% endblock %}
+
 {% block page_description %}Manage your registered billboard screens, availability, and pricing.{% endblock %}
 
 {% block breadcrumbs %}
@@ -16,7 +16,7 @@
 {% endblock %}
 
 {% block page_header_actions %}
-<a href="{% url 'admanager:billboard_create' %}"
+<a href="{% url 'device:billboard_create' %}"
    class="btn btn-primary btn-sm">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -72,7 +72,6 @@
                 <option value="led"     {% if selected_screen_type == 'led'     %}selected{% endif %}>LED</option>
                 <option value="lcd"     {% if selected_screen_type == 'lcd'     %}selected{% endif %}>LCD</option>
                 <option value="digital" {% if selected_screen_type == 'digital' %}selected{% endif %}>Digital</option>
-                <option value="static"  {% if selected_screen_type == 'static'  %}selected{% endif %}>Static</option>
             </select>
         </div>
 
@@ -95,8 +94,8 @@
         {# Clear #}
         {% if search_query or selected_availability or selected_screen_type or selected_state %}
         <div class="form-control">
-            <label class="label py-0.5"><span class="label-text opacity-0"> </span></label>
-            <a href="{% url 'admanager:billboard_list' %}"
+            <label class="label py-0.5"><span class="label-text opacity-0"> </span></label>
+            <a href="{% url 'device:billboard_list' %}"
                class="btn btn-ghost btn-sm text-base-content/60 hover:text-base-content">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -216,8 +215,30 @@
             {% endif %}
 
             {# Card actions #}
-            <div class="card-actions justify-end mt-2 pt-2 border-t border-base-300/50">
-                <a href="{% url 'admanager:billboard_edit' bb.pk %}"
+            <div class="card-actions justify-end mt-2 pt-2 border-t border-base-300/50 gap-2">
+                {% if bb.is_paired %}
+                <a href="{% url 'device:billboard_schedule' bb.pk %}"
+                   class="btn btn-ghost btn-xs">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Schedule
+                </a>
+                <a href="{% url 'device:device_detail' bb.pk %}"
+                   class="btn btn-ghost btn-xs">
+                    <span class="w-1.5 h-1.5 rounded-full {% if bb.player_device.is_online %}bg-success animate-pulse{% else %}bg-base-content/30{% endif %}"></span>
+                    Device
+                </a>
+                {% else %}
+                <a href="{% url 'device:device_pair' %}"
+                   class="btn btn-ghost btn-xs text-warning">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Pair Device
+                </a>
+                {% endif %}
+                <a href="{% url 'device:billboard_edit' bb.pk %}"
                    class="btn btn-ghost btn-xs">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -240,12 +261,12 @@
     {% if search_query or selected_availability or selected_screen_type or selected_state %}
         <p class="font-semibold tracking-tight text-base">No matching billboards</p>
         <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Try adjusting your search or filter criteria.</p>
-        <a href="{% url 'admanager:billboard_list' %}"
+        <a href="{% url 'device:billboard_list' %}"
            class="mt-5 btn btn-ghost btn-sm">Clear all filters</a>
     {% else %}
         <p class="font-semibold tracking-tight text-base">No billboards yet</p>
         <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Register your first physical billboard screen to start setting rates and serving campaigns.</p>
-        <a href="{% url 'admanager:billboard_create' %}"
+        <a href="{% url 'device:billboard_create' %}"
            class="mt-5 px-5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-red-900/30 active:scale-95">
             Add Billboard
         </a>

@@ -16,6 +16,7 @@ from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSe
                            CampaignReviewSerializer
                           )
 from decimal import Decimal
+from  ..services import (approve_campaign_by_manager, reject_campaign,admin_forward_campaign,)
 
 User = get_user_model()
 
@@ -283,12 +284,11 @@ class CampaignCancelView(APIView):
     
 class CampaignReviewView(APIView):
     """
-    POST  /advertiser/campaigns/<uuid:pk>/review/
-    Global Tech Admin:  action="approve"
+    Global Tech Admin:action="approve"
                Moves PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW
                (calls campaign.admin_forward_to_manager)
  
-    9/10 — Ad Manager: action="approve"
+    Ad Manager: action="approve"
                Moves PENDING_MANAGER_REVIEW → APPROVED
                Media status → FULLY_APPROVED
                (calls campaign.manager_approve)
@@ -339,14 +339,27 @@ class CampaignReviewView(APIView):
 
         action = serializer.validated_data["action"]
         reason = serializer.validated_data.get("rejection_reason", "")
-        with transaction.atomic():
-            if action == "approve": 
+        try:
+            with transaction.atomic():
+                if action == "reject":
+                    reject_campaign(campaign, reviewer=user, reason=reason)
+                    return Response(CampaignSerializer(campaign).data)
+                
                 if campaign.status == Campaign.Status.PENDING_ADMIN_REVIEW:
-                    campaign.admin_forward_to_manager(admin_user=user) # admin forwards to ad manager
+                    # Admin forwards to manager — no payment, no schedule yet
+                    admin_forward_campaign(campaign, admin_user=user)
                 else:
-                    campaign.manager_approve(manager_user=user) # ad manager gives final approval
-            else:
-                campaign.reject(reviewer=user, reason=reason)
+                    # Ad manager gives final approval — payment + schedule fires here
+                    result = approve_campaign_by_manager(campaign, manager_user=user)
+                    return Response({
+                        **CampaignSerializer(campaign).data,
+                        "slots_created": result["slots_created"],
+                        "slots_skipped": result["slots_skipped"],
+                        "payment_total": result["payment_total"],
+                    })
+        except DjangoValidationError as e:
+            errors = e.message_dict if hasattr(e, "message_dict") else e.messages
+            raise DRFValidationError(errors)
         return Response(CampaignSerializer(campaign).data)
 
 class CampaignPriceEstimateView(APIView):

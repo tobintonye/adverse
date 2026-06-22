@@ -17,7 +17,6 @@ class Billboard(TimeStampedModel):
         LED = "led", "LED"
         LCD = "lcd", "LCD"
         DIGITAL = "digital", "Digital"
-        STATIC = "static", "Static"
 
     class Availability(models.TextChoices): 
         AVAILABLE = "available", "Available"
@@ -165,6 +164,21 @@ class PlayerDevice(TimeStampedModel):
     def disable(self):
         self.status = self.Status.DISABLED
         self.save(update_fields=["status", "updated_at"])
+
+    def unpair(self):
+        """
+        Detach this device from its billboard, freeing the billboard up
+        for a new device to be paired. Does NOT disable the device itself —
+        a freshly unpaired device stays in its current status (e.g. still
+        ACTIVE) until it's either re-paired or explicitly disabled.
+ 
+        Use this when swapping hardware: unpair the old device, pair a
+        new one to the same billboard, then disable() the old device
+        separately once you're done with it (keeps audit history intact).
+        """
+        self.billboard = None
+        self.status = self.Status.PENDING
+        self.save(update_fields=["billboard", "status", "updated_at"])
     
     def __str__(self):
         paired_to = self.billboard.name if self.billboard_id else "unpaired"
@@ -177,3 +191,44 @@ class PlayerDevice(TimeStampedModel):
             models.Index(fields=["last_seen_at"]),
             models.Index(fields=["pairing_code"]),
         ]
+
+class PlaybackLog(TimeStampedModel):
+    # One row per ad play. Drives billing and analytics.
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="playback_logs")
+    media_id = models.UUIDField(db_index=True)
+    started_at = models.DateTimeField()
+    duration_seconds = models.PositiveIntegerField()
+    completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"PlaybackLog [{self.player.device_uid}] media={self.media_id}"
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "media_id", "started_at"],
+                name="unique_playback_per_player_media_start",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["player", "started_at"]),
+            models.Index(fields=["media_id"]),
+        ]
+
+class DeviceMetric(TimeStampedModel):
+    """Point-in-time hardware health snapshot."""
+
+    id  = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="metrics")
+    cpu_usage_pct = models.FloatField(null=True, blank=True)
+    ram_usage_mb = models.PositiveIntegerField(null=True, blank=True)
+    free_storage_mb  = models.PositiveIntegerField(null=True, blank=True)
+    temperature_celsius = models.FloatField(null=True, blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Metric [{self.player.device_uid}] @ {self.recorded_at}"
+
+    class Meta:
+        indexes = [models.Index(fields=["player", "recorded_at"])]

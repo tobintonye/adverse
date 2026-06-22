@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 import uuid
-from decimal import Decimal
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -17,8 +17,10 @@ class Admanager(models.Model):
     class BusinessType(models.TextChoices): 
         INDIVIDUAL = "individual", "Individual"
         COMPANY = "company", "Company"
+        
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='ad_manager')
+   
     business_name = models.CharField(max_length=200, blank=False, null=False)
     business_type = models.CharField(max_length=20, choices=BusinessType.choices, default=BusinessType.INDIVIDUAL)
     company_registration_number = models.CharField(max_length=100, blank=True)
@@ -26,132 +28,161 @@ class Admanager(models.Model):
     business_email = models.EmailField()
     business_phone = models.CharField(max_length = 20)
     website = models.URLField(blank=True)
+
     address = models.TextField()
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     country = models.CharField(max_length=100,default="Nigeria")
+   
     verification_status = models.CharField(max_length=20, choices=VerificationStatus.choices, default=VerificationStatus.PENDING)
-    verification_requested = models.BooleanField(default=False)
-    verification_requested_at = models.DateTimeField(null=True, blank=True)
-    verified_at = models.DateTimeField(null=True, blank=True)
-    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='verified_ad_managers')
     is_active = models.BooleanField(default=True)
     rejection_reason = models.TextField(blank=True)
+    suspension_reason = models.TextField(blank=True)
+
+    # Audit trail — who changed the status and when
+    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_ad_managers")
+    verified_at  = models.DateTimeField(null=True, blank=True)
+    verification_requested = models.BooleanField(default=False)
+    verification_requested_at = models.DateTimeField(null=True, blank=True)
+    suspended_by = models.ForeignKey(User, null=True, blank=True,on_delete=models.SET_NULL, related_name="suspended_ad_managers",)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+
+    # financials 
+    # Commission rate — platform takes this % from each campaign earned by this manager
+
+    # Default matches PLATFORM_FEE_PERCENT in payments/models.py (10%).
+    # Can be overridden per manager (e.g. premium partners pay lower commission).
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=10.00,help_text="Platform commission percentage taken from this manager's earnings. Default 10%.")
+
+    bank_name = models.CharField(max_length=120, blank=True)
+    account_number = models.CharField(max_length=20, blank=True)
+    account_name = models.CharField(max_length=180, blank=True)
+    bank_code = models.CharField(max_length=10, blank=True, help_text="Paystack bank code for transfers.")
+    
+    # NEW: Store the Paystack Recipient Code for easier API transfers
+    recipient_code = models.CharField(max_length=50, unique=True, blank=True, null=True, help_text="Paystack RCP code.")
+
+
     total_billboards = models.PositiveIntegerField(default=0)
     total_campaigns_serverd = models.PositiveIntegerField(default=0)
     total_impressions = models.BigIntegerField(default=0)
-    revenue = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     created_at = models.DateTimeField(auto_now_add=True)
-    update_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def verify(self, admin_user):
-        self.verification_status = self.VerificationStatus.VERIFIED
-        self.verification_requested = False
-        self.verified_by = admin_user
-        self.verified_at = timezone.now()
-        self.rejection_reason = ''
-        self.save(update_fields=['verification_status', 'verification_requested', 'verified_by', 'verified_at', 'rejection_reason', 'update_at'])
-
-    def reject(self, admin_user, reason=''):
-        self.verification_status = self.VerificationStatus.REJECTED
-        self.verification_requested = False
-        self.rejection_reason = reason
-        self.save(update_fields=['verification_status', 'verification_requested', 'rejection_reason', 'update_at'])
-
-    def suspend(self):
-        self.verification_status = self.VerificationStatus.SUSPENDED
-        self.is_active = False
-        self.save(update_fields=['verification_status', 'is_active', 'update_at'])
-
+    @property
+    def is_verified(self):
+        return self.verification_status == self.VerificationStatus.VERIFIED
+    
+    @property
+    def has_bank_account(self):
+        """True if payout bank details are complete."""
+        return all([self.bank_name, self.account_number, self.account_name, self.bank_code])
+    
     @property
     def received_campaigns(self):
         """Returns a queryset of all campaigns booking this manager's billboards."""
         from advertiser.models import Campaign  # Local import to prevent circular dependency
         return Campaign.objects.filter(campaign_slots__billboard__ad_manager=self).distinct()
-
+    
     @property
-    def total_campaigns_served(self):
-        """Returns the dynamic count of campaigns served by this ad manager."""
+    def pending_review_campaigns(self):
         from advertiser.models import Campaign
         return self.received_campaigns.filter(
-            status__in=[Campaign.Status.APPROVED, Campaign.Status.ACTIVE, Campaign.Status.COMPLETED]
-        ).count()
-
-    def calculate_revenue(self):
-        from advertiser.models import Campaign, CampaignSlot
-        slots = CampaignSlot.objects.filter(
-            billboard__ad_manager=self,
-            campaign__status__in=[Campaign.Status.APPROVED, Campaign.Status.ACTIVE, Campaign.Status.COMPLETED]
-        ).select_related('campaign')
-        
-        total_rev = Decimal('0.00')
-        for slot in slots:
-            campaign = slot.campaign
-            if campaign.actual_price > 0:
-                ratio = campaign.admanager_split_price / campaign.actual_price
-                total_rev += slot.slot_price * ratio
-            else:
-                total_rev += slot.slot_price * Decimal('0.70')
-        return total_rev
-
-    @property
-    def total_withdrawn(self):
-        approved_requests = self.withdrawal_requests.filter(status=WithdrawalRequest.Status.APPROVED)
-        return approved_requests.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
-
-    @property
-    def pending_withdrawal(self):
-        pending_requests = self.withdrawal_requests.filter(status=WithdrawalRequest.Status.PENDING)
-        return pending_requests.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
-
-    @property
-    def available_balance(self):
-        return self.revenue - self.total_withdrawn - self.pending_withdrawal
+            status=Campaign.Status.PENDING_MANAGER_REVIEW
+        )
     
+    @property
+    def active_campaigns(self):
+        # Currently running campaigns on this manager's billboards
+        from advertiser.models import Campaign
+        return self.received_campaigns.filter(
+            status=Campaign.Status.ACTIVE
+        )
+    
+    #Global Tech Admin verifies the ad manager account
+    def verify(self, admin_user):
+        if self.verification_status == self.VerificationStatus.VERIFIED:
+            raise ValidationError("Account is already verified.")
+        self.verification_status = self.VerificationStatus.VERIFIED
+        self.is_active = True
+        self.verified_by = admin_user
+        self.verified_at = timezone.now()
+        self.rejection_reason= ""
+        self.verification_requested = False 
+        self.save(update_fields=[
+            "verification_status", "is_active",
+            "verified_by", "verified_at",
+            "rejection_reason", "verification_requested", "updated_at",
+        ])
+    
+    def reject(self, admin_user, reason=""):
+        if not reason.strip():
+            raise ValidationError("A rejection reason is required.")
+        if self.verification_status not in [self.VerificationStatus.PENDING, self.VerificationStatus.VERIFIED]:
+            raise ValidationError("Account cannot be rejected from its current status.")
+        self.verification_status = self.VerificationStatus.REJECTED
+        self.is_active = False
+        self.rejection_reason = reason
+        self.verification_requested = False
+        self.save(update_fields=[
+            "verification_status", "is_active",
+            "rejection_reason", "verification_requested", "updated_at",
+        ])
+
+    def suspend(self, admin_user, reason=""):
+        if not reason.strip():
+            raise ValidationError("A suspension reason is required.")
+        if self.verification_status != self.VerificationStatus.VERIFIED:
+            raise ValidationError("Only verified accounts can be suspended.")
+        self.verification_status = self.VerificationStatus.SUSPENDED
+        self.is_active = False
+        self.suspension_reason = reason
+        self.suspended_by = admin_user
+        self.suspended_at = timezone.now()
+        self.save(update_fields=[
+            "verification_status", "is_active",
+            "suspension_reason", "suspended_by", "suspended_at",
+            "updated_at",
+        ])        
+    
+    def reinstate(self, admin_user):
+        if self.verification_status != self.VerificationStatus.SUSPENDED:
+            raise ValidationError("Only suspended accounts can be reinstated.")
+        self.verification_status = self.VerificationStatus.VERIFIED
+        self.is_active = True
+        self.suspension_reason = ""
+        self.save(update_fields=[
+            "verification_status", "is_active",
+            "suspension_reason", "updated_at",
+        ])
+
+    # admanager to request a verification 
+    def request_verification(self):
+        """
+        Ad manager flags their account as ready for admin review.
+        Only meaningful from PENDING — already verified/rejected/suspended
+        accounts shouldn't be re-flagged via this path.
+        """
+        if self.verification_status != self.VerificationStatus.PENDING:
+            raise ValidationError(
+                "Only accounts pending verification can request a review."
+            )
+        if self.verification_requested:
+            raise ValidationError("A verification request has already been submitted.")
+
+        self.verification_requested = True
+        self.verification_requested_at = timezone.now()
+        self.save(update_fields=["verification_requested", "verification_requested_at", "updated_at"])
+
     def __str__(self):
-        return self.business_name
-
-
-class WithdrawalRequest(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        APPROVED = "approved", "Approved"
-        REJECTED = "rejected", "Rejected"
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ad_manager = models.ForeignKey(Admanager, on_delete=models.CASCADE, related_name='withdrawal_requests')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    bank_details = models.TextField(help_text="Bank Name, Account Number, Account Name")
-    notes = models.TextField(blank=True, help_text="Optional notes from the AdManager")
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    admin_notes = models.TextField(blank=True, help_text="Notes/reason from the Admin")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.ad_manager.business_name} — ₦{self.amount:,.2f} ({self.status})"
-
-
-class BankAccount(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ad_manager = models.ForeignKey(Admanager, on_delete=models.CASCADE, related_name='bank_accounts')
-    bank_name = models.CharField(max_length=100)
-    account_name = models.CharField(max_length=200)
-    account_number = models.CharField(max_length=20)
-    is_default = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+        return f"{self.business_name} [{self.verification_status}]"
+    
     class Meta:
-        ordering = ['-is_default', 'created_at']
-
-    def save(self, *args, **kwargs):
-        # If this is being set as default, clear others
-        if self.is_default:
-            BankAccount.objects.filter(ad_manager=self.ad_manager, is_default=True).exclude(pk=self.pk).update(is_default=False)
-        # If it's the first account, auto-set as default
-        elif not self.pk and not BankAccount.objects.filter(ad_manager=self.ad_manager).exists():
-            self.is_default = True
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.bank_name} — {self.account_number} ({self.ad_manager.business_name})"
+        verbose_name    = "Ad Manager"
+        verbose_name_plural = "Ad Managers"
+        indexes = [
+            models.Index(fields=["verification_status"]),
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["business_type"]),
+            models.Index(fields=["country", "state", "city"]),
+        ]

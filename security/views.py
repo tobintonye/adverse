@@ -7,11 +7,7 @@ from .models import CustomUser
 from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ValidationError
 from django.conf import settings
-from django.core.mail import send_mail, BadHeaderError
 from django.core.validators import validate_email
-from django.urls import reverse
-import smtplib
-import socket
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
@@ -19,52 +15,10 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-import threading
-import time
-import random
-from rest_framework.exceptions import APIException
+
+from core.services.email_service import ( send_verification_email, send_password_reset_email_safe, send_password_changed_email, )
 
 User = get_user_model()
-
-def sendCustomEmail(subject, message, recipient_email): 
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [recipient_email])
-    except BadHeaderError:
-        raise ValidationError("There was a problem with the email header. Please try again later.")
-    except smtplib.SMTPRecipientsRefused:
-        raise ValidationError("This email address is not valid or refused by the email server.")
-    except smtplib.SMTPDataError:
-        raise ValidationError("There was an error sending your email. Please try again.")
-    except smtplib.SMTPException:
-        raise ValidationError("A mail server error occurred. Please try again later.")
-    except socket.error:
-        raise ValidationError("Network error. Please check your internet connection and try again.")
-    except ImproperlyConfigured:
-        raise ValidationError("Email service is currently not configured. Please contact support.")
-    except Exception:
-        raise ValidationError("An unexpected error occurred. Please try again later.")
-
-def sendVerificationEmail(user, request): 
-    token = default_token_generator.make_token(user)
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
-    verification_link = request.build_absolute_uri( 
-        reverse("security:verifyemail", kwargs={"uidb64":uid, "token":token})
-    )
-
-    subject = "Verify your Adverse account"
-    message = f"""Hi {user.first_name},
-
-    Thanks for creating an account with Adverse!
-
-    To verify your email, please click the link below:
-    {verification_link}
-
-    If you didn’t create an account, you can safely ignore this email.
-
-    Best regards,
-    The Adverse Team
-    """
-    sendCustomEmail(subject, message, user.email)
 
 def verifyEmail(request, uidb64, token):
     try:
@@ -79,12 +33,7 @@ def verifyEmail(request, uidb64, token):
         storage.used = True
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, "Your account has been verified.")
-        if user.role == CustomUser.UserRole.ADVERTISER:
-            return redirect("advertiser:create_profile")
-        elif user.role == CustomUser.UserRole.ADMIN or user.is_staff:
-            return redirect("admin_panel:dashboard")
-        else:
-            return redirect("admanager:profile")
+        return redirect("security:selectrole")
     else:
         return render(request, 'security/verification_failed.html')
 
@@ -110,7 +59,7 @@ def resendVerificationLink(request):
             user = User.objects.get(email=email)
             if not user.is_active:
                 try:
-                    sendVerificationEmail(user, request)
+                    send_verification_email(user, request)  
                 except ValidationError as e: 
                     messages.error(request, str(e))
                     return render(request, 'security/resendVerification.html')
@@ -128,36 +77,19 @@ def registerAccount(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            role = request.POST.get('role', 'ad_manager')
-            if role not in ['ad_manager', 'advertiser']:
-                role = 'ad_manager'
-            user.role = role
-            user.first_name = request.POST.get('first_name', '').strip()
-            user.last_name = request.POST.get('last_name', '').strip()
-            user.set_password(form.cleaned_data["password"])
+            user.is_active = False # until a user is verified 
 
-            if settings.DEBUG:
-                # In local dev, skip email and auto-activate so SMTP isn't required
-                user.is_active = True
-                user.save()
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                messages.success(request, f"Account created! Welcome, {user.first_name or user.email}.")
-                if user.role == CustomUser.UserRole.ADVERTISER:
-                    return redirect('advertiser:create_profile')
-                elif user.role == CustomUser.UserRole.ADMIN or user.is_staff:
-                    return redirect('admin_panel:dashboard')
-                else:
-                    return redirect('admanager:profile')
-            else:
-                user.is_active = False
-                user.save()
-                try:
-                    sendVerificationEmail(user, request)
-                    messages.success(request, "Verification email sent to " + user.email)
-                    return render(request, "security/verification_pending.html", {"email": user.email})
-                except ValidationError as e:
-                    user.delete()
-                    messages.error(request, str(e))
+            #user.first_name = request.POST.get('first_name', '').strip()
+            #user.last_name = request.POST.get('last_name', '').strip()
+            user.set_password(form.cleaned_data["password"])
+            user.save()
+            try: 
+                send_verification_email(user, request)  
+                messages.success(request, "Verification email sent to " + user.email )
+                return render(request, "security/verification_pending.html", {"email":user.email})
+            except ValidationError as e:
+                user.delete() 
+                messages.error(request, str(e))
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -193,7 +125,7 @@ def loginAccount(request):
             if not user.is_active:
                 request.session['pending_verification_email'] = user.email
                 messages.error(request, "Please verify your email address before logging in.")
-                sendVerificationEmail(user, request)
+                send_verification_email(user, request)  
                 return redirect('security:verificationpending')
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             remember_me = form.cleaned_data.get("remember_me")
@@ -201,7 +133,7 @@ def loginAccount(request):
                 request.session.set_expiry(60 * 60 * 24 * 30)
             else:
                 request.session.set_expiry(0)
-            messages.success(request, f"Welcome back, {user.first_name}")
+            #messages.success(request, f"Welcome back, {user.first_name}")
             if user.role == CustomUser.UserRole.ADVERTISER:
                 if hasattr(user, 'advertiser_profile'):
                     return redirect('advertiser:dashboard')
@@ -210,9 +142,9 @@ def loginAccount(request):
                 return redirect('admin_panel:dashboard')
             else:
                 if hasattr(user, 'ad_manager'):
-                    ad_manager = user.ad_manager
-                    ad_manager.revenue = ad_manager.calculate_revenue()
-                    ad_manager.save(update_fields=['revenue'])
+                    #ad_manager = user.ad_manager
+                    #ad_manager.revenue = ad_manager.calculate_revenue()
+                   # ad_manager.save(update_fields=['revenue'])
                     return redirect('admanager:dashboard')
                 return redirect('admanager:profile')
     else:
@@ -222,26 +154,40 @@ def loginAccount(request):
 @login_required
 def logoutAccount(request):
     if request.method == "POST" or settings.DEBUG: # dev only
-        first_name = request.user.first_name  
+        #first_name = request.user.first_name  
         storage = messages.get_messages(request)
         storage.used = True
         logout(request)
-        messages.success(request, f'{first_name} logged out successfully')
+        #messages.success(request, f'{first_name} logged out successfully')
         return redirect("security:login")
     else:
         return redirect("adverse:home")
     
-def delayed_send_email(user, request):
-    def _send_with_delay():
-        time.sleep(random.uniform(1.0, 2.0)) 
-        try:
-            if user is not None:
-                sendPasswordResetLink(user, request)
-        except ValidationError:
-            pass 
-    thread = threading.Thread(target=_send_with_delay)
-    thread.daemon = True # in prod use django-Q
-    thread.start()
+@login_required(login_url='security:login')
+def selectuser_role(request):
+    # Check if user already has a role selected
+    if request.user.role:
+        if request.user.role == CustomUser.UserRole.AD_MANAGER:
+            messages.info(request, "You have already selected your role as Ad manager.")
+            return redirect("adverse:home")
+        elif request.user.role == CustomUser.UserRole.ADVERTISER:
+            messages.info(request, "You have already selected your role as advertiser.")
+            return redirect('advertiser:dashboard') # set for now
+    if request.method == "POST":
+        role = request.POST.get("role")
+        if role in [CustomUser.UserRole.ADVERTISER, CustomUser.UserRole.AD_MANAGER]:
+            request.user.role = role
+            request.user.save()
+        
+            if role == CustomUser.UserRole.AD_MANAGER:
+                messages.success(request, "Your role has been set to Ad manager, please create a profile")
+                return redirect("admanager:profile")
+            else:
+                messages.success(request, "Your role has been set to Advertiser. Please create a profile.")
+                return redirect("advertiser:create_profile")
+        else:
+            messages.error(request, "Invalid role selected.")
+    return render(request, 'security/selectrole.html')
 
 # handle password reset request
 def passwordReset(request): 
@@ -251,9 +197,9 @@ def passwordReset(request):
             email = form.cleaned_data['email']
             try: 
                 user = User.objects.get(email=email)
-                delayed_send_email(user, request)
+                send_password_reset_email_safe(user, request)
             except User.DoesNotExist: 
-                delayed_send_email(None, request)
+                send_password_reset_email_safe(None, request)
            # messages.success(request, "If an account with that email exists, a password")
             return redirect("security:passwordresetdone")
     else:
@@ -263,27 +209,6 @@ def passwordReset(request):
 @require_http_methods(["GET"])
 def password_reset_done(request):
     return render(request, 'security/passwordResetDone.html')
-
-
-def sendPasswordResetLink(user, request):
-    token = default_token_generator.make_token(user)
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-    reset_link = request.build_absolute_uri(
-        reverse('security:newpasswordReset', kwargs={"uidb64":uid, "token":token})
-    )
-
-    subject = "Password Reset"
-    message = f"""Hello {user.first_name}
-    You requested a password reset for your account. Please click the link below to reset your password:
-
-    {reset_link}
-
-    If you didn't request this, you can safely ignore this email.
-
-    This link will expire in 24 hours.
-"""
-    sendCustomEmail(subject, message, user.email)
 
 @require_http_methods(["GET", "POST"])
 def new_password_request(request, uidb64, token):
@@ -324,9 +249,9 @@ def resend_passwordreset_link(request):
             return render(request, "security/passwordReset.html")
         try:
             user = User.objects.get(email=email)
-            delayed_send_email(user, request)
+            send_password_reset_email_safe(user, request)
         except User.DoesNotExist:
-            delayed_send_email(None, request)
+            send_password_reset_email_safe(None, request)
 
        # messages.success(request, "If an security with that email exists, a password reset link has been sent.")
         return redirect("security:passwordresetdone")
@@ -348,12 +273,16 @@ def post_login(request):
     return redirect('adverse:home')
 
 @login_required(login_url='security:login')
+#@ratelimit(key='user', rate='5/h', method='POST', block=True)
 def change_password(request):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
+            # Notify the user — cheap, high-value: if this wasn't them,
+            # this is their only signal that something happened.
+            send_password_changed_email(user)
             messages.success(request, 'Your password has been changed successfully.')
             role = request.user.role
             if role == CustomUser.UserRole.ADVERTISER:

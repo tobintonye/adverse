@@ -1,3 +1,4 @@
+"""
 import logging
 from advertiser.models import Campaign
 
@@ -16,3 +17,4 @@ class CampaignStatusSyncMiddleware:
                 
         response = self.get_response(request)
         return response
+"""

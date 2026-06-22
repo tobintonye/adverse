@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Billboard, PlayerDevice
+from ..models import Billboard, PlayerDevice, PlaybackLog, DeviceMetric
 
 class BillboardSerializer(serializers.ModelSerializer):
     resolution = serializers.CharField(read_only=True)
@@ -126,3 +126,28 @@ class HeartbeatSerializer(serializers.Serializer):
     firmware_version = serializers.CharField(required=False, allow_blank=True, max_length=80)
     free_storage_mb = serializers.IntegerField(required=False, min_value=0)
     current_media_id = serializers.UUIDField(required=False)
+
+class PlaybackLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = PlaybackLog
+        fields = ("id", "media_id", "started_at", "duration_seconds", "completed", "created_at")
+        read_only_fields = ("id", "created_at")
+
+class BulkPlaybackLogSerializer(serializers.Serializer):
+    logs = PlaybackLogSerializer(many=True)
+
+    def validate_logs(self, value):
+        if not value:
+            raise serializers.ValidationError("logs must not be empty.")
+        if len(value) > 500:
+            raise serializers.ValidationError("Maximum 500 logs per flush.")
+        return value
+    
+class DeviceMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = DeviceMetric
+        fields = (
+            "id", "cpu_usage_pct", "ram_usage_mb",
+            "free_storage_mb", "temperature_celsius", "recorded_at",
+        )
+        read_only_fields = ("id", "recorded_at")

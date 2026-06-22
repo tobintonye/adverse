@@ -1,85 +1,78 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verification Required</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-black flex items-center justify-center min-h-screen p-4 text-zinc-300">
 
-    <div class="w-full max-w-sm">
-        <nav class="flex items-center gap-1.5 text-sm mb-4">
-            <span class="font-semibold">Verification Pending</span>
-        </nav>
-        <div class="card card-border bg-base-200 border-base-300 rounded-2xl p-8 shadow-2xl text-center">
-
-        <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-12 h-12 object-contain mx-auto mb-5">
-
+    <!-- Compact Container -->
+    <div class="w-full max-w-sm bg-black p-8 rounded-2xl border border-zinc-800 shadow-2xl text-center">
+        
         <!-- Animated Icon Section -->
         <div class="flex justify-center mb-6">
             <div class="relative">
-                <div class="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
-                <div class="relative bg-base-300 border border-primary/50 p-4 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
+                <!-- Outer Pulse Ring -->
+                <div class="absolute inset-0 rounded-full bg-red-600/20 animate-ping"></div>
+                <!-- Inner Icon Circle -->
+                <div class="relative bg-zinc-900 border border-red-600/50 p-4 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500">
                         <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                     </svg>
                 </div>
             </div>
         </div>
         
+        <!-- Header -->
         <div class="mb-6">
-            <h2 class="text-xl font-bold tracking-tight">Verify your email</h2>
-            <p class="text-base-content/50 text-sm mt-1">Almost there!</p>
+            <h2 class="text-xl font-bold text-white tracking-tight">Verify your email</h2>
+            <p class="text-zinc-500 text-sm mt-1">Almost there!</p>
         </div>
 
+        <!-- Content Section -->
         <div class="space-y-3 text-sm leading-relaxed">
             <p>We've sent a verification link to:<br>
-                <span class="font-mono font-bold bg-base-300 px-2 py-1 rounded border border-base-300 inline-block mt-1">{{ email }}</span>
+                <span class="text-white font-mono font-bold bg-zinc-900 px-2 py-1 rounded border border-zinc-800 inline-block mt-1">{{ email }}</span>
             </p>
-            <p class="text-base-content/50">Check your inbox and click the link to activate your account.</p>
+            <p class="text-zinc-500">Check your inbox and click the link to activate your account.</p>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-base-300 text-left">
-            <h6 class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-3">Didn't receive it?</h6>
+        <!-- Help Section (Tighter) -->
+        <div class="mt-8 pt-6 border-t border-zinc-800 text-left">
+            <h6 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Didn't receive it?</h6>
             <ul class="space-y-2 text-[12px]">
                 <li class="flex items-start gap-2">
-                    <span class="text-primary">•</span>
-                    <span>Check your <span class="font-medium">spam folder</span></span>
+                    <span class="text-red-500">•</span>
+                    <span>Check your <span class="text-zinc-100 font-medium">spam folder</span></span>
                 </li>
                 <li class="flex items-start gap-2">
-                    <span class="text-primary">•</span>
+                    <span class="text-red-500">•</span>
                     <span>Verify your email address is correct</span>
                 </li>
                 <li class="flex items-start gap-2">
-                    <span class="text-primary">•</span>
-                    <span>Still nothing? <a href="{% url 'security:resendVerification' %}" class="link link-hover text-primary font-bold">Resend link</a></span>
+                    <span class="text-red-500">•</span>
+                    <span>Still nothing? <a href="{% url 'security:resendVerification' %}" class="text-red-500 hover:text-red-400 font-bold underline decoration-red-500/30 underline-offset-4 transition">Resend link</a></span>
                 </li>
             </ul>
         </div>
 
+        <!-- Actions -->
         <div class="mt-8 flex flex-col gap-3">
-            <a href="{% url 'security:login'%}" class="btn btn-ghost w-full">
+            <a href="{% url 'security:login'%}" class="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-lg border border-zinc-700 transition active:scale-95">
                 Back to Login
             </a>
         </div>
 
+        <!-- Support -->
         <div class="mt-6">
-            <p class="text-[11px] text-base-content/40">
+            <p class="text-[11px] text-zinc-600">
                 Need help? 
-                <a href="mailto:support@adverse.com" class="link link-hover text-base-content/60 hover:text-primary transition">support@adverse.com</a>
+                <a href="mailto:support@adverse.com" class="text-zinc-400 hover:text-red-500 transition">support@adverse.com</a>
             </p>
         </div>
     </div>
 
-    {% include "partials/theme_toggle.html" %}
 </body>
 </html>

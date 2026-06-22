@@ -1,492 +1,448 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
-from django.db.models import Sum
-from django.core.serializers.json import DjangoJSONEncoder
-from security.models import CustomUser
-from .models import Advertiser, Media, Campaign, CampaignSlot
-from .forms import AdvertiserProfileForm, MediaUploadForm, CampaignForm
-from .decorators import advertiser_required
-from device.models import Billboard
+from datetime import timedelta
 import json
+from .forms import AdvertiserProfileForm, MediaUploadForm, CampaignForm
+from advertiser.decorators import advertiser_required
+from .models import Advertiser, Campaign, CampaignSlot, Media
+from device.models import Billboard
+from django.db import transaction
 
 
-@login_required(login_url='security:login')
-def create_advertiser_profile(request):
-    if request.user.role != CustomUser.UserRole.ADVERTISER:
-        return redirect('adverse:home')
+def _get_advertiser(request):
+    """Single place to resolve the advertiser — raises if profile missing."""
+    return request.user.advertiser_profile
+
+def _campaign_error_messages(request, form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            if field == "__all__":
+                messages.error(request, error)
+            else:
+                label = form.fields[field].label or field.replace("_", " ").capitalize()
+                messages.error(request, f"{label}: {error}")
+
+
+login_required(login_url='security:login')
+def advertiser_create_profile(request):
     if hasattr(request.user, 'advertiser_profile'):
-        return redirect('advertiser:dashboard')
-    if request.method == 'POST':
+        messages.info(request, "Your profile already exists.")
+        return redirect("advertiser:dashboard")
+ 
+    if request.method == "POST":
         form = AdvertiserProfileForm(request.POST)
         if form.is_valid():
-            profile = form.save(commit=False)
-            profile.user = request.user
-            profile.save()
-            messages.success(request, 'Profile created! Welcome to Adverse.')
-            return redirect('advertiser:dashboard')
+            with transaction.atomic():
+                profile = form.save(commit=False)
+                profile.user = request.user
+                profile.save()
+            messages.success(request, "Profile created! Your account is pending verification.")
+            return redirect("advertiser:dashboard")
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+            _campaign_error_messages(request, form)
     else:
         form = AdvertiserProfileForm()
-    return render(request, 'advertiser/profile.html', {'form': form})
+ 
+    return render(request, "advertiser/create_profile.html", {"form": form})
 
 
-@login_required(login_url='security:login')
+@login_required(login_url="security:login")
 @advertiser_required
-def advertiser_dashboard(request):
-    advertiser = request.user.advertiser_profile
-    media_count = advertiser.media_files.count()
-    active_campaigns = advertiser.campaigns.filter(status__in=['active', 'approved']).count()
-    pending_campaigns = advertiser.campaigns.filter(
-        status__in=['pending_admin_review', 'pending_manager_review']
+def advertiser_edit_profile(request):
+    advertiser = get_object_or_404(Advertiser, user=request.user)
+
+    if request.method == "POST":
+        form = AdvertiserProfileForm(request.POST, instance=advertiser)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("advertiser:settings")
+        else:
+            _campaign_error_messages(request, form)
+    else: 
+        form = AdvertiserProfileForm(advertiser=advertiser)
+    return render(request, "advertiser/edit_profile.html", {"form": form, "advertiser": advertiser})
+
+# verification
+@login_required(login_url="security:login")
+@advertiser_required
+def advertiser_request_verification(request):
+    advertiser = _get_advertiser(request)
+    if request.method == "POST":
+        try:
+            advertiser.request_verification()
+            messages.success(request, "Verification request submitted. Our admin team will review your account shortly")
+        except ValidationError as e:
+            messages.error(request, e.message if hasattr(e, "message") else str(e))
+    return redirect("advertiser:dashboard")
+
+@login_required(login_url="security:login")
+@advertiser_required
+def advertiserDashboard(request):
+    advertiser = _get_advertiser(request)
+    campaigns = Campaign.objects.filter(advertiser=advertiser)
+    billed_statuses = [
+        Campaign.Status.APPROVED,
+        Campaign.Status.ACTIVE,
+        Campaign.Status.COMPLETED,
+    ]
+ 
+    total_lifetime_budget = (
+        campaigns.filter(status__in=billed_statuses)
+        .aggregate(total=Sum("actual_price"))["total"] or 0
+    )
+    total_active_budget = (
+        campaigns.filter(status=Campaign.Status.ACTIVE)
+        .aggregate(total=Sum("actual_price"))["total"] or 0
+    )
+    active_campaigns = campaigns.filter(status=Campaign.Status.ACTIVE).count()
+    pending_campaigns = campaigns.filter(
+        status__in=[
+            Campaign.Status.PENDING_ADMIN_REVIEW,
+            Campaign.Status.PENDING_MANAGER_REVIEW,
+        ]
     ).count()
-    recent_media = advertiser.media_files.order_by('-created_at')[:4]
-
-    # Detailed State Counts
-    draft_campaigns_count = advertiser.campaigns.filter(status=Campaign.Status.DRAFT).count()
-    rejected_campaigns_count = advertiser.campaigns.filter(status=Campaign.Status.REJECTED).count()
-    completed_campaigns_count = advertiser.campaigns.filter(status=Campaign.Status.COMPLETED).count()
-
-    # Advanced Calculations
-    total_active_budget = advertiser.campaigns.filter(
-        status__in=[Campaign.Status.ACTIVE, Campaign.Status.APPROVED]
-    ).aggregate(total=Sum('budget'))['total'] or 0
-
-    total_lifetime_budget = advertiser.campaigns.exclude(
-        status__in=[Campaign.Status.DRAFT, Campaign.Status.CANCELLED]
-    ).aggregate(total=Sum('budget'))['total'] or 0
-
-    daily_slots_booked = CampaignSlot.objects.filter(
-        campaign__advertiser=advertiser,
-        campaign__status=Campaign.Status.ACTIVE
-    ).aggregate(total=Sum('slots_per_day'))['total'] or 0
-
-    total_media_size_mb = round(
-        (advertiser.media_files.aggregate(total_size=Sum('file_size_bytes'))['total_size'] or 0) / (1024 * 1024), 
-        2
+    draft_campaigns_count = campaigns.filter(status=Campaign.Status.DRAFT).count()
+    rejected_campaigns_count = campaigns.filter(status=Campaign.Status.REJECTED).count()
+ 
+    # Sum slots_per_day across all active campaign slots
+    daily_slots_booked = sum(
+        slot.slots_per_day
+        for c in campaigns.filter(status=Campaign.Status.ACTIVE).prefetch_related("campaign_slots")
+        for slot in c.campaign_slots.all()
     )
-
-    # Calculate Monthly Spend (rolling 12 months) and Annual Spend (last 5 years)
+ 
+    media_qs = Media.objects.filter(advertiser=advertiser)
+    media_count = media_qs.count()
+    total_media_size_bytes = media_qs.aggregate(total=Sum("file_size_bytes"))["total"] or 0
+    total_media_size_mb = round(total_media_size_bytes / (1024 * 1024), 2)
+ 
+    recent_campaigns = campaigns.select_related("media").order_by("-created_at")[:5]
+ 
     today = timezone.now().date()
-    current_year = today.year
-    current_month = today.month
-
-    # Generate rolling 12 months list (tuples of (year, month))
-    months_list = []
-    for i in range(11, -1, -1):
-        m = current_month - i
-        y = current_year
-        while m <= 0:
-            m += 12
-            y -= 1
-        months_list.append((y, m))
-
-    # Initialize data dict with 0
-    from datetime import date
-    monthly_data = {}
-    for y, m in months_list:
-        month_name = date(y, m, 1).strftime("%b %Y")
-        monthly_data[month_name] = 0.0
-
-    # Same for annual data (last 5 years)
-    years_list = range(today.year - 4, today.year + 1)
-    annual_data = {str(y): 0.0 for y in years_list}
-
-    # Retrieve all campaigns for spend aggregation (excluding Draft and Cancelled)
-    spend_campaigns = advertiser.campaigns.exclude(
-        status__in=[Campaign.Status.DRAFT, Campaign.Status.CANCELLED]
+    twelve_months_ago = today.replace(day=1) - timedelta(days=365)
+    monthly_qs = (
+        campaigns.filter(status__in=billed_statuses, created_at__date__gte=twelve_months_ago)
+        .annotate(month=TruncMonth("created_at"))
+        .values("month")
+        .annotate(total=Sum("actual_price"))
+        .order_by("month")
     )
-
-    for campaign in spend_campaigns:
-        c_date = campaign.start_date
-        if c_date:
-            # Monthly rolling accumulation
-            c_month_name = c_date.strftime("%b %Y")
-            if c_month_name in monthly_data:
-                monthly_data[c_month_name] += float(campaign.budget)
-            
-            # Annual accumulation
-            c_year_str = str(c_date.year)
-            if c_year_str in annual_data:
-                annual_data[c_year_str] += float(campaign.budget)
-
-    # Convert to lists for JSON serialization
-    monthly_labels = list(monthly_data.keys())
-    monthly_values = list(monthly_data.values())
-
-    annual_labels = list(annual_data.keys())
-    annual_values = list(annual_data.values())
-
-    monthly_labels_json = json.dumps(monthly_labels)
-    monthly_values_json = json.dumps(monthly_values)
-    annual_labels_json = json.dumps(annual_labels)
-    annual_values_json = json.dumps(annual_values)
-
-    # Recent Campaigns (last 5)
-    recent_campaigns = advertiser.campaigns.order_by('-created_at')[:5]
-
-    return render(request, 'advertiser/dashboard.html', {
-        'advertiser': advertiser,
-        'media_count': media_count,
-        'active_campaigns': active_campaigns,
-        'pending_campaigns': pending_campaigns,
-        'recent_media': recent_media,
-        'recent_campaigns': recent_campaigns,
-
-        # New metrics
-        'draft_campaigns_count': draft_campaigns_count,
-        'rejected_campaigns_count': rejected_campaigns_count,
-        'completed_campaigns_count': completed_campaigns_count,
-        'total_active_budget': total_active_budget,
-        'total_lifetime_budget': total_lifetime_budget,
-        'daily_slots_booked': daily_slots_booked,
-        'total_media_size_mb': total_media_size_mb,
-
-        # Chart JSON
-        'monthly_labels_json': monthly_labels_json,
-        'monthly_values_json': monthly_values_json,
-        'annual_labels_json': annual_labels_json,
-        'annual_values_json': annual_values_json,
-    })
+    monthly_labels = [row["month"].strftime("%b %Y") for row in monthly_qs]
+    monthly_values = [float(row["total"]) for row in monthly_qs]
+ 
+    five_years_ago = today.replace(month=1, day=1) - timedelta(days=365 * 5)
+    annual_qs = (
+        campaigns.filter(status__in=billed_statuses, created_at__date__gte=five_years_ago)
+        .annotate(year=TruncYear("created_at"))
+        .values("year")
+        .annotate(total=Sum("actual_price"))
+        .order_by("year")
+    )
+    annual_labels = [row["year"].strftime("%Y") for row in annual_qs]
+    annual_values = [float(row["total"]) for row in annual_qs]
+ 
+    context = {
+        "advertiser": advertiser,
+        "total_lifetime_budget": total_lifetime_budget,
+        "total_active_budget": total_active_budget,
+        "active_campaigns": active_campaigns,
+        "pending_campaigns": pending_campaigns,
+        "draft_campaigns_count": draft_campaigns_count,
+        "rejected_campaigns_count": rejected_campaigns_count,
+        "daily_slots_booked": daily_slots_booked,
+        "media_count": media_count,
+        "total_media_size_mb": total_media_size_mb,
+        "recent_campaigns": recent_campaigns,
+        "monthly_labels_json": json.dumps(monthly_labels),
+        "monthly_values_json": json.dumps(monthly_values),
+        "annual_labels_json": json.dumps(annual_labels),
+        "annual_values_json": json.dumps(annual_values),
+    }
+    return render(request, "advertiser/dashboard.html", context)
 
 
-@login_required(login_url='security:login')
-@advertiser_required
-def browse_billboards(request):
-    advertiser = request.user.advertiser_profile
-    billboards = Billboard.objects.filter(availability='available')
-    
-    screen_type = request.GET.get('screen_type', '')
-    max_price = request.GET.get('max_price', '')
-    country = request.GET.get('country', '').strip()
-    state = request.GET.get('state', '').strip()
-    location_name = request.GET.get('location_name', '').strip()
-    latitude = request.GET.get('latitude', '').strip()
-    longitude = request.GET.get('longitude', '').strip()
-
-    if screen_type:
-        billboards = billboards.filter(screen_type=screen_type)
-    if max_price:
-        try:
-            billboards = billboards.filter(price_per_slot__lte=float(max_price))
-        except ValueError:
-            pass
-
-    if country:
-        billboards = billboards.filter(country__icontains=country)
-    if state:
-        billboards = billboards.filter(state__icontains=state)
-    if location_name:
-        billboards = billboards.filter(location_name__icontains=location_name)
-
-    if latitude and longitude:
-        try:
-            lat = float(latitude)
-            lng = float(longitude)
-            billboards = billboards.filter(
-                latitude__gte=lat - 0.1, latitude__lte=lat + 0.1,
-                longitude__gte=lng - 0.1, longitude__lte=lng + 0.1
-            )
-        except ValueError:
-            pass
-
-    return render(request, 'advertiser/billboard_browse.html', {
-        'advertiser': advertiser,
-        'billboards': billboards,
-        'screen_type': screen_type,
-        'max_price': max_price,
-        'country': country,
-        'state': state,
-        'location_name': location_name,
-        'latitude': latitude,
-        'longitude': longitude,
-        'screen_type_choices': Billboard.ScreenType.choices,
-    })
-
-
-@login_required(login_url='security:login')
+# media libbrary
+@login_required(login_url="security:login")
 @advertiser_required
 def media_library(request):
-    advertiser = request.user.advertiser_profile
-    media_files = advertiser.media_files.order_by('-created_at')
-    return render(request, 'advertiser/media_list.html', {
-        'advertiser': advertiser,
-        'media_files': media_files,
-    })
-
-
-@login_required(login_url='security:login')
+    advertiser = _get_advertiser(request)
+    media_files = Media.objects.filter(advertiser=advertiser).order_by("-created_at")
+    return render(request, "advertiser/media_library.html", {"media_files": media_files})
+ 
+@login_required(login_url="security:login")
 @advertiser_required
 def upload_media(request):
-    advertiser = request.user.advertiser_profile
-    if request.method == 'POST':
+    advertiser = _get_advertiser(request)
+
+    if request.method == "POST":
         form = MediaUploadForm(request.POST, request.FILES)
         if form.is_valid():
             media = form.save(commit=False)
             media.advertiser = advertiser
             try:
                 media.save()
-                messages.success(request, 'Media uploaded and pending review.')
-                return redirect('advertiser:media_library')
+                messages.success(request, f"'{media.title}' uploaded successfully. It's pending admin review.")
             except ValidationError as e:
-                for field, errs in e.message_dict.items():
-                    for err in errs:
-                        messages.error(request, err)
+                error_dict = ( e.message_dict if hasattr(e, "message_dict") else {"__all__": e.messages})
+                for field, errors in error_dict.items():
+                    for error in errors:
+                        messages.error(request, error)
         else:
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                    if field == "__all__":
+                        messages.error(request, error)
+                    else:
+                        label = form.fields[field].label or field.replace("_", " ").capitalize()
+                        messages.error(request, f"{label}: {error}")
     else:
         form = MediaUploadForm()
-    return render(request, 'advertiser/media_upload.html', {
-        'advertiser': advertiser,
-        'form': form,
+    return render(request, "advertiser/upload_media.html", {"form": form})
+
+@login_required(login_url="security:login")
+@advertiser_required
+def media_delete(request, pk):
+    # POST-only. Only PENDING/REJECTED media can be deleted.
+    advertiser = _get_advertiser(request)
+    media = get_object_or_404(Media, pk=pk, advertiser=advertiser)
+
+    if request.method != "POST":
+        return redirect("advertiser:media_library")
+    
+    if media.status not in [Media.Status.PENDING, Media.Status.REJECTED]:
+        messages.error(request,  f"'{media.title}' has been approved and may be referenced by a campaign — it can't be deleted.")
+        return redirect("advertiser:media_library")
+
+    title = media.title
+    media.delete()
+    messages.success(request, f"'{title}' deleted.")
+    return redirect("advertiser:media_library")
+
+# browse billboards
+@login_required(login_url="security:login")
+@advertiser_required
+def browse_billboards(request):
+    billboards = (Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).select_related("ad_manager").order_by("name"))
+    screen_type_choices = Billboard.ScreenType.choices
+    return render(request, "advertiser/browse_billboards.html", {
+        "billboards": billboards,
+        "screen_type_choices": screen_type_choices,
     })
 
-
-@login_required(login_url='security:login')
+# campaigns 
+@login_required(login_url="security:login")
 @advertiser_required
 def campaign_list(request):
-    from django.db import models
-    advertiser = request.user.advertiser_profile
-    campaigns = advertiser.campaigns.order_by('-created_at')
-
-    # ── Search & filter ──────────────────────────────────────────────
-    search_query = request.GET.get('search', '').strip()
-    status_f     = request.GET.get('status', '')
-
+    advertiser = _get_advertiser(request)
+    campaigns = Campaign.objects.filter(advertiser=advertiser).select_related("media").order_by("-created_at")
+    search_query = request.GET.get("search", "").strip()
     if search_query:
-        campaigns = campaigns.filter(
-            models.Q(name__icontains=search_query) |
-            models.Q(media__title__icontains=search_query)
-        )
-    if status_f:
-        campaigns = campaigns.filter(status=status_f)
+        campaigns = campaigns.filter(Q(name__icontains=search_query) | Q(media__title__icontains=search_query))
 
-    return render(request, 'advertiser/campaign_list.html', {
-        'advertiser': advertiser,
-        'campaigns': campaigns,
-        'search_query': search_query,
-        'selected_status': status_f,
+    selected_status = request.GET.get("status", "").strip()
+    if selected_status:
+        campaigns = campaigns.filter(status=selected_status)
+    
+    return render(request, "advertiser/campaign_list.html", {
+        "campaigns": campaigns,
+        "search_query": search_query,
+        "selected_status": selected_status,
     })
 
+def _build_billboards_json(available_billboards):
+    """
+    Serialise billboard queryset to a JS-safe dict keyed by pk string.
+    Used by the campaign create/edit template's live price calculator.
+    """
+    result = {}
+    for bb in available_billboards:
+        media_url = bb.media_file.url if bb.media_file else None
+        media_is_video = False
+        if media_url:
+            ext = media_url.rsplit(".", 1)[-1].lower()
+            media_is_video = ext in ("mp4", "mov", "webm", "m4v", "3gp")
+ 
+        result[str(bb.pk)] = {
+            "name": bb.name,
+            "location_name": bb.location_name,
+            "state": bb.state,
+            "country": bb.country,
+            "screen_type": bb.get_screen_type_display(),
+            "hours_start": str(bb.operating_hours_start)[:5],
+            "hours_end": str(bb.operating_hours_end)[:5],
+            "price": float(bb.price_per_slot),
+            "charge_unit": bb.charge_unit,
+            "media_url": media_url,
+            "media_is_video": media_is_video,
+        }
+    return json.dumps(result)
 
-@login_required(login_url='security:login')
+@login_required(login_url="security:login")
 @advertiser_required
 def campaign_create(request):
-    advertiser = request.user.advertiser_profile
+    advertiser = _get_advertiser(request)
+    available_billboards = Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).order_by("name")
+    # ?billboard=<pk> from the "Book" button on browse_billboards
+    preselected_billboard = request.GET.get("billboard", "")
 
-    # Build billboard data map for live JS price calculator
-    available_billboards = Billboard.objects.filter(availability='available')
-    billboards_data = {
-        str(bb.pk): {
-            'name': bb.name,
-            'location': bb.location_name,
-            'state': bb.state,
-            'country': bb.country,
-            'price': float(bb.price_per_slot),
-            'charge_unit': bb.charge_unit,
-            'screen_type': bb.get_screen_type_display(),
-            'hours_start': str(bb.operating_hours_start),
-            'hours_end': str(bb.operating_hours_end),
-            'media_url': bb.media_file.url if bb.media_file else None,
-            'media_is_video': bool(bb.media_file and any(
-                str(bb.media_file.name).lower().endswith(ext)
-                for ext in ['.mp4', '.mov', '.webm', '.m4v']
-            )),
-        }
-        for bb in available_billboards
-    }
-
-    # Pre-select billboard if coming from the Book button
-    preselected_pk = request.GET.get('billboard', '')
-
-    if request.method == 'POST':
-        form = CampaignForm(request.POST, advertiser=advertiser)
+    if request.method == "POST":
+        form = CampaignForm(advertiser, request.POST)
         if form.is_valid():
-            campaign = form.save(commit=False)
-            campaign.advertiser = advertiser
-            try:
-                campaign.save()
-                # Create CampaignSlot for the selected billboard
-                slots_per_day = form.cleaned_data.get('slots_per_day', 1)
-                billboard = form.cleaned_data['billboard']
-                CampaignSlot.objects.create(
-                    campaign=campaign,
-                    billboard=billboard,
-                    slots_per_day=slots_per_day,
-                )
-                messages.success(request, 'Campaign created as draft. Submit it when ready.')
-                return redirect('advertiser:campaign_detail', pk=campaign.pk)
-            except ValidationError as e:
-                for field, errs in e.message_dict.items():
-                    for err in errs:
-                        messages.error(request, err)
+            billboard_id = request.POST.get("billboard", "").strip()
+            slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+
+            if not billboard_id:
+                messages.error(request, "Please select a billboard.")
+            else:
+                billboard = get_object_or_404(Billboard, pk=billboard_id, availability=Billboard.Availability.AVAILABLE)
+                try:
+                    with transaction.atomic():
+                        campaign = form.save(commit=False)
+                        campaign.advertiser = advertiser
+                        campaign.save()
+                        CampaignSlot.objects.create(
+                            campaign=campaign,
+                            billboard=billboard,
+                            slots_per_day=slots_per_day,
+                        )
+                        campaign.sync_estimated_price()
+                    messages.success(request, f"'{campaign.name}' saved as draft.")
+                    return redirect("advertiser:campaign_detail", pk=campaign.pk)
+                except ValidationError as e:
+                    messages.error(request, e.message if hasattr(e,"message") else str(e))
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+            _campaign_error_messages(request, form)
     else:
-        initial = {}
-        if preselected_pk:
-            try:
-                bb = Billboard.objects.get(pk=preselected_pk, availability='available')
-                initial['billboard'] = bb
-            except Billboard.DoesNotExist:
-                pass
-        form = CampaignForm(advertiser=advertiser, initial=initial)
+        form = CampaignForm(advertiser)
+    
+    context = {
+        "form": form,
+        "billboards_json": _build_billboards_json(available_billboards),
+        "preselected_billboard": preselected_billboard,
+    }
+    # Inject the billboard queryset into the form field so the template can
+    # iterate form.fields.billboard.queryset for the <select> options
+    form.fields["billboard"] = _BillboardChoiceField(available_billboards)
+    form.initial["billboard"] = preselected_billboard
+    return render(request, "advertiser/campaign_create.html", context)
 
-    return render(request, 'advertiser/campaign_create.html', {
-        'advertiser': advertiser,
-        'form': form,
-        'preselected_pk': preselected_pk,
-        'billboards_json': json.dumps(billboards_data, cls=DjangoJSONEncoder),
-    })
+class _BillboardChoiceField:
+    """
+        Thin shim so the template can do form.fields.billboard.queryset
+        without making CampaignForm a full ModelForm for Billboard.
+        Not a real Django field — just exposes .queryset for template iteration.
+    """
+    def __init__(self, queryset):
+        self.queryset = queryset
 
-
-@login_required(login_url='security:login')
-@advertiser_required
-def campaign_detail(request, pk):
-    advertiser = request.user.advertiser_profile
-    campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        try:
-            if action == 'submit':
-                campaign.submit_for_approval()
-                messages.success(request, 'Campaign submitted for review.')
-            elif action == 'cancel':
-                campaign.cancel()
-                messages.success(request, 'Campaign cancelled.')
-        except ValidationError as e:
-            messages.error(request, str(e))
-        return redirect('advertiser:campaign_detail', pk=campaign.pk)
-
-    # Always sync the estimated price on GET so the template shows
-    # the live calculated figure (not a stale value from creation time)
-    if campaign.status in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:
-        campaign.sync_estimated_price()
-
-    slots = campaign.campaign_slots.select_related('billboard').all()
-    return render(request, 'advertiser/campaign_detail.html', {
-        'advertiser': advertiser,
-        'campaign': campaign,
-        'slots': slots,
-    })
-
-
-
-@login_required(login_url='security:login')
-@advertiser_required
+@login_required(login_url="security:login")
+@advertiser_required        
 def campaign_edit(request, pk):
-    advertiser = request.user.advertiser_profile
+    advertiser = _get_advertiser() 
     campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
 
     if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:
-        messages.error(request, 'Only draft or rejected campaigns can be edited.')
-        return redirect('advertiser:campaign_detail', pk=campaign.pk)
+        messages.error(request, "This campaign can't be edited in its current status.")
 
-    existing_slots = campaign.campaign_slots.select_related('billboard').all()
-    initial_slots_per_day = existing_slots.first().slots_per_day if existing_slots.exists() else 1
-    first_billboard = existing_slots.first().billboard if existing_slots.exists() else None
+        return redirect("advertiser:campaign_detail", pk=campaign.pk)
+    
+    available_billboards = Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).order_by("name")
 
-    # Build billboard data for JS calculator
-    available_billboards = Billboard.objects.filter(availability='available')
-    billboards_data = {
-        str(bb.pk): {
-            'name': bb.name,
-            'location': bb.location_name,
-            'state': bb.state,
-            'country': bb.country,
-            'price': float(bb.price_per_slot),
-            'charge_unit': bb.charge_unit,
-            'screen_type': bb.get_screen_type_display(),
-            'hours_start': str(bb.operating_hours_start),
-            'hours_end': str(bb.operating_hours_end),
-            'media_url': bb.media_file.url if bb.media_file else None,
-            'media_is_video': bool(bb.media_file and any(
-                str(bb.media_file.name).lower().endswith(ext)
-                for ext in ['.mp4', '.mov', '.webm', '.m4v']
-            )),
-        }
-        for bb in available_billboards
-    }
+    # Existing slot — one billboard per campaign in current UI
+    existing_slot = campaign.campaign_slots.select_related("billboard").first()
 
-    if request.method == 'POST':
-        form = CampaignForm(request.POST, instance=campaign, advertiser=advertiser)
+    if request.method == "POST": 
+        form = CampaignForm(advertiser, request.POST, instance=campaign)
         if form.is_valid():
-            try:
-                form.save()
-                slots_per_day = form.cleaned_data.get('slots_per_day', 1)
-                campaign.campaign_slots.all().delete()
-                billboard = form.cleaned_data['billboard']
-                CampaignSlot.objects.create(
-                    campaign=campaign,
-                    billboard=billboard,
-                    slots_per_day=slots_per_day,
-                )
-                messages.success(request, 'Campaign updated.')
-                return redirect('advertiser:campaign_detail', pk=campaign.pk)
-            except ValidationError as e:
-                for field, errs in e.message_dict.items():
-                    for err in errs:
-                        messages.error(request, err)
+            billboard_id = request.POST.get("billboard", "").strip()
+            slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+
+            if not billboard_id:
+                messages.error(request, "Please select a billboard.")
+            else:
+                billboard = get_object_or_404(Billboard, pk=billboard_id, availability=Billboard.Availability.AVAILABLE)
+                try:
+                    with transaction.atomic():
+                        updated = form.save()
+                        # Replace existing slot
+                        updated.campaign_slots.all().delete()
+                        CampaignSlot.objects.create(campaign=updated, billboard=billboard, slots_per_day=slots_per_day)
+                        updated.sync_estimated_price()
+                        messages.success(request, f"'{updated.name}' updated.")
+                        return redirect("advertiser:campaign_detail", pk=updated.pk)
+                except ValidationError as e:
+                    messages.error(request, e.messages if hasattr(e, "message") else str(e))
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+            _campaign_error_messages(request, form)
     else:
-        form = CampaignForm(
-            instance=campaign,
-            advertiser=advertiser,
-            initial={
-                'billboard': first_billboard,
-                'slots_per_day': initial_slots_per_day,
-            }
-        )
-    return render(request, 'advertiser/campaign_edit.html', {
-        'advertiser': advertiser,
-        'campaign': campaign,
-        'form': form,
-        'billboards_json': json.dumps(billboards_data, cls=DjangoJSONEncoder),
+        form = CampaignForm(advertiser, instance=campaign)
+
+    # Pre-populate billboard select and slots_per_day from existing slot
+    initial_billboard_pk = str(existing_slot.billboard.pk) if existing_slot else ""
+    initial_slots_per_day = existing_slot.slots_per_day if existing_slot else 1
+    form.fields["billboard"] = _BillboardChoiceField(available_billboards)
+    form.initial["billboard"] = initial_billboard_pk
+ 
+    context = {
+        "form": form,
+        "campaign": campaign,
+        "billboards_json": _build_billboards_json(available_billboards),
+        "preselected_billboard": initial_billboard_pk,
+        "initial_slots_per_day": initial_slots_per_day,
+    }
+    return render(request, "advertiser/campaign_create.html", context)
+
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_detail(request, pk):
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign.objects.select_related("media", "advertiser"),pk=pk,advertiser=advertiser)
+    slots = campaign.campaign_slots.select_related("billboard").all()
+ 
+    if request.method == "POST":
+        action = request.POST.get("action")
+ 
+        if action == "submit":
+            try:
+                campaign.submit_for_approval()
+                messages.success(request, "Campaign submitted for review. You'll be notified once it's processed.")
+            except ValidationError as e:
+                messages.error(request, e.message if hasattr(e, "message") else str(e))
+ 
+        elif action == "cancel":
+            try:
+                campaign.cancel()
+                messages.success(request, f"'{campaign.name}' has been cancelled.")
+                return redirect("advertiser:campaign_list")
+            except ValidationError as e:
+                messages.error(request, e.message if hasattr(e, "message") else str(e))
+        return redirect("advertiser:campaign_detail", pk=campaign.pk)
+
+    return render(request, "advertiser/campaign_detail.html", {
+        "campaign": campaign,
+        "slots": slots,
     })
 
-
-@login_required(login_url='security:login')
+@login_required(login_url="security:login")
 @advertiser_required
 def advertiser_settings(request):
-    advertiser = request.user.advertiser_profile
-    if request.method == 'POST':
+    advertiser = _get_advertiser(request)
+
+    if request.method == "POST":
         form = AdvertiserProfileForm(request.POST, instance=advertiser)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Profile updated.')
-            return redirect('advertiser:settings')
+            messages.success(request, "Profile updated successfully.")
+            return redirect("advertiser:settings")
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+            _campaign_error_messages(request, form)
     else:
         form = AdvertiserProfileForm(instance=advertiser)
-    return render(request, 'advertiser/settings.html', {
-        'advertiser': advertiser,
-        'form': form,
-    })
 
-
-@login_required(login_url='security:login')
-@advertiser_required
-def request_verification(request):
-    if request.method == 'POST':
-        advertiser = request.user.advertiser_profile
-        if not advertiser.is_verified and not advertiser.verification_requested:
-            advertiser.verification_requested = True
-            advertiser.verification_requested_at = timezone.now()
-            advertiser.save(update_fields=['verification_requested', 'verification_requested_at'])
-            messages.success(request, 'Verification request submitted. An admin will review your account.')
-    return redirect('advertiser:dashboard')
+    return render(request, "advertiser/settings.html", {"form": form, "advertiser": advertiser})

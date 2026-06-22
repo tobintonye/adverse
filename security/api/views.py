@@ -1,16 +1,21 @@
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer
+from .serializers import( RegisterSerializer, LoginSerializer,
+        PasswordResetRequestSerializer, SetNewPasswordSerializer, RoleSelectionSerializer)
 from django.contrib.auth import get_user_model
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from ..views import sendVerificationEmail, sendPasswordResetLink, delayed_send_email
+from core.services.email_service import (send_verification_email, send_password_reset_email_safe,)
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.db import transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from ..models import CustomUser
+from axes.decorators import axes_dispatch 
+from django.utils.decorators import method_decorator
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 
 User = get_user_model()
 
@@ -23,7 +28,7 @@ class RegisterView(generics.CreateAPIView):
         response = super().create(request, *args, **kwargs)
         user = User.objects.get(id=response.data['id'])
         
-        sendVerificationEmail(user, request)
+        send_verification_email(user, request)  
         return Response(
             {"detail": "Registration successful. Please check your email to verify your account."},
             status=status.HTTP_201_CREATED
@@ -33,7 +38,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request): 
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             refresh = RefreshToken.for_user(user)
@@ -41,10 +46,12 @@ class LoginView(APIView):
                 "refresh":str(refresh), 
                 "access":str(refresh.access_token),
             },  status=status.HTTP_200_OK )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
     
+@method_decorator(axes_dispatch, name='dispatch')
 class ReSendVerificationEmailView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request): 
         email = request.data.get('email')
@@ -52,7 +59,7 @@ class ReSendVerificationEmailView(APIView):
             try: 
                 user = User.objects.get(email=email)
                 if not user.is_active:
-                    sendVerificationEmail(user, request) # for dev
+                    send_verification_email(user, request)  # for dev
             except User.DoesNotExist:
                 pass
         return Response({
@@ -92,6 +99,8 @@ class VerifyEmailView(APIView):
 
 class PasswordResetView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_sensitive"
 
     def post(self, request): 
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -99,9 +108,9 @@ class PasswordResetView(APIView):
             email = serializer.validated_data['email']
             try: 
                 user = User.objects.get(email=email)
-                sendPasswordResetLink(user, request)
+                send_password_reset_email_safe(user, request)
             except User.DoesNotExist: 
-                delayed_send_email(None, request)
+                send_password_reset_email_safe(None, request) 
             return Response({"detail": "If this email exists, a password reset link has been sent."}, status=status.HTTP_200_OK)
         
 class SetNewPassword(APIView): 
@@ -125,7 +134,7 @@ class SetNewPassword(APIView):
         )
 
         if not serializer.is_valid():
-            return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
 
@@ -138,7 +147,36 @@ class LogoutView(APIView):
             return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
         try: 
             token = RefreshToken(refresh_token)
+            if token["user_id"] != request.user.id:
+                return Response({"error": "Token mismatch."}, status=status.HTTP_403_FORBIDDEN)
             token.blacklist()
         except TokenError: 
             return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"detail": "Logout successful."},status=status.HTTP_205_RESET_CONTENT)
+
+class SelectUserRoleView(APIView): 
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request): 
+        serializer = RoleSelectionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        chosen_role = serializer.validated_data["role"]
+
+        try:
+            with transaction.atomic():
+                user = CustomUser.objects.select_for_update().get(pk=request.user.pk)
+                if user.role:
+                    return Response({
+                        "detail": f"You already selected your role as {user.role}."
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                user.role = chosen_role
+                user.save()
+                return Response(
+                    {"message": f"Role set to {user.role}. Please complete your profile."},
+                    status=status.HTTP_200_OK
+                )
+        except Exception as e:
+            return Response(
+                {"error": "Something went wrong. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
