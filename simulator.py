@@ -30,7 +30,7 @@ import uuid
 from datetime import datetime, timezone
 
 # media player sim for dev only
-BASE_URL = "http://localhost:8000/adverse-api/billboards"
+BASE_URL = "http://localhost:8000/adverse-api"
 STATE_FILE = ".simulator_state.json"
 
 HEARTBEAT_INTERVAL = 30     # seconds
@@ -101,7 +101,7 @@ def wait_for_pairing(device_uid: str) -> str | None:
     print()
     
     while True: 
-        res = api("get", "/players/register/status/", params={"device_uid": device_uid})
+        res = api("get", "/players/pairing-status/", params={"device_uid": device_uid})
         if res is None:
             time.sleep(POLL_INTERVAL)
             continue

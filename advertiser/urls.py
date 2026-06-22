@@ -4,15 +4,21 @@ from . import views
 app_name = "advertiser"
 
 urlpatterns = [
-    path("profile/", views.create_advertiser_profile, name="create_profile"),
-    path("dashboard/", views.advertiser_dashboard, name="dashboard"),
-    path("billboards/", views.browse_billboards, name="browse_billboards"),
+    path("create-profile/", views.advertiser_create_profile, name="create_profile"),
+    path("edit-profile/", views.advertiser_edit_profile, name="edit_profile"),
+    path("dashboard/", views.advertiserDashboard, name="dashboard"),
+    path("request-verification/", views.advertiser_request_verification, name="request_verification"),
+    # Media
     path("media/", views.media_library, name="media_library"),
     path("media/upload/", views.upload_media, name="upload_media"),
+    path("media/<uuid:pk>/delete/", views.media_delete, name="media_delete"),
+    # Billboards (browse only — advertisers don't own billboards)
+    path("billboards/", views.browse_billboards, name="browse_billboards"),
+    # Campaigns
     path("campaigns/", views.campaign_list, name="campaign_list"),
     path("campaigns/create/", views.campaign_create, name="campaign_create"),
     path("campaigns/<uuid:pk>/", views.campaign_detail, name="campaign_detail"),
     path("campaigns/<uuid:pk>/edit/", views.campaign_edit, name="campaign_edit"),
+
     path("settings/", views.advertiser_settings, name="settings"),
-    path("request-verification/", views.request_verification, name="request_verification"),
 ]

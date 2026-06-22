@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import ( PlayerDeviceListCreateView, PairDeviceView, PlayerDeviceDetailView, 
-    PlayerDeviceDisableView, PlayerDeviceRotateTokenView, PlayerHeartbeatView, 
-    PlayerSelfRegisterView,  PlayerPairingStatusView      
+    PlayerDeviceDisableView, PlayerDeviceRotateTokenView, PlayerHeartbeatView, PlayerScheduleView,
+    PlayerSelfRegisterView,  PlayerPairingStatusView, PlayerPlaybackView, PlayerPlaybackBulkView, PlayerMetricsView,   
 )
 
 urlpatterns = [
@@ -16,4 +16,9 @@ urlpatterns = [
     path("heartbeat/", PlayerHeartbeatView.as_view(), name="player-heartbeat"),
     path("register/", PlayerSelfRegisterView.as_view(), name="player-self-register"),
     path("pairing-status/", PlayerPairingStatusView.as_view(), name="player-pairing-status"),
+    path("playback/", PlayerPlaybackView.as_view(), name="player-playback"),
+    path("players/schedule/", PlayerScheduleView.as_view(), name="player-schedule"),
+    path("players/playback/bulk/", PlayerPlaybackBulkView.as_view(), name="player-playback-bulk"),
+    path("metrics/", PlayerMetricsView.as_view(), name="player-metrics"),
+
 ]

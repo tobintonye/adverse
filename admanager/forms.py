@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from .models import Admanager, BankAccount
+from .models import Admanager
 from device.models import Billboard
 import re
 
@@ -113,7 +113,7 @@ class BillboardForm(forms.ModelForm):
             }),
         }
 
-
+'''
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
@@ -131,3 +131,4 @@ class BankAccountForm(forms.ModelForm):
         if len(num) < 10:
             raise ValidationError("Account number must be at least 10 digits.")
         return num
+'''

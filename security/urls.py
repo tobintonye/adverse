@@ -18,4 +18,5 @@ urlpatterns = [
     path('password-reset-complete/', views.passwordRestComplete, name='resetcomplete'),
     path('reset-password/', views.resend_passwordreset_link, name="resendpasswordlink"),
     path('change-password/', views.change_password, name='change_password'),
+    path('select-role/', views.selectuser_role, name='selectrole'),
 ]

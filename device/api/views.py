@@ -2,16 +2,17 @@ from django.utils import timezone
 from rest_framework import  permissions, status
 from rest_framework.exceptions import PermissionDenied, NotFound
 from admanager.models import Admanager
-from ..models import Billboard, PlayerDevice
+from ..models import Billboard, PlayerDevice, PlaybackLog
 from .serializers import (
      BillboardSerializer, BillboardWriteSerializer, HeartbeatSerializer,
     PairDeviceSerializer, PlayerDeviceRegistrationSerializer, PlayerDeviceSerializer,
+    DeviceMetricSerializer, BulkPlaybackLogSerializer
     )
 from .authentication import DeviceTokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import NotFound
 
 def get_ad_manager(user):
@@ -201,6 +202,96 @@ class PlayerHeartbeatView(APIView):
             "billboard": player.billboard.name if player.billboard_id else None,
         })
     
+class PlayerScheduleView(APIView):
+    authentication_classes = [DeviceTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        player = request.user
+        if not player.is_paired:
+            return Response(
+                {"detail": "Device is not paired to a billboard yet."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from scheduling.models import get_playlist_for_billboard
+        from scheduling.api.serializers import TimeSlotSerializer
+
+        slots = get_playlist_for_billboard(player.billboard)
+        return Response({
+            "device_uid": player.device_uid,
+            "billboard": player.billboard.name,
+            "schedule": TimeSlotSerializer(slots, many=True).data,
+            "fetched_at": timezone.now(),
+        })
+    
+class PlayerPlaybackView(APIView):
+    authentication_classes = [DeviceTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DeviceTokenAuthentication(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        log = serializer.save(player=request.user)
+        return Response(
+            {
+                "detail": "Playback recorded.",
+                "log_id": log.id,
+                "media_id": str(log.media_id),
+                "completed": log.completed,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class PlayerPlaybackBulkView(APIView):
+    authentication_classes = [DeviceTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = BulkPlaybackLogSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        player = request.user
+        logs_data = serializer.validated_data["logs"]
+        created_logs, skipped = [], 0
+
+        for entry in logs_data:
+            log, created = PlaybackLog.objects.get_or_create(
+                player=player,
+                media_id=entry["media_id"],
+                started_at=entry["started_at"],
+                defaults={
+                    "duration_seconds": entry["duration_seconds"],
+                    "completed": entry.get("completed", False),
+                },
+            )
+            if created:
+                created_logs.append(log)
+            else:
+                skipped += 1
+
+        return Response(
+            {
+                "detail": "Bulk playback flush complete.",
+                "received": len(logs_data),
+                "created": len(created_logs),
+                "skipped_duplicates": skipped,
+            },
+            status=status.HTTP_207_MULTI_STATUS,
+        )
+
+class PlayerMetricsView(APIView):
+    authentication_classes = [DeviceTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DeviceMetricSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        metric = serializer.save(player=request.user)
+        return Response(
+            {"detail": "Metrics recorded.", "recorded_at": metric.recorded_at},
+            status=status.HTTP_201_CREATED,
+        )
+
 # billboard self-registration
 class PlayerSelfRegisterView(APIView):
     """

@@ -5,7 +5,7 @@
 {% block page_description %}Monitor your billboard inventory and campaign performance at a glance.{% endblock %}
 
 {% block page_header_actions %}
-<a href="{% url 'admanager:billboard_create' %}"
+<a href="{% url 'device:billboard_create' %}"
    class="btn btn-primary btn-sm">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -33,10 +33,13 @@
                 Your account is currently <strong>pending verification</strong>. Submit a verification request to list active screens and serve campaigns.
             </p>
         </div>
-        <form method="post" action="{% url 'admanager:request_verification' %}" class="flex-shrink-0 w-full sm:w-auto">
+        <form method="post" class="flex-shrink-0 w-full sm:w-auto">
             {% csrf_token %}
-            <button type="submit" class="btn btn-warning btn-sm w-full sm:w-auto">Request Verification</button>
+            <button type="submit" name="request_verification" value="1" class="btn btn-warning btn-sm w-full sm:w-auto">
+                Request Verification
+            </button>
         </form>
+ 
     </div>
     {% endif %}
 {% elif verification_status == 'rejected' %}
@@ -56,7 +59,7 @@
             No bank account on file. Add your <strong>bank details</strong> so we can process withdrawal disbursements to you.
         </p>
     </div>
-    <a href="{% url 'admanager:settings' %}?tab=bank"
+    <a href="#"
        class="btn btn-warning btn-sm flex-shrink-0 whitespace-nowrap">
         Add Bank Account →
     </a>
@@ -91,26 +94,26 @@
 <!-- Row 1: KPI Cards (Simple Inventory & Output stats) -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <!-- Listed Billboards count -->
-    <a href="{% url 'admanager:billboard_list' %}" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
+    <a href="#" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
         <div class="stat-figure text-primary">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
         </div>
         <div class="stat-title text-xs uppercase tracking-widest">Active Screens</div>
-        <div class="stat-value text-3xl">{{ total_billboards }}</div>
+        <div class="stat-value text-3xl">{{ total_billboards |default:"0"  }}</div>
         <div class="stat-desc text-[10px]">Screens listed on the network</div>
     </a>
 
     <!-- Campaigns Served -->
-    <a href="{% url 'admanager:campaign_requests' %}" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
+    <a href="#" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
         <div class="stat-figure text-success">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
         </div>
         <div class="stat-title text-xs uppercase tracking-widest">Campaigns Served</div>
-        <div class="stat-value text-3xl">{{ total_campaigns_served }}</div>
+        <div class="stat-value text-3xl">{{ total_campaigns_served|default:"0" }}</div>
         <div class="stat-desc text-[10px]">Historical campaigns broadcasted</div>
     </a>
 
@@ -131,7 +134,7 @@
 <!-- Row 1.2: Financial KPIs -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <!-- Available Balance -->
-    <a href="{% url 'admanager:withdrawal_list' %}" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
+    <a href="#" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
         <div class="stat-figure text-success">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -199,7 +202,7 @@
 <!-- Row 2: Clean Actions Control Panel -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- Manage Billboards Action Card -->
-    <a href="{% url 'admanager:billboard_list' %}" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
+    <a href="{% url 'device:billboard_list' %}" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
         <div class="card-body flex flex-row items-center gap-4">
             <div class="p-3 bg-base-300 border border-base-300 rounded-xl text-base-content/50 group-hover:text-primary transition-all">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +217,7 @@
     </a>
 
     <!-- Campaign Requests Action Card -->
-    <a href="{% url 'admanager:campaign_requests' %}" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
+    <a href="#" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
         <div class="card-body flex flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-base-300 border border-base-300 rounded-xl text-base-content/50 group-hover:text-success transition-all">

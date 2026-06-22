@@ -1,0 +1,140 @@
+{% extends "adManager/base.html" %}
+
+{% block title %}Device — {{ billboard.name }}{% endblock %}
+{% block page_title %}Device Status{% endblock %}
+{% block page_description %}Hardware status and controls for the device paired to this billboard.{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex items-center gap-1.5 text-sm min-w-0">
+    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
+    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <a href="{% url 'device:billboard_list' %}" class="link link-hover text-base-content/50">Billboards</a>
+    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="font-semibold truncate">{{ billboard.name }}</span>
+</nav>
+{% endblock %}
+
+{% block page_container_class %}max-w-2xl mx-auto{% endblock %}
+
+{% block content %}
+
+<div class="card card-border bg-base-200 border-base-300 mb-6">
+    <div class="card-body">
+        <div class="flex items-start justify-between gap-4 mb-6">
+            <div>
+                <h2 class="card-title">{{ billboard.name }}</h2>
+                <p class="text-sm text-base-content/50 mt-0.5">{{ billboard.location_name }}</p>
+            </div>
+            {% if player.status == 'disabled' %}
+                <span class="badge badge-error gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                    Disabled
+                </span>
+            {% elif player.is_online %}
+                <span class="badge badge-success gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                    Online
+                </span>
+            {% elif player.status == 'pending' %}
+                <span class="badge badge-warning gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+                    Pending First Heartbeat
+                </span>
+            {% else %}
+                <span class="badge badge-ghost gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full"></span>
+                    Offline
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+            <div>
+                <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Device ID</p>
+                <p class="font-mono text-sm">{{ player.device_uid }}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Pairing Code</p>
+                <p class="font-mono text-sm">{{ player.pairing_code }}</p>
+            </div>
+
+            <div class="sm:col-span-2 border-t border-base-300/60 my-1"></div>
+
+            <div>
+                <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Firmware</p>
+                <p class="font-medium">{{ player.firmware_version|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-1">Last Seen</p>
+                <p class="font-medium">{{ player.last_seen_at|default:"Never"|timesince }} {% if player.last_seen_at %}ago{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if player.status != 'disabled' %}
+<!-- Device Controls -->
+<div class="card card-border bg-base-200 border-base-300">
+    <div class="card-body">
+        <h3 class="card-title gap-2 mb-2">
+            <svg class="w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Device Controls
+        </h3>
+
+        <!-- Rotate token -->
+        <div class="flex items-center justify-between gap-4 py-3 border-b border-base-300/60">
+            <div>
+                <p class="text-sm font-medium">Rotate auth token</p>
+                <p class="text-xs text-base-content/50 mt-0.5">Invalidates the current token. The device will need to re-authenticate.</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="action" value="rotate_token" class="btn btn-outline btn-sm flex-shrink-0">
+                    Rotate Token
+                </button>
+            </form>
+        </div>
+
+        <!-- Unpair -->
+        <div class="flex items-center justify-between gap-4 py-3 border-b border-base-300/60">
+            <div>
+                <p class="text-sm font-medium">Unpair device</p>
+                <p class="text-xs text-base-content/50 mt-0.5">Frees this billboard so a new device can be paired. This device stays active and can be paired elsewhere.</p>
+            </div>
+            <form method="post" onsubmit="return confirm('Unpair this device? The billboard will need a new device paired before it can play content again.');">
+                {% csrf_token %}
+                <button type="submit" name="action" value="unpair" class="btn btn-outline btn-warning btn-sm flex-shrink-0">
+                    Unpair
+                </button>
+            </form>
+        </div>
+
+        <!-- Disable -->
+        <div class="flex items-center justify-between gap-4 py-3">
+            <div>
+                <p class="text-sm font-medium text-error">Disable device</p>
+                <p class="text-xs text-base-content/50 mt-0.5">Permanently deactivates this device. It stays linked to this billboard for record-keeping but can no longer authenticate.</p>
+            </div>
+            <form method="post" onsubmit="return confirm('Disable this device permanently? This cannot be undone from this page.');">
+                {% csrf_token %}
+                <button type="submit" name="action" value="disable" class="btn btn-outline btn-error btn-sm flex-shrink-0">
+                    Disable
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-error text-sm">
+    <p>This device has been disabled and can no longer authenticate or receive content. It remains linked to this billboard for historical record.</p>
+</div>
+{% endif %}
+
+{% endblock %}
