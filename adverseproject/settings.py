@@ -2,7 +2,11 @@ from pathlib import Path
 import os 
 import environ
 from datetime import timedelta
-from celery.schedules import crontab
+try:
+    from celery.schedules import crontab
+    _celery_available = True
+except ImportError:
+    _celery_available = False
 env = environ.Env(
     DEBUG=(bool, False)
 )
@@ -226,34 +230,48 @@ RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
-CELERY_BEAT_SCHEDULE = {
-    'activate-due-campaigns': {
-        'task': 'scheduling.tasks.activate_due_campaigns',
-        'schedule': crontab(hour=0, minute=5),  # just after midnight
-    },
-    'expire-old-campaigns': {
-        'task': 'scheduling.tasks.expire_old_campaigns',
-        'schedule': crontab(hour=0, minute=10),
-    },
-}
+if _celery_available:
+    CELERY_BEAT_SCHEDULE = {
+        'activate-due-campaigns': {
+            'task': 'scheduling.tasks.activate_due_campaigns',
+            'schedule': crontab(hour=0, minute=5),  # just after midnight
+        },
+        'expire-old-campaigns': {
+            'task': 'scheduling.tasks.expire_old_campaigns',
+            'schedule': crontab(hour=0, minute=10),
+        },
+    }
 
-# CACHE CONFIGURATION 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",  # Database 1 for general app caching
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    },
-    "axes": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/2",  # Database 2 exclusively for tracking logins
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+# CACHE CONFIGURATION
+try:
+    import django_redis  # noqa: F401 — check availability
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",  # Database 1 for general app caching
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        },
+        "axes": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/2",  # Database 2 exclusively for tracking logins
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
         }
     }
-}
+except ImportError:
+    # Fall back to in-memory cache when django_redis is not installed (local dev)
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        },
+        "axes": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "axes",
+        },
+    }
 
 # Tell django-axes to look at the 'axes' cache block defined above
 AXES_CACHE = "axes"

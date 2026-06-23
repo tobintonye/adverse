@@ -1,4 +1,11 @@
-from celery import shared_task
+try:
+    from celery import shared_task
+except ImportError:
+    # No-op decorator: functions work as plain callables when celery isn't installed
+    def shared_task(*args, **kwargs):
+        def decorator(fn):
+            return fn
+        return decorator if args and callable(args[0]) else decorator
 from .models import Campaign
 import logging
 logger = logging.getLogger("advertiser.services")
