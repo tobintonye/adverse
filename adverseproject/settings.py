@@ -254,6 +254,20 @@ CACHES = {
     }
 }
 
+CELERY_BEAT_SCHEDULE = {
+    "flag-suspicious-payouts": {
+        "task": "backend.apps.payments.tasks.flag_suspicious_payouts",
+        "schedule": crontab(hour="*/6"),  # every 6 hours
+    },
+    "expire-stale-payments": {
+        "task": "backend.apps.payments.tasks.expire_stale_campaign_payments",
+        "schedule": crontab(hour="0", minute="0"),  # daily midnight
+    },
+    "reconciliation-alert": {
+        "task": "backend.apps.payments.tasks.send_reconciliation_alert",
+        "schedule": crontab(hour="8", minute="0"),  # daily 8am
+    },
+}
 # Tell django-axes to look at the 'axes' cache block defined above
 AXES_CACHE = "axes"
 
@@ -264,7 +278,8 @@ AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by IP AND username toget
 
 AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler' # Uses Redis cache so it's super fast
 
-
+PAYSTACK_SECRET_KEY=env('PAYSTACK_SECRET_KEY')
+PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY')
 
 # Django-Q2 config — ORM broker 
 Q_CLUSTER = {
