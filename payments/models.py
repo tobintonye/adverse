@@ -57,12 +57,12 @@ class AdManagerSubaccount(TimeStampedModel):
         related_name="paystack_subaccount",
     )
     subaccount_code = models.CharField(max_length=120, unique=True)
-    business_name = models.CharField(max_length=180)
+    business_name = models.CharField(max_length=180, null=True) # to be changed 
     bank_name = models.CharField(max_length=120)
     bank_code = models.CharField(max_length=10)
     # Only the last 4 digits are stored. The full account number is never
     # persisted — Paystack holds the authoritative copy via subaccount_code.
-    account_number_last4 = models.CharField(max_length=4)
+    account_number_last4 = models.CharField(max_length=4, null=True) # to be changed 
     account_name = models.CharField(max_length=180)
     settlement_bank = models.CharField(max_length=120, blank=True)
     is_active = models.BooleanField(default=True)

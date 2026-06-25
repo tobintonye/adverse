@@ -28,7 +28,7 @@ class AdManagerSubaccountSerializer(serializers.ModelSerializer):
       should never be handed to client-facing responses. Use the admin
       serializer (AdminAdManagerSubaccountSerializer) for internal tooling.
     """
-    account_number = serializers.CharField(ssource="masked_account_number", read_only=True)
+    account_number = serializers.CharField(source="masked_account_number", read_only=True)
     is_verified = serializers.BooleanField(read_only=True)
 
     class Meta:
