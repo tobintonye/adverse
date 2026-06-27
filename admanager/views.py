@@ -1,4 +1,5 @@
 
+from payments.services import ( create_paystack_subaccount, update_paystack_subaccount_bank_details)
 from django.contrib.auth import get_user_model
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -20,6 +21,11 @@ from advertiser.services import approve_campaign_by_manager, reject_campaign
 from django.db.models import Q
 from scheduling.models import ScheduleGenerationLog
 
+try:
+    from payments.models import AdManagerSubaccount
+except ImportError:
+    AdManagerSubaccount = None
+ 
 def _get_campaign_for_manager(ad_manager, pk):
     """
     Return a campaign that includes this manager's billboard.
@@ -372,3 +378,140 @@ def adManager_setting(request):
         "active_tab": active_tab,
     }
     return render(request, "adManager/settings.html", context)
+
+@login_required(login_url="security:login")
+@ad_manager_required
+def payment_setup(request):
+    """
+    GET  /admanager/payment/setup/
+         Show the subaccount setup form (or existing details if already set up).
+ 
+    POST /admanager/payment/setup/
+         Create a new Paystack subaccount for this ad manager.
+         Calls create_paystack_subaccount() from payments.services — this
+         hits Paystack's name enquiry API then creates the subaccount.
+         Only the last 4 digits of the account number are stored locally.
+    """
+    from payments.models import AdManagerSubaccount
+
+    ad_manager = request.user.ad_manager
+
+    # Resolve existing subaccount if present
+    subaccount = getattr(ad_manager, "paystack_subaccount", None)
+
+    if request.method == "POST" and not subaccount:
+        bank_code = request.POST.get("bank_code", "").strip()
+        account_number = request.POST.get("account_number", "").strip()
+        business_name = request.POST.get("business_name", "").strip()
+
+        # Basic frontend-mirrored validation before hitting Paystack
+        errors = []
+        if not bank_code:
+            errors.append("Please select a bank.")
+        if not account_number.isdigit() or len(account_number) != 10:
+            errors.append("Account number must be exactly 10 digits.")
+        if not business_name:
+            errors.append("Business name is required.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+        else:
+            try:
+                subaccount = create_paystack_subaccount(ad_manager=ad_manager, bank_code=bank_code, account_number=account_number, business_name=business_name)
+                messages.success(request, "Bank account connected successfully." "Your subaccount will be verified before payments are processed.")
+                return redirect("admanager:payment_setup")
+            except ValidationError as e:
+                messages.error(request, str(e))
+
+    return render(request, "adManager/payment_setup.html", {
+        "ad_manager": ad_manager,
+        "subaccount": subaccount,
+    })
+    
+@login_required(login_url="security:login")
+@ad_manager_required
+def payment_update_bank(request):
+    """
+    POST /admanager/payment/update-bank/
+ 
+    Updates the bank details on an existing Paystack subaccount.
+    Calls update_paystack_subaccount_bank_details() from payments.services —
+    this hits Paystack's name enquiry API, updates the subaccount on Paystack,
+    and saves only the last 4 digits locally.
+ 
+    Always redirects — no GET for this endpoint.
+    """
+    from payments.services import update_paystack_subaccount_bank_details
+
+    if request.method != "POST":
+        return redirect("admanager:payment_setup")
+    
+    ad_manager = request.user.ad_manager
+    subaccount = getattr(ad_manager, "paystack_subaccount", None)
+
+    if not subaccount:
+        messages.error(request, "No subaccount found. Please set up payment details first.")
+        return redirect("admanager:payment_setup")
+    
+    bank_code = request.POST.get("bank_code", "").strip()
+    account_number = request.POST.get("account_number", "").strip()
+    business_name = request.POST.get("business_name", "").strip() or None
+
+    errors = []
+    if not bank_code:
+        errors.append("Please select a bank.")
+    if not account_number.isdigit() or len(account_number) != 10:
+        errors.append("Account number must be exactly 10 digits.")
+    if errors:
+        for e in errors:
+            messages.error(request, e)
+        return redirect("admanager:payment_setup")
+    
+    try:
+        update_paystack_subaccount_bank_details(subaccount=subaccount, bank_code=bank_code, account_number=account_number, business_name=business_name, updated_by=request.user)
+        messages.success(request, "Bank details updated. Your subaccount is pending re-verification — " "payments are paused until the new account is confirmed.")
+    except ValidationError as e:
+        messages.error(request, str(e))
+    
+    return redirect("admanager:payment_setup")
+
+
+@login_required(login_url="security:login")
+@ad_manager_required
+def payment_verify_subaccount(request):
+    """
+    POST /admanager/payment/verify/
+    Checks the subaccount status on Paystack and marks it verified locally
+    if Paystack confirms it. Called manually by the ad manager or by staff.
+    """
+    if request.method != "POST":
+        return redirect("admanager:payment_setup")
+
+    ad_manager = request.user.ad_manager
+    subaccount = getattr(ad_manager, "paystack_subaccount", None)
+
+    if not subaccount:
+        messages.error(request, "No subaccount found. Please set up payment details first.")
+        return redirect("admanager:payment_setup")
+    if subaccount.is_verified:
+        messages.info(request, "Your subaccount is already verified.")
+        return redirect("admanager:payment_setup")
+
+    try:
+        from payments.services import _paystack_get
+        data = _paystack_get(
+            f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}"
+        )
+        paystack_subaccount = data.get("data", {})
+        is_verified = paystack_subaccount.get("is_verified", False)
+
+        if is_verified:
+            subaccount.mark_verified(changed_by=request.user)
+            messages.success(request, "Subaccount verified successfully. You can now receive payments.")
+        else:
+            messages.warning(request, "Paystack has not verified this subaccount yet. Please try again shortly.")
+
+    except Exception as e:
+        messages.error(request, f"Could not check verification status: {e}")
+
+    return redirect("admanager:payment_setup")

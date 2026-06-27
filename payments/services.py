@@ -13,25 +13,30 @@ from .models import ( AdManagerSubaccount, AdManagerSubaccountAuditLog, Campaign
 logger = logging.getLogger(__name__)
 # Paystack Webhook Signature Verification
 def verify_paystack_signature(raw_body: bytes, signature: str) -> bool:
-    # Verify that a webhook request genuinely came from Paystack.
-
-    if not getattr(settings, "PAYSTACK_SECRET_KEY", None): 
+    if not getattr(settings, "PAYSTACK_SECRET_KEY", None):
         raise ValidationError("PAYSTACK_SECRET_KEY is not configured")
+    
+    key = settings.PAYSTACK_SECRET_KEY.strip()  # strip any whitespace
     expected = hmac.new(
-        settings.PAYSTACK_SECRET_KEY.encode("utf-8"),
-        raw_body, 
-        hashlib.sha512,
-    ).hexdigest
+        key.encode("utf-8"),
+        msg=raw_body,
+        digestmod=hashlib.sha512,
+    ).hexdigest()
+    
+    print(f"DEBUG expected: {expected[:20]}")
+    print(f"DEBUG received: {signature[:20] if signature else 'NONE'}")
+    
     return hmac.compare_digest(expected, signature or "")
 
 def _paystack_headers() -> dict:
-    if not getattr(settings, "PAYSTACK_SECRET_KEY", None ): 
+    key = getattr(settings, "PAYSTACK_SECRET_KEY", None)
+    print(f"DEBUG PAYSTACK KEY: repr='{repr(key)}'")  # add this
+    if not key:
         raise ValidationError("PAYSTACK_SECRET_KEY is not configured.")
     return {
-        "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
-
 
 def _paystack_get(url: str) -> dict:
     """
@@ -50,7 +55,7 @@ def _paystack_get(url: str) -> dict:
             f"Paystack API error (status {response.status_code}): "
             f"{response.json().get('message', 'Unknown error')}"
         )
-    return requests.json()
+    return response.json()
 
 def _paystack_post(url: str, payload: dict) -> dict:
     """
@@ -119,7 +124,7 @@ def create_paystack_subaccount( ad_manager, bank_code: str, account_number: str,
     # full details from Paystack's API when needed.
     with transaction.atomic():
         subaccount = AdManagerSubaccount.objects.create(
-             ad_manager=ad_manager,
+            ad_manager=ad_manager,
             subaccount_code=paystack_data["subaccount_code"],
             business_name=business_name,
             bank_name=bank_name,
@@ -197,12 +202,22 @@ def initialize_campaign_payment(campaign) -> dict:
         If the Paystack call fails, the local record is deleted so we never have an
         active Paystack checkout without a matching local record.
     """
-    billboard = campaign.billboard
+    first_slot = (
+        campaign.campaign_slots
+        .select_related("billboard__ad_manager__paystack_subaccount")
+        .first()
+    )
+    if not first_slot:
+        raise ValidationError(
+            "This campaign has no billboard slots assigned. "
+            "Please add a billboard before paying."
+        )
+    billboard = first_slot.billboard
     ad_manager = billboard.ad_manager
     subaccount = ad_manager.paystack_subaccount
-    subaccount = ad_manager.paystack_subaccount
-
-    total_amount = money(campaign.total_price)
+    subaccount.assert_ready_for_payment()
+    
+    total_amount = money(campaign.actual_price)
     platform_fee, manager_amount = compute_split(total_amount)
     reference = f"adv-{uuid.uuid4().hex}"
     amount_kobo = int(total_amount * 100)

@@ -17,6 +17,7 @@ urlpatterns = [
     path("campaigns/pay/", InitiateCampaignPaymentView.as_view(), name="campaign-pay"),
     path("campaigns/<uuid:campaign_id>/payment/", CampaignPaymentDetailView.as_view(), name="campaign-payment-detail"),
     path("campaigns/<uuid:campaign_id>/refund/", CampaignRefundView.as_view(), name="campaign-refund"),
+    
 
     # Ad Manager Earnings
     path("earnings/", AdManagerEarningsView.as_view(), name="earnings"),

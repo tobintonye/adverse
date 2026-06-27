@@ -57,12 +57,12 @@ class AdManagerSubaccount(TimeStampedModel):
         related_name="paystack_subaccount",
     )
     subaccount_code = models.CharField(max_length=120, unique=True)
-    business_name = models.CharField(max_length=180, null=True) # to be changed 
+    business_name = models.CharField(max_length=180) # to be changed 
     bank_name = models.CharField(max_length=120)
     bank_code = models.CharField(max_length=10)
     # Only the last 4 digits are stored. The full account number is never
     # persisted — Paystack holds the authoritative copy via subaccount_code.
-    account_number_last4 = models.CharField(max_length=4, null=True) # to be changed 
+    account_number_last4 = models.CharField(max_length=4) # to be changed 
     account_name = models.CharField(max_length=180)
     settlement_bank = models.CharField(max_length=120, blank=True)
     is_active = models.BooleanField(default=True)
@@ -334,6 +334,15 @@ class CampaignPayment(TimeStampedModel):
                 platform_fee=payment.platform_fee,
                 paystack_reference=paystack_reference,
             )
+            campaign = payment.campaign
+            today = timezone.now().date()
+            if campaign.start_date <= today:
+                from advertiser.models import Campaign as CampaignModel
+                if campaign.status == CampaignModel.Status.APPROVED:
+                    campaign.status = CampaignModel.Status.ACTIVE
+                    campaign.save(update_fields=["status", "updated_at"])
+            # If start_date is in the future, leave as APPROVED —
+            # Celery's activate_due_campaigns will pick it up on the right day.
             self._sync_from(payment)
 
     def mark_failed(self, gateway_response=None):

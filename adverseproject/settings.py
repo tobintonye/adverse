@@ -225,14 +225,27 @@ RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
+# Merge them into one:
 CELERY_BEAT_SCHEDULE = {
     'activate-due-campaigns': {
         'task': 'scheduling.tasks.activate_due_campaigns',
-        'schedule': crontab(hour=0, minute=5),  # just after midnight
+        'schedule': crontab(hour=0, minute=5),
     },
     'expire-old-campaigns': {
         'task': 'scheduling.tasks.expire_old_campaigns',
         'schedule': crontab(hour=0, minute=10),
+    },
+    "flag-suspicious-payouts": {
+        "task": "payments.tasks.flag_suspicious_payouts",
+        "schedule": crontab(hour="*/6"),
+    },
+    "expire-stale-payments": {
+        "task": "payments.tasks.expire_stale_campaign_payments",
+        "schedule": crontab(hour="0", minute="0"),
+    },
+    "reconciliation-alert": {
+        "task": "payments.tasks.send_reconciliation_alert",
+        "schedule": crontab(hour="8", minute="0"),
     },
 }
 
@@ -254,20 +267,6 @@ CACHES = {
     }
 }
 
-CELERY_BEAT_SCHEDULE = {
-    "flag-suspicious-payouts": {
-        "task": "backend.apps.payments.tasks.flag_suspicious_payouts",
-        "schedule": crontab(hour="*/6"),  # every 6 hours
-    },
-    "expire-stale-payments": {
-        "task": "backend.apps.payments.tasks.expire_stale_campaign_payments",
-        "schedule": crontab(hour="0", minute="0"),  # daily midnight
-    },
-    "reconciliation-alert": {
-        "task": "backend.apps.payments.tasks.send_reconciliation_alert",
-        "schedule": crontab(hour="8", minute="0"),  # daily 8am
-    },
-}
 # Tell django-axes to look at the 'axes' cache block defined above
 AXES_CACHE = "axes"
 
@@ -278,8 +277,8 @@ AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by IP AND username toget
 
 AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler' # Uses Redis cache so it's super fast
 
-PAYSTACK_SECRET_KEY=env('PAYSTACK_SECRET_KEY')
-PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY')
+PAYSTACK_SECRET_KEY=env('PAYSTACK_SECRET_KEY').strip().strip("'").strip('"')
+PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY').strip()
 
 # Django-Q2 config — ORM broker 
 Q_CLUSTER = {
@@ -294,3 +293,5 @@ Q_CLUSTER = {
     'bulk': 10,
     'sync': False,          # set True in tests to run tasks synchronously
 }
+# settings.py
+SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")

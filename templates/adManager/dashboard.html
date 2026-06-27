@@ -59,7 +59,7 @@
             No bank account on file. Add your <strong>bank details</strong> so we can process withdrawal disbursements to you.
         </p>
     </div>
-    <a href="#"
+    <a href="{% url 'admanager:payment_setup' %}"
        class="btn btn-warning btn-sm flex-shrink-0 whitespace-nowrap">
         Add Bank Account →
     </a>
@@ -217,7 +217,7 @@
     </a>
 
     <!-- Campaign Requests Action Card -->
-    <a href="#" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
+    <a href="{% url 'admanager:campaign_requests' %}" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
         <div class="card-body flex flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-base-300 border border-base-300 rounded-xl text-base-content/50 group-hover:text-success transition-all">

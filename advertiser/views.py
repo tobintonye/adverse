@@ -12,6 +12,7 @@ from advertiser.decorators import advertiser_required
 from .models import Advertiser, Campaign, CampaignSlot, Media
 from device.models import Billboard
 from django.db import transaction
+from payments.services import initialize_campaign_payment
 
 
 def _get_advertiser(request):
@@ -402,19 +403,46 @@ def campaign_edit(request, pk):
 @advertiser_required
 def campaign_detail(request, pk):
     advertiser = _get_advertiser(request)
-    campaign = get_object_or_404(Campaign.objects.select_related("media", "advertiser"),pk=pk,advertiser=advertiser)
+    campaign = get_object_or_404(
+        Campaign.objects.select_related("media", "advertiser").prefetch_related(
+            "campaign_slots__billboard"
+        ),
+        pk=pk,
+        advertiser=advertiser,
+    )
+
+    # Auto-verify pending payment when advertiser views the campaign page
+    try:
+        payment = campaign.payment
+        if payment and payment.status == "pending":
+            from payments.services import handle_charge_success
+            try:
+                handle_charge_success({
+                    "event": "charge.success",
+                    "data": {"reference": payment.reference}
+                })
+                payment.refresh_from_db()
+                campaign.refresh_from_db()
+                if payment.status == "completed":
+                    messages.success(
+                        request,
+                        "Payment confirmed! Your campaign is now active."
+                    )
+            except Exception:
+                pass  # still pending, stay quiet
+    except Exception:
+        payment = None
+
     slots = campaign.campaign_slots.select_related("billboard").all()
- 
+
     if request.method == "POST":
         action = request.POST.get("action")
- 
         if action == "submit":
             try:
                 campaign.submit_for_approval()
-                messages.success(request, "Campaign submitted for review. You'll be notified once it's processed.")
+                messages.success(request, "Campaign submitted for review.")
             except ValidationError as e:
                 messages.error(request, e.message if hasattr(e, "message") else str(e))
- 
         elif action == "cancel":
             try:
                 campaign.cancel()
@@ -427,6 +455,7 @@ def campaign_detail(request, pk):
     return render(request, "advertiser/campaign_detail.html", {
         "campaign": campaign,
         "slots": slots,
+        "payment": payment,
     })
 
 @login_required(login_url="security:login")
@@ -446,3 +475,47 @@ def advertiser_settings(request):
         form = AdvertiserProfileForm(instance=advertiser)
 
     return render(request, "advertiser/settings.html", {"form": form, "advertiser": advertiser})
+
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_pay(request, pk):
+    """
+    POST /advertiser/campaigns/<pk>/pay/
+ 
+    Initiates a Paystack payment for an APPROVED campaign.
+    Creates a CampaignPayment record (PENDING) then redirects the
+    advertiser to Paystack's hosted checkout page.
+ 
+    On return from Paystack, the advertiser lands back on campaign_detail.
+    The actual mark_completed() happens via the Paystack webhook — NOT here.
+ 
+    Guards:
+    - Campaign must belong to this advertiser
+    - Campaign must be APPROVED
+    - No active PENDING or COMPLETED payment already exists
+    """
+    if request.method != "POST":
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign.objects.select_related("advertiser", "payment"), pk=pk, advertiser=advertiser)
+
+    if campaign.status != Campaign.Status.APPROVED:
+        messages.error(request, "Only approved campaigns can be paid for.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    try:
+        from payments.services import initialize_campaign_payment
+        paystack_data = initialize_campaign_payment(campaign)
+
+    except ValidationError as e:
+        messages.error(request, str(e))
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    authorization_url = paystack_data.get("authorization_url")
+    if not authorization_url:
+        messages.error(request, "Could not initialize payment. Please try again.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    # Redirect advertiser to Paystack's hosted checkout
+    return redirect(authorization_url)

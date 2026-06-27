@@ -19,6 +19,7 @@ urlpatterns = [
     path("campaigns/create/", views.campaign_create, name="campaign_create"),
     path("campaigns/<uuid:pk>/", views.campaign_detail, name="campaign_detail"),
     path("campaigns/<uuid:pk>/edit/", views.campaign_edit, name="campaign_edit"),
+    path("campaigns/<uuid:pk>/pay/", views.campaign_pay, name="campaign_pay"), 
 
     path("settings/", views.advertiser_settings, name="settings"),
 ]

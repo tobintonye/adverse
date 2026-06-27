@@ -75,8 +75,7 @@ class Admanager(models.Model):
     
     @property
     def has_bank_account(self):
-        """True if payout bank details are complete."""
-        return all([self.bank_name, self.account_number, self.account_name, self.bank_code])
+        return hasattr(self, "paystack_subaccount")
     
     @property
     def received_campaigns(self):
