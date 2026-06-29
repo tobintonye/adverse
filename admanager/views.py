@@ -20,6 +20,7 @@ from advertiser.models import Campaign
 from advertiser.services import approve_campaign_by_manager, reject_campaign
 from django.db.models import Q
 from scheduling.models import ScheduleGenerationLog
+from decimal import Decimal
 
 try:
     from payments.models import AdManagerSubaccount
@@ -174,7 +175,12 @@ def adManagerDashboard(request):
     )
     annual_labels = [row["year"].strftime("%Y") for row in annual_qs]
     annual_values = [float(row["total"]) for row in annual_qs]
- 
+    
+    # Subaccount status check
+    subaccount = getattr(ad_manager, "paystack_subaccount", None)
+    subaccount_inactive = subaccount and not subaccount.is_active
+    subaccount_unverified = subaccount and subaccount.is_active and not subaccount.is_verified
+
     context = {
         "ad_manager": ad_manager,
         # Profile/status
@@ -195,7 +201,7 @@ def adManagerDashboard(request):
         # Inventory & output stats
         "total_billboards": total_billboards,
         "total_campaigns_served": total_campaigns_served,
-        "total_impressions": ad_manager.total_impressions,
+        "total_impressions": ad_manager.total_impressions, # we have to get this
         "pending_requests_count": pending_requests_count,
         # Financials
         "revenue": revenue,
@@ -210,6 +216,9 @@ def adManagerDashboard(request):
         "monthly_values_json": json.dumps(monthly_values),
         "annual_labels_json": json.dumps(annual_labels),
         "annual_values_json": json.dumps(annual_values),
+        "subaccount": subaccount,
+        "subaccount_inactive": subaccount_inactive,
+        "subaccount_unverified": subaccount_unverified,
     }
  
     return render(request, "adManager/dashboard.html", context)
@@ -250,7 +259,7 @@ def campaign_requests(request):
     return render(request, "adManager/campaign_requests.html", context)
  
 
-login_required(login_url='security:login')
+@login_required(login_url='security:login')
 @ad_manager_required
 def campaign_request_detail(request, pk):
     """
@@ -393,13 +402,14 @@ def payment_setup(request):
          Only the last 4 digits of the account number are stored locally.
     """
     from payments.models import AdManagerSubaccount
-
     ad_manager = request.user.ad_manager
-
     # Resolve existing subaccount if present
     subaccount = getattr(ad_manager, "paystack_subaccount", None)
 
-    if request.method == "POST" and not subaccount:
+    # Allow recreation if subaccount exists but is inactive
+    subaccount_inactive = subaccount and not subaccount.is_active
+    
+    if request.method == "POST" and (not subaccount or subaccount_inactive):
         bank_code = request.POST.get("bank_code", "").strip()
         account_number = request.POST.get("account_number", "").strip()
         business_name = request.POST.get("business_name", "").strip()
@@ -417,6 +427,10 @@ def payment_setup(request):
                 messages.error(request, e)
         else:
             try:
+                # If old subaccount exists but inactive, delete it first
+                if subaccount_inactive:
+                    subaccount.delete()
+
                 subaccount = create_paystack_subaccount(ad_manager=ad_manager, bank_code=bank_code, account_number=account_number, business_name=business_name)
                 messages.success(request, "Bank account connected successfully." "Your subaccount will be verified before payments are processed.")
                 return redirect("admanager:payment_setup")
@@ -426,6 +440,7 @@ def payment_setup(request):
     return render(request, "adManager/payment_setup.html", {
         "ad_manager": ad_manager,
         "subaccount": subaccount,
+        "subaccount_inactive": subaccount_inactive,
     })
     
 @login_required(login_url="security:login")
@@ -515,3 +530,40 @@ def payment_verify_subaccount(request):
         messages.error(request, f"Could not check verification status: {e}")
 
     return redirect("admanager:payment_setup")
+
+
+@login_required(login_url="security:login")
+@ad_manager_required
+def request_withdrawal(request):
+    """
+    POST /admanager/withdraw/
+    Ad manager requests a withdrawal of their available balance.
+    """
+    if request.method != "POST":
+        return redirect("admanager:dashboard")
+
+    ad_manager = request.user.ad_manager
+    amount_str = request.POST.get("amount", "").strip()
+
+    if not amount_str:
+        messages.error(request, "Please enter an amount.")
+        return redirect("admanager:dashboard")
+
+    try:
+        amount = Decimal(amount_str)
+    except Exception:
+        messages.error(request, "Invalid amount.")
+        return redirect("admanager:dashboard")
+
+    try:
+        from payments.services import initiate_withdrawal
+        payout = initiate_withdrawal(ad_manager=ad_manager, amount=amount,initiated_by=request.user)
+        messages.success(
+            request,
+            f"Withdrawal of ₦{payout.amount:,.2f} initiated successfully. "
+            f"You'll be notified once it's processed."
+        )
+    except ValidationError as e:
+        messages.error(request, str(e))
+
+    return redirect("admanager:dashboard")

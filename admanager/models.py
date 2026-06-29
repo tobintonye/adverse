@@ -20,11 +20,10 @@ class Admanager(models.Model):
         
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='ad_manager')
-   
     business_name = models.CharField(max_length=200, blank=False, null=False)
     business_type = models.CharField(max_length=20, choices=BusinessType.choices, default=BusinessType.INDIVIDUAL)
-    company_registration_number = models.CharField(max_length=100, blank=True)
-    tax_identification_number = models.CharField(max_length=100, blank=True)
+    company_registration_number = models.CharField(max_length=100, blank=True) # same as below
+    tax_identification_number = models.CharField(max_length=100, blank=True) # we need to find a way to verify this so admanager don't input random digits as tax id number
     business_email = models.EmailField()
     business_phone = models.CharField(max_length = 20)
     website = models.URLField(blank=True)
@@ -40,7 +39,7 @@ class Admanager(models.Model):
     suspension_reason = models.TextField(blank=True)
 
     # Audit trail — who changed the status and when
-    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_ad_managers")
+    verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_ad_managers") # admin
     verified_at  = models.DateTimeField(null=True, blank=True)
     verification_requested = models.BooleanField(default=False)
     verification_requested_at = models.DateTimeField(null=True, blank=True)
@@ -50,9 +49,9 @@ class Admanager(models.Model):
     # financials 
     # Commission rate — platform takes this % from each campaign earned by this manager
 
-    # Default matches PLATFORM_FEE_PERCENT in payments/models.py (10%).
+    # Default matches PLATFORM_FEE_PERCENT in payments/models.py (30%).
     # Can be overridden per manager (e.g. premium partners pay lower commission).
-    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=10.00,help_text="Platform commission percentage taken from this manager's earnings. Default 10%.")
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=30.00, help_text="Platform commission percentage taken from this manager's earnings. Default 30%.")
 
     bank_name = models.CharField(max_length=120, blank=True)
     account_number = models.CharField(max_length=20, blank=True)
@@ -98,7 +97,7 @@ class Admanager(models.Model):
             status=Campaign.Status.ACTIVE
         )
     
-    #Global Tech Admin verifies the ad manager account
+    # Global Tech Admin verifies the ad manager account
     def verify(self, admin_user):
         if self.verification_status == self.VerificationStatus.VERIFIED:
             raise ValidationError("Account is already verified.")
@@ -177,7 +176,7 @@ class Admanager(models.Model):
         return f"{self.business_name} [{self.verification_status}]"
     
     class Meta:
-        verbose_name    = "Ad Manager"
+        verbose_name = "Ad Manager"
         verbose_name_plural = "Ad Managers"
         indexes = [
             models.Index(fields=["verification_status"]),

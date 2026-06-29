@@ -7,9 +7,9 @@ import requests
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from .models import ( AdManagerSubaccount, AdManagerSubaccountAuditLog, CampaignPayment, 
-                     PayoutRecord, compute_split, money  )
-
+from .models import ( AdManagerSubaccount, AdManagerSubaccountAuditLog, CampaignPayment, PayoutRecord, compute_split, money,AdManagerEarning  )
+from json import JSONDecodeError
+from django.db.models import Sum
 logger = logging.getLogger(__name__)
 # Paystack Webhook Signature Verification
 def verify_paystack_signature(raw_body: bytes, signature: str) -> bool:
@@ -23,14 +23,14 @@ def verify_paystack_signature(raw_body: bytes, signature: str) -> bool:
         digestmod=hashlib.sha512,
     ).hexdigest()
     
-    print(f"DEBUG expected: {expected[:20]}")
-    print(f"DEBUG received: {signature[:20] if signature else 'NONE'}")
+    #print(f"DEBUG expected: {expected[:20]}")
+    #print(f"DEBUG received: {signature[:20] if signature else 'NONE'}")
     
     return hmac.compare_digest(expected, signature or "")
 
 def _paystack_headers() -> dict:
     key = getattr(settings, "PAYSTACK_SECRET_KEY", None)
-    print(f"DEBUG PAYSTACK KEY: repr='{repr(key)}'")  # add this
+    #print(f"DEBUG PAYSTACK KEY: repr='{repr(key)}'")  # add this
     if not key:
         raise ValidationError("PAYSTACK_SECRET_KEY is not configured.")
     return {
@@ -426,3 +426,89 @@ def _safe_gateway_response(data: dict) -> dict:
         "log",
     }
     return {k: v for k, v in data.items() if k not in PII_KEYS}
+
+
+def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutRecord:
+
+    subaccount = getattr(ad_manager, "paystack_subaccount", None)
+    if not subaccount:
+        raise ValidationError("No bank account set up. Please add your bank details first.")
+    if not subaccount.is_active:
+        raise ValidationError("Your bank account is inactive. Please update your bank details.")
+    if not subaccount.is_verified:
+        raise ValidationError("Your bank account is not verified yet.")
+
+    amount = money(amount)
+
+    # Calculate available balance
+    total_earned = AdManagerEarning.objects.filter(
+        ad_manager=ad_manager
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+
+    total_withdrawn = PayoutRecord.objects.filter(
+        ad_manager=ad_manager,
+        status__in=[PayoutRecord.Status.SUCCESS, PayoutRecord.Status.PENDING]
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+
+    available = total_earned - total_withdrawn
+
+    if amount > available:
+        raise ValidationError(
+            f"Insufficient balance. Available: ₦{available:.2f}, Requested: ₦{amount:.2f}"
+        )
+
+    # Fetch full account details from Paystack using subaccount_code
+    # We never store the full account number locally — Paystack holds it
+    paystack_subaccount_data = _paystack_get(
+        f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}"
+    )
+    subaccount_data = paystack_subaccount_data.get("data", {})
+    full_account_number = subaccount_data.get("account_number", "")
+    bank_code = subaccount_data.get("bank", {})
+
+    if not full_account_number:
+        raise ValidationError(
+            "Could not retrieve bank account details from Paystack. "
+            "Please verify your payment setup."
+        )
+
+    # Create a Paystack transfer recipient using the real account number
+    recipient_response = _paystack_post(
+        "https://api.paystack.co/transferrecipient",
+        {
+            "type": "nuban",
+            "name": subaccount.account_name,
+            "account_number": full_account_number,
+            "bank_code": subaccount.bank_code,
+            "currency": "NGN",
+        },
+    )
+    recipient_code = recipient_response["data"]["recipient_code"]
+
+    # Initiate the transfer
+    reference = f"payout-{uuid.uuid4().hex}"
+    transfer_response = _paystack_post(
+        "https://api.paystack.co/transfer",
+        {
+            "source": "balance",
+            "amount": int(amount * 100),
+            "recipient": recipient_code,
+            "reason": f"AdVerse payout for {ad_manager.business_name}",
+            "reference": reference,
+        },
+    )
+
+    transfer_data = transfer_response.get("data", {})
+
+    payout = PayoutRecord.objects.create(
+        ad_manager=ad_manager,
+        subaccount=subaccount,
+        bank_name=subaccount.bank_name,
+        account_number_last4=subaccount.account_number_last4,
+        account_name=subaccount.account_name,
+        amount=amount,
+        paystack_transfer_code=transfer_data.get("transfer_code", ""),
+        paystack_reference=reference,
+        status=PayoutRecord.Status.PENDING,
+    )
+    return payout

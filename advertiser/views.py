@@ -29,7 +29,7 @@ def _campaign_error_messages(request, form):
                 messages.error(request, f"{label}: {error}")
 
 
-login_required(login_url='security:login')
+@login_required(login_url='security:login')
 def advertiser_create_profile(request):
     if hasattr(request.user, 'advertiser_profile'):
         messages.info(request, "Your profile already exists.")
@@ -345,7 +345,7 @@ class _BillboardChoiceField:
 @login_required(login_url="security:login")
 @advertiser_required        
 def campaign_edit(request, pk):
-    advertiser = _get_advertiser() 
+    advertiser = _get_advertiser(request) 
     campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
 
     if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:

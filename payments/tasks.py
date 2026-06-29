@@ -86,7 +86,7 @@ def flag_suspicious_payouts(self):
         # Trigger 3 — more than 3 UNFLAGGED payouts in 24 hours
         # is_flagged=False applied to both the count and the fetch so the
         # reason string reflects the true unflagged frequency.
-        high_frequency = (PayoutRecord.objects.filter(created_at__gte=now - timezone(hours=24), is_flagged=False).values("ad_manager").annotate(count=Count("id")).filter(count__gte=3))
+        high_frequency = (PayoutRecord.objects.filter(created_at__gte=now - timedelta(hours=24), is_flagged=False).values("ad_manager").annotate(count=Count("id")).filter(count__gte=3))
 
         already_queued_ids = {p.id for p, _ in payout_ids_to_flag}
 
@@ -99,7 +99,7 @@ def flag_suspicious_payouts(self):
             for payout in recent: 
                 if payout.id in already_queued_ids:
                     continue
-                payout_ids_to_flag.app((payout, (f"High frequency: {entry['count']} unflagged payouts in the last 24 hours",  f"from the same ad manager."),))
+                payout_ids_to_flag.append((payout, (f"High frequency: {entry['count']} unflagged payouts in the last 24 hours",  f"from the same ad manager."),))
                 already_queued_ids.add(payout.id)
 
         with transaction.atomic(): 
@@ -162,6 +162,7 @@ def expire_stale_campaign_payments(self):
         raise self.retry(exc=exc, countdown=60 * 10)
 
 # Daily Reconciliation Alert
+@shared_task(bind=True, max_retries=3)
 def send_reconciliation_alert(self):
     """
     Runs daily at 8am. Sends a summary email to AdVerse staff with:
@@ -231,4 +232,15 @@ def _alert_staff_flagged_payouts(count: int) -> None:
         )
     except Exception as e:
         logger.error("Failed to send flagged payout alert email: %s", e)
- 
+
+@shared_task
+def sync_all_subaccounts():
+    """
+    Daily task — checks all active subaccounts against Paystack
+    and deactivates any that no longer exist.
+    """
+    from payments.models import AdManagerSubaccount
+    active = AdManagerSubaccount.objects.filter(is_active=True)
+    for sub in active:
+        sub.sync_with_paystack()
+    logger.info("sync_all_subaccounts completed for %d subaccounts.", active.count())

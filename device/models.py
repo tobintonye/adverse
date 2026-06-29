@@ -36,12 +36,7 @@ class Billboard(TimeStampedModel):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     country = models.CharField(max_length=100, default="Nigeria", blank=True)
     state = models.CharField(max_length=100, blank=True)
-    media_file = models.FileField(
-        upload_to="billboards/media/",
-        null=True,
-        blank=True,
-        help_text="Upload an image or video representing this billboard's physical state."
-    )
+    media_file = models.FileField(upload_to="billboards/media/", null=True, blank=True, help_text="Upload an image or video representing this billboard's physical state.")
 
     # Screen specs
     screen_type = models.CharField(max_length=24, choices=ScreenType.choices, default=ScreenType.LED)
@@ -49,7 +44,7 @@ class Billboard(TimeStampedModel):
     screen_height_px = models.PositiveIntegerField(default=1080)
     
     # Business
-    price_per_slot = models.DecimalField(max_digits=10, decimal_places=2, default=0) # it can be a day/mintue etc we don't know for now
+    price_per_slot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     charge_unit = models.CharField(max_length=10, choices=ChargeUnit.choices, default=ChargeUnit.SLOT)
     operating_hours_start = models.TimeField(default="06:00")
     operating_hours_end = models.TimeField(default="22:00")

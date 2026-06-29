@@ -161,7 +161,30 @@ class AdManagerSubaccount(TimeStampedModel):
                 "This ad manager's bank details have not been verified yet. "
                 "Payment cannot proceed."
             )
-
+        
+    def sync_with_paystack(self, changed_by=None):
+        """
+        Verify this subaccount still exists on Paystack.
+        If it doesn't, deactivate it locally and log the event.
+        Call this periodically or when a payment fails unexpectedly.
+        """
+        from payments.services import _paystack_get
+        try:
+            response = _paystack_get(f"https://api.paystack.co/subaccount/{self.subaccount_code}")
+            data = response.get("data", {})
+            # Re-sync active status from Paystack
+            paystack_active = data.get("active", False)
+            if not paystack_active and self.is_active:
+                self.deactivate(
+                    reason="Deactivated because subaccount no longer active on Paystack.",
+                    changed_by=changed_by,
+                )
+        except Exception:
+            # If Paystack returns 404 or error — subaccount is gone
+            self.deactivate(
+                reason="Subaccount not found on Paystack — may have been deleted.",
+                changed_by=changed_by,
+            )
     def __str__(self):
         return f"Subaccount [{self.ad_manager}] {self.subaccount_code}"
 
@@ -189,16 +212,10 @@ class AdManagerSubaccountAuditLog(TimeStampedModel):
     subaccount = models.ForeignKey(
         AdManagerSubaccount,
         on_delete=models.PROTECT,
-        related_name="audit_logs",  # fixed typo: was "aduit_logs"
+        related_name="audit_logs",  
     )
     event = models.CharField(max_length=32, choices=Event.choices)
-    changed_by = models.ForeignKey(
-        User,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="subaccount_audit_logs",
-    )
+    changed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="subaccount_audit_logs")
     note = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
@@ -289,9 +306,7 @@ class CampaignPayment(TimeStampedModel):
                 )
         super().save(*args, **kwargs)
 
-    def mark_completed(
-        self, paystack_reference, gateway_response=None, verified_amount=None
-    ):
+    def mark_completed(self, paystack_reference, gateway_response=None, verified_amount=None):
         """
         Called from the Paystack webhook handler after verifying the payment.
         Creates the AdManagerEarning log record atomically.

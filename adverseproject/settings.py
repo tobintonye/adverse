@@ -247,6 +247,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "payments.tasks.send_reconciliation_alert",
         "schedule": crontab(hour="8", minute="0"),
     },
+
+    "sync-subaccounts": {
+    "task": "payments.tasks.sync_all_subaccounts",
+    "schedule": crontab(hour=2, minute=0),  # runs at 2am daily
+},
 }
 
 # CACHE CONFIGURATION 
