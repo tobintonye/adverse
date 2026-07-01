@@ -7,5 +7,6 @@ urlpatterns = [
     path('players/', include('device.api.players_urls')),
     path('advertiser/', include('advertiser.api.urls')),
     path('billboards/', include('scheduling.api.urls')),
+    path("billing/", include("payments.api.urls")),
 ]
 

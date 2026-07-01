@@ -1,0 +1,65 @@
+<!-- Bank code -->
+<div class="form-control mb-4">
+    <label class="label pb-1">
+        <span class="label-text text-xs font-medium">Bank <span class="text-error">*</span></span>
+    </label>
+    <select name="bank_code" id="bank-code-select" class="select select-bordered select-sm w-full" required>
+        <option value="" disabled selected>Select your bank...</option>
+        <option value="044">Access Bank</option>
+        <option value="023">Citibank</option>
+        <option value="063">Diamond Bank</option>
+        <option value="050">Ecobank</option>
+        <option value="011">First Bank of Nigeria</option>
+        <option value="214">First City Monument Bank (FCMB)</option>
+        <option value="070">Fidelity Bank</option>
+        <option value="058">Guaranty Trust Bank (GTBank)</option>
+        <option value="030">Heritage Bank</option>
+        <option value="301">Jaiz Bank</option>
+        <option value="082">Keystone Bank</option>
+        <option value="526">Moniepoint MFB</option>
+        <option value="076">Polaris Bank</option>
+        <option value="101">Providus Bank</option>
+        <option value="221">Stanbic IBTC Bank</option>
+        <option value="068">Standard Chartered Bank</option>
+        <option value="232">Sterling Bank</option>
+        <option value="100">Suntrust Bank</option>
+        <option value="032">Union Bank of Nigeria</option>
+        <option value="033">United Bank for Africa (UBA)</option>
+        <option value="215">Unity Bank</option>
+        <option value="035">Wema Bank</option>
+        <option value="057">Zenith Bank</option>
+        <option value="305">Kuda MFB</option>
+        <option value="565">Carbon (One Finance)</option>
+        <option value="000014">Palmpay</option>
+        <option value="000013">GTMobile (GTBank)</option>
+        <option value="999992">Opay</option>
+    </select>
+    <label class="label pt-1">
+        <span class="label-text-alt text-base-content/40">Select the bank where your account is held</span>
+    </label>
+</div>
+
+<!-- Account number -->
+<div class="form-control mb-4">
+    <label class="label pb-1">
+        <span class="label-text text-xs font-medium">Account number <span class="text-error">*</span></span>
+    </label>
+    <input type="text" name="account_number"
+           class="input input-bordered input-sm w-full font-mono tracking-widest account-number-input"
+           placeholder="10-digit account number"
+           maxlength="10"
+           pattern="[0-9]{10}"
+           inputmode="numeric"
+           required>
+    <label class="label pt-1">
+        <span class="label-text-alt text-base-content/40">Must be exactly 10 digits</span>
+    </label>
+</div>
+
+<script>
+    document.querySelectorAll('.account-number-input').forEach(function(el) {
+        el.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+    });
+</script>

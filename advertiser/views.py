@@ -12,6 +12,7 @@ from advertiser.decorators import advertiser_required
 from .models import Advertiser, Campaign, CampaignSlot, Media
 from device.models import Billboard
 from django.db import transaction
+from payments.services import initialize_campaign_payment
 
 
 def _get_advertiser(request):
@@ -28,7 +29,7 @@ def _campaign_error_messages(request, form):
                 messages.error(request, f"{label}: {error}")
 
 
-login_required(login_url='security:login')
+@login_required(login_url='security:login')
 def advertiser_create_profile(request):
     if hasattr(request.user, 'advertiser_profile'):
         messages.info(request, "Your profile already exists.")
@@ -172,8 +173,32 @@ def advertiserDashboard(request):
 @advertiser_required
 def media_library(request):
     advertiser = _get_advertiser(request)
+    today = timezone.now().date()
+     # Auto-expire campaigns whose end_date has passed — self-heals without Celery
+    expired = Campaign.objects.filter(advertiser=advertiser, status=Campaign.Status.ACTIVE, end_date__lt=today,)
+    if expired.exists():
+        expired.update(status=Campaign.Status.COMPLETED)
+    media_items = advertiser.media_files.prefetch_related("campaigns").order_by("-created_at")
+
+    # Build a set of media IDs that have active campaigns right now
+    active_media_ids = set(
+        Campaign.objects.filter(advertiser=advertiser,status=Campaign.Status.ACTIVE,end_date__gte=today,).values_list("media_id", flat=True))
+
+    completed_media_ids = set(
+        Campaign.objects.filter(
+            advertiser=advertiser,
+            status=Campaign.Status.COMPLETED,
+        ).values_list("media_id", flat=True)
+    )
+
     media_files = Media.objects.filter(advertiser=advertiser).order_by("-created_at")
-    return render(request, "advertiser/media_library.html", {"media_files": media_files})
+    return render(request, "advertiser/media_library.html", {
+        "media_files": media_files,
+        "media_items": media_items,
+        "active_media_ids": active_media_ids,
+        "completed_media_ids": completed_media_ids,
+        "today": today,
+        })
  
 @login_required(login_url="security:login")
 @advertiser_required
@@ -333,18 +358,18 @@ def campaign_create(request):
     return render(request, "advertiser/campaign_create.html", context)
 
 class _BillboardChoiceField:
+    def __init__(self, queryset):
+        self.queryset = queryset
     """
         Thin shim so the template can do form.fields.billboard.queryset
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
-    def __init__(self, queryset):
-        self.queryset = queryset
 
 @login_required(login_url="security:login")
 @advertiser_required        
 def campaign_edit(request, pk):
-    advertiser = _get_advertiser() 
+    advertiser = _get_advertiser(request) 
     campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
 
     if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:
@@ -402,19 +427,46 @@ def campaign_edit(request, pk):
 @advertiser_required
 def campaign_detail(request, pk):
     advertiser = _get_advertiser(request)
-    campaign = get_object_or_404(Campaign.objects.select_related("media", "advertiser"),pk=pk,advertiser=advertiser)
+    campaign = get_object_or_404(
+        Campaign.objects.select_related("media", "advertiser").prefetch_related(
+            "campaign_slots__billboard"
+        ),
+        pk=pk,
+        advertiser=advertiser,
+    )
+
+    # Auto-verify pending payment when advertiser views the campaign page
+    try:
+        payment = campaign.payment
+        if payment and payment.status == "pending":
+            from payments.services import handle_charge_success
+            try:
+                handle_charge_success({
+                    "event": "charge.success",
+                    "data": {"reference": payment.reference}
+                })
+                payment.refresh_from_db()
+                campaign.refresh_from_db()
+                if payment.status == "completed":
+                    messages.success(
+                        request,
+                        "Payment confirmed! Your campaign is now active."
+                    )
+            except Exception:
+                pass  # still pending, stay quiet
+    except Exception:
+        payment = None
+
     slots = campaign.campaign_slots.select_related("billboard").all()
- 
+
     if request.method == "POST":
         action = request.POST.get("action")
- 
         if action == "submit":
             try:
                 campaign.submit_for_approval()
-                messages.success(request, "Campaign submitted for review. You'll be notified once it's processed.")
+                messages.success(request, "Campaign submitted for review.")
             except ValidationError as e:
                 messages.error(request, e.message if hasattr(e, "message") else str(e))
- 
         elif action == "cancel":
             try:
                 campaign.cancel()
@@ -427,6 +479,7 @@ def campaign_detail(request, pk):
     return render(request, "advertiser/campaign_detail.html", {
         "campaign": campaign,
         "slots": slots,
+        "payment": payment,
     })
 
 @login_required(login_url="security:login")
@@ -446,3 +499,47 @@ def advertiser_settings(request):
         form = AdvertiserProfileForm(instance=advertiser)
 
     return render(request, "advertiser/settings.html", {"form": form, "advertiser": advertiser})
+
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_pay(request, pk):
+    """
+    POST /advertiser/campaigns/<pk>/pay/
+ 
+    Initiates a Paystack payment for an APPROVED campaign.
+    Creates a CampaignPayment record (PENDING) then redirects the
+    advertiser to Paystack's hosted checkout page.
+ 
+    On return from Paystack, the advertiser lands back on campaign_detail.
+    The actual mark_completed() happens via the Paystack webhook — NOT here.
+ 
+    Guards:
+    - Campaign must belong to this advertiser
+    - Campaign must be APPROVED
+    - No active PENDING or COMPLETED payment already exists
+    """
+    if request.method != "POST":
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign.objects.select_related("advertiser", "payment"), pk=pk, advertiser=advertiser)
+
+    if campaign.status != Campaign.Status.APPROVED:
+        messages.error(request, "Only approved campaigns can be paid for.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    try:
+        from payments.services import initialize_campaign_payment
+        paystack_data = initialize_campaign_payment(campaign)
+
+    except ValidationError as e:
+        messages.error(request, str(e))
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    authorization_url = paystack_data.get("authorization_url")
+    if not authorization_url:
+        messages.error(request, "Could not initialize payment. Please try again.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    # Redirect advertiser to Paystack's hosted checkout
+    return redirect(authorization_url)

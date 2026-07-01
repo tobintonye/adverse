@@ -59,9 +59,44 @@
             No bank account on file. Add your <strong>bank details</strong> so we can process withdrawal disbursements to you.
         </p>
     </div>
-    <a href="#"
+    <a href="{% url 'admanager:payment_setup' %}"
        class="btn btn-warning btn-sm flex-shrink-0 whitespace-nowrap">
         Add Bank Account →
+    </a>
+</div>
+{% endif %}
+
+{% if subaccount_inactive %}
+<div class="alert alert-error mb-6 text-sm flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="font-medium">
+            Your payment account has been <strong>deactivated</strong>. 
+            You cannot receive payments until you set up a new bank account.
+        </p>
+    </div>
+    <a href="{% url 'admanager:payment_setup' %}"
+       class="btn btn-error btn-sm flex-shrink-0 whitespace-nowrap">
+        Fix Payment Account →
+    </a>
+</div>
+
+{% elif subaccount_unverified %}
+<div class="alert alert-warning mb-6 text-sm flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="font-medium">
+            Your bank account is connected but <strong>not yet verified</strong>. 
+            Payments are paused until verification is complete.
+        </p>
+    </div>
+    <a href="{% url 'admanager:payment_setup' %}"
+       class="btn btn-warning btn-sm flex-shrink-0 whitespace-nowrap">
+        Verify Account →
     </a>
 </div>
 {% endif %}
@@ -134,16 +169,54 @@
 <!-- Row 1.2: Financial KPIs -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <!-- Available Balance -->
-    <a href="#" class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 hover:-translate-y-0.5 group">
-        <div class="stat-figure text-success">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <div class="stat-title text-xs uppercase tracking-widest">Available Balance</div>
-        <div class="stat-value text-success text-3xl">₦{{ available_balance|floatformat:2 }}</div>
-        <div class="stat-desc text-[10px]">Click to request withdrawal</div>
-    </a>
+    <div class="stat bg-base-200 border border-base-300 rounded-xl">
+    <div class="stat-figure text-success">
+        <!-- icon -->
+    </div>
+    <div class="stat-title text-xs uppercase tracking-widest">Available Balance</div>
+    <div class="stat-value text-success text-3xl">₦{{ available_balance|floatformat:2 }}</div>
+    <div class="stat-desc mt-2">
+        <button onclick="document.getElementById('withdraw_modal').showModal()"
+                class="btn btn-success btn-xs"
+                {% if available_balance <= 0 %}disabled{% endif %}>
+            Withdraw
+        </button>
+    </div>
+</div>
+
+<!-- Withdrawal Modal -->
+<dialog id="withdraw_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Request Withdrawal</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            Available balance: <strong class="text-success">₦{{ available_balance|floatformat:2 }}</strong>
+        </p>
+        <form method="POST" action="{% url 'admanager:request_withdrawal' %}">
+            {% csrf_token %}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text text-sm">Amount (₦)</span>
+                </label>
+                <input type="number" name="amount" step="0.01" 
+                       min="100" max="{{ available_balance }}"
+                       placeholder="Enter amount"
+                       class="input input-bordered w-full" required />
+            </div>
+            <p class="text-xs text-base-content/50 mb-4">
+                Funds will be sent to your registered bank account ending in 
+                <strong>{{ ad_manager.paystack_subaccount.account_number_last4|default:"N/A" }}</strong>
+            </p>
+            <div class="modal-action">
+                <button type="button" onclick="document.getElementById('withdraw_modal').close()" 
+                        class="btn btn-ghost btn-sm">Cancel</button>
+                <button type="submit" class="btn btn-success btn-sm">Confirm Withdrawal</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 
     <!-- Lifetime Revenue -->
     <div class="stat bg-base-200 border border-base-300 rounded-xl transition-all duration-300 group">
@@ -217,7 +290,7 @@
     </a>
 
     <!-- Campaign Requests Action Card -->
-    <a href="#" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
+    <a href="{% url 'admanager:campaign_requests' %}" class="card bg-base-200 border border-base-300/80 hover:border-base-300 transition-all duration-300 hover:scale-[1.02]">
         <div class="card-body flex flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-base-300 border border-base-300 rounded-xl text-base-content/50 group-hover:text-success transition-all">

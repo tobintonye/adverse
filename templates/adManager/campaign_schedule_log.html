@@ -39,10 +39,9 @@
                             Success
                         </span>
                     {% elif log.result == 'partial' %}
-                        <span class="badge badge-warning gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
-                            Partial
-                        </span>
+                        <span class="badge badge-warning badge-lg font-bold">
+                        Partial
+                    </span>
                     {% else %}
                         <span class="badge badge-error gap-1">
                             <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
@@ -59,9 +58,10 @@
                 </div>
             </div>
 
+            
             {% if log.result == 'partial' %}
-            <div class="bg-warning/10 border border-warning/20 rounded-lg p-4 mt-3">
-                <p class="text-xs text-warning-content/80 leading-relaxed">
+            <div class="bg-warning/15 border border-warning/30 rounded-lg p-4 mt-3">
+    <p class="text-xs text-warning leading-relaxed font-medium">
                     {{ log.slots_skipped }} slot{{ log.slots_skipped|pluralize }} could not be scheduled —
                     one or more booked billboards ran out of daily capacity on at least one date
                     in the campaign's date range.

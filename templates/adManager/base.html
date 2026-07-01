@@ -100,6 +100,17 @@
                 </a>
                 <span class="nav-tooltip">Withdrawals</span>
             </div>
+
+            <div class="nav-item relative">
+                <a href="{% url 'admanager:payment_setup' %}"
+                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'payment_setup' %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/50{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    <span class="nav-label whitespace-nowrap">Payment</span>
+                </a>
+                <span class="nav-tooltip">Payment</span>
+            </div>
             <div class="nav-item relative">
                 <a href="{% url 'admanager:settings'%}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'settings' %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/50{% endif %}">

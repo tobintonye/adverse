@@ -49,6 +49,15 @@ class Advertiser(TimeStampedModel):
         self.verified_at = timezone.now()
         self.save(update_fields=["is_verified", "verification_requested", "verified_at", "verified_by", "updated_at"])
 
+    def request_verification(self):
+        if self.is_verified:
+            raise ValidationError("Your account is already verified.")
+        if self.verification_requested:
+            raise ValidationError("You have already submitted a verification request. Please wait for admin review.")
+        self.verification_requested = True
+        self.verification_requested_at = timezone.now()
+        self.save(update_fields=["verification_requested", "verification_requested_at", "updated_at"])
+        
     def __str__(self):
         return f"{self.business_name} ({self.user.username})"
         
@@ -58,6 +67,8 @@ class Advertiser(TimeStampedModel):
             models.Index(fields=["business_category"]),
         ]
         
+    
+
 def media_upload_path(instance, filename):
     # Organise S3 uploads by advertiser UUID -> advertiser/abc-111-uuid/media/... advertiser/xyz-222-uuid/media/..
     ext = filename.rsplit(".", 1)[-1].lower()

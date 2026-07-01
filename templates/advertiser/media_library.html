@@ -73,23 +73,17 @@
             
             <!-- Status badge on top right -->
             <div class="absolute top-3 right-3 z-10">
-                {% if media.status == 'pending' %}
-                    <span class="badge badge-warning badge-xs gap-1.5">
-                        <span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span> Pending
-                    </span>
-                {% elif media.status == 'admin_approved' %}
-                    <span class="badge badge-info badge-xs gap-1.5">
-                        <span class="w-1 h-1 rounded-full bg-blue-400"></span> Approved
-                    </span>
-                {% elif media.status == 'fully_approved' %}
-                    <span class="badge badge-success badge-xs gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
-                    </span>
-                {% else %}
-                    <span class="badge badge-error badge-xs gap-1.5">
-                        <span class="w-1 h-1 rounded-full bg-red-400"></span> Rejected
-                    </span>
-                {% endif %}
+               {% if media.id in active_media_ids %}
+    <span class="badge badge-success badge-sm absolute top-2 right-2">Live</span>
+{% elif media.id in completed_media_ids %}
+    <span class="badge badge-ghost badge-sm absolute top-2 right-2">Ended</span>
+{% elif media.status == 'fully_approved' %}
+    <span class="badge badge-info badge-sm absolute top-2 right-2">Ready</span>
+{% elif media.status == 'pending' %}
+    <span class="badge badge-warning badge-sm absolute top-2 right-2">Pending</span>
+{% else %}
+    <span class="badge badge-ghost badge-sm absolute top-2 right-2">{{ media.get_status_display }}</span>
+{% endif %}
             </div>
             
             <!-- Action overlay hover effect -->
