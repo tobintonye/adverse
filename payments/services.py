@@ -429,7 +429,7 @@ def _safe_gateway_response(data: dict) -> dict:
 
 
 def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutRecord:
-
+    import os # TEST WITHDRAWAL 
     subaccount = getattr(ad_manager, "paystack_subaccount", None)
     if not subaccount:
         raise ValidationError("No bank account set up. Please add your bank details first.")
@@ -439,7 +439,7 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
         raise ValidationError("Your bank account is not verified yet.")
 
     amount = money(amount)
-
+    
     # Calculate available balance
     total_earned = AdManagerEarning.objects.filter(
         ad_manager=ad_manager
@@ -457,6 +457,21 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
             f"Insufficient balance. Available: ₦{available:.2f}, Requested: ₦{amount:.2f}"
         )
 
+    # DEVELOPMENT MOCK — remove when Paystack account is upgraded to Regular
+    if os.environ.get("MOCK_WITHDRAWALS"):
+        payout = PayoutRecord.objects.create(
+            ad_manager=ad_manager,
+            subaccount=subaccount,
+            bank_name=subaccount.bank_name,
+            account_number_last4=subaccount.account_number_last4,
+            account_name=subaccount.account_name,
+            amount=amount,
+            paystack_transfer_code=f"mock-{uuid.uuid4().hex}",
+            paystack_reference=f"payout-{uuid.uuid4().hex}",
+            status=PayoutRecord.Status.PENDING,
+        )
+        return payout
+        
     # Fetch full account details from Paystack using subaccount_code
     # We never store the full account number locally — Paystack holds it
     paystack_subaccount_data = _paystack_get(

@@ -119,7 +119,11 @@
                         {% elif campaign.status == 'rejected' %}
                             <span class="badge badge-error badge-sm">Rejected</span>
                         {% elif campaign.status == 'cancelled' %}
-                            <span class="badge badge-ghost badge-sm">Cancelled</span>
+                        <span class="badge badge-ghost badge-sm">Cancelled</span>
+                        {% elif campaign.status == 'completed' %}
+                            <span class="badge badge-neutral badge-sm">Completed</span>
+                        {% elif campaign.status == 'paused' %}
+                            <span class="badge badge-secondary badge-sm">Paused</span>
                         {% else %}
                             <span class="badge badge-ghost badge-sm">{{ campaign.get_status_display }}</span>
                         {% endif %}

@@ -173,8 +173,32 @@ def advertiserDashboard(request):
 @advertiser_required
 def media_library(request):
     advertiser = _get_advertiser(request)
+    today = timezone.now().date()
+     # Auto-expire campaigns whose end_date has passed — self-heals without Celery
+    expired = Campaign.objects.filter(advertiser=advertiser, status=Campaign.Status.ACTIVE, end_date__lt=today,)
+    if expired.exists():
+        expired.update(status=Campaign.Status.COMPLETED)
+    media_items = advertiser.media_files.prefetch_related("campaigns").order_by("-created_at")
+
+    # Build a set of media IDs that have active campaigns right now
+    active_media_ids = set(
+        Campaign.objects.filter(advertiser=advertiser,status=Campaign.Status.ACTIVE,end_date__gte=today,).values_list("media_id", flat=True))
+
+    completed_media_ids = set(
+        Campaign.objects.filter(
+            advertiser=advertiser,
+            status=Campaign.Status.COMPLETED,
+        ).values_list("media_id", flat=True)
+    )
+
     media_files = Media.objects.filter(advertiser=advertiser).order_by("-created_at")
-    return render(request, "advertiser/media_library.html", {"media_files": media_files})
+    return render(request, "advertiser/media_library.html", {
+        "media_files": media_files,
+        "media_items": media_items,
+        "active_media_ids": active_media_ids,
+        "completed_media_ids": completed_media_ids,
+        "today": today,
+        })
  
 @login_required(login_url="security:login")
 @advertiser_required
@@ -334,13 +358,13 @@ def campaign_create(request):
     return render(request, "advertiser/campaign_create.html", context)
 
 class _BillboardChoiceField:
+    def __init__(self, queryset):
+        self.queryset = queryset
     """
         Thin shim so the template can do form.fields.billboard.queryset
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
-    def __init__(self, queryset):
-        self.queryset = queryset
 
 @login_required(login_url="security:login")
 @advertiser_required        

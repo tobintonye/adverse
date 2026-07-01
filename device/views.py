@@ -118,7 +118,7 @@ def billboard_edit(request, pk):
         "action": "Edit",
         "billboard": billboard,
     }
-    return render(request, "adManager/billboard_create.html", context)
+    return render(request, "adManager/billboard_edit.html", context)
 
 @login_required(login_url='security:login')
 @ad_manager_required

@@ -119,8 +119,17 @@ class PlayerDevice(TimeStampedModel):
                 if not PlayerDevice.objects.filter(auth_token=token).exists():
                     self.auth_token = token
                     break
+        is_new = self._state.adding
         super().save(*args, **kwargs)
-
+        if is_new:
+            from scheduling.models import BillboardCapacity
+            BillboardCapacity.objects.get_or_create(
+                billboard=self,
+                defaults={
+                    "max_slots_per_day": 10,
+                    "slot_duration_seconds": 30,
+                }
+            )
     @staticmethod
     def _generate_pairing_code():
         clean_letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"
