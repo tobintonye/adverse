@@ -456,7 +456,7 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
         raise ValidationError(
             f"Insufficient balance. Available: ₦{available:.2f}, Requested: ₦{amount:.2f}"
         )
-
+    """
     # DEVELOPMENT MOCK — remove when Paystack account is upgraded to Regular
     if os.environ.get("MOCK_WITHDRAWALS"):
         payout = PayoutRecord.objects.create(
@@ -471,7 +471,7 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
             status=PayoutRecord.Status.PENDING,
         )
         return payout
-        
+        """
     # Fetch full account details from Paystack using subaccount_code
     # We never store the full account number locally — Paystack holds it
     paystack_subaccount_data = _paystack_get(
