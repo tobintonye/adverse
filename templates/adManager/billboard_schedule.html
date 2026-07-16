@@ -22,7 +22,6 @@
 
 {% block content %}
 
-{# ── Capacity warning ──────────────────────────────────────────── #}
 {% if not has_capacity_set %}
 <div class="alert alert-warning mb-6 text-sm">
     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +31,7 @@
 </div>
 {% endif %}
 
-{# ── Date navigation ──────────────────────────────────────────── #}
+
 <div class="card card-border bg-base-200 border-base-300 mb-6">
     <div class="card-body py-4 flex-row items-center justify-between gap-4">
         <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-ghost btn-sm gap-1">

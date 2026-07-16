@@ -11,6 +11,7 @@ from .models import ( AdManagerSubaccount, AdManagerSubaccountAuditLog, Campaign
 from json import JSONDecodeError
 from django.db.models import Sum
 logger = logging.getLogger(__name__)
+import json
 # Paystack Webhook Signature Verification
 def verify_paystack_signature(raw_body: bytes, signature: str) -> bool:
     if not getattr(settings, "PAYSTACK_SECRET_KEY", None):
@@ -37,6 +38,45 @@ def _paystack_headers() -> dict:
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
+# testing
+def _safe_json(response: requests.Response) -> dict:
+    """
+    Safely parse a Paystack response body. Paystack error responses (rate
+    limits, gateway timeouts, WAF blocks) are sometimes empty or HTML rather
+    than JSON, so response.json() can't be trusted blindly.
+    """
+    try:
+        return response.json()
+    except (JSONDecodeError, ValueError):
+        logger.error(
+            "Paystack returned non-JSON response (status %s): %r",
+            response.status_code,
+            response.text[:500],
+        )
+        return {}
+# testing
+def _paystack_request(method: str, url: str, payload: dict | None = None) -> dict:
+    try:
+        response = requests.request(
+            method, url, json=payload, headers=_paystack_headers(), timeout=20
+        )
+    except requests.exceptions.Timeout:
+        raise ValidationError("Paystack request timed out. Please try again.")
+    except requests.exceptions.RequestException as e:
+        raise ValidationError(f"Network error contacting Paystack: {e}")
+
+    body = _safe_json(response)
+    if response.status_code not in (200, 201) or not body.get("status"):
+        raise ValidationError(f"Paystack API error: {body.get('message', 'Unknown error')}")
+    return body
+
+
+def _paystack_post(url: str, payload: dict) -> dict:
+    return _paystack_request("POST", url, payload)
+
+
+def _paystack_put(url: str, payload: dict) -> dict:
+    return _paystack_request("PUT", url, payload)
 
 def _paystack_get(url: str) -> dict:
     """
@@ -50,29 +90,13 @@ def _paystack_get(url: str) -> dict:
     except requests.exceptions.RequestException as e:
         raise ValidationError(f"Network error contacting Paystack: {e}")
     
-    if response.status_code != 200: 
+    body = _safe_json(response)
+    if response.status_code != 200:
         raise ValidationError(
             f"Paystack API error (status {response.status_code}): "
-            f"{response.json().get('message', 'Unknown error')}"
+            f"{body.get('message', 'Unknown error')}"
         )
-    return response.json()
-
-def _paystack_post(url: str, payload: dict) -> dict:
-    """
-    Thin wrapper around requests.post for Paystack API calls.
-    Raises ValidationError on network errors, timeouts, or non-2xx responses.
-    """
-
-    try:
-        response = requests.post(url, json=payload, headers=_paystack_headers(), timeout=20)
-    except requests.exceptions.Timeout:
-        raise ValidationError("Paystack request timed out. Please try again.")
-    except requests.exceptions.RequestException as e:
-        raise ValidationError(f"Network error contacting Paystack: {e}")
-
-    if response.status_code not in (200, 201) or not response.json().get("status"):
-        raise ValidationError(f"Paystack API error: {response.json().get('message', 'Unknown error')}")
-    return response.json()
+    return body
 
 def verify_paystack_transaction(reference: str) -> dict:
     """
@@ -97,7 +121,7 @@ def create_paystack_subaccount( ad_manager, bank_code: str, account_number: str,
     )
 
     if not enquiry_payload.get("status"):
-        raise ValidationError("Could not verify bank account details.", "Please check your account number and bank.")
+        raise ValidationError("Could not verify bank account details. Please check your account number and bank.")
     
     enquiry_data = enquiry_payload.get("data", {})
     resolved_account_name = enquiry_data.get("account_name", "")
@@ -142,6 +166,7 @@ def create_paystack_subaccount( ad_manager, bank_code: str, account_number: str,
         )
     return subaccount
 
+
 def update_paystack_subaccount_bank_details( subaccount: AdManagerSubaccount, bank_code: str,  account_number: str, 
                                              business_name: str | None,  updated_by ) -> AdManagerSubaccount:
     enquiry_payload = _paystack_get(
@@ -163,10 +188,10 @@ def update_paystack_subaccount_bank_details( subaccount: AdManagerSubaccount, ba
     if business_name:
         update_payload["business_name"] = business_name
 
-    response_payload = _paystack_post(
-        f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}",
-        update_payload,
-    )
+    response_payload = _paystack_put(
+    f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}",
+    update_payload,
+)
     paystack_data = response_payload.get("data", {})
     new_bank_name = (
         paystack_data.get("settlement_bank")
@@ -183,7 +208,7 @@ def update_paystack_subaccount_bank_details( subaccount: AdManagerSubaccount, ba
         updated_by=updated_by,
     )
     return subaccount
- 
+
 # Campaign Payment Initialization
 def initialize_campaign_payment(campaign) -> dict:
     """
@@ -345,7 +370,8 @@ def handle_transfer_success(event_data: dict) -> PayoutRecord | None:
     reference = data.get("reference", "")
 
     try:
-        record = PayoutRecord.objects.get(paystack_transfer_code=transfer_code)
+        # record = PayoutRecord.objects.get(paystack_transfer_code=transfer_code)
+        record = PayoutRecord.objects.select_related("ad_manager__user", "subaccount",).get(paystack_transfer_code=transfer_code)
     except PayoutRecord.DoesNotExist:
         return None
  
@@ -353,6 +379,25 @@ def handle_transfer_success(event_data: dict) -> PayoutRecord | None:
         paystack_transfer_code=transfer_code,
         paystack_reference=reference,
         gateway_response=_safe_gateway_response(data),
+    )
+
+    from adverseproject.emails import send_adverse_email
+ 
+    site_url = getattr(settings, "SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+ 
+    send_adverse_email(
+        template="payout_processed",
+        to=record.ad_manager.user.email,
+        context={
+            "manager_name": record.ad_manager.user.get_full_name()
+                or record.ad_manager.user.email,
+            "amount": f"{record.amount:,.2f}",
+            "bank_name": record.bank_name,
+            "masked_account": record.masked_account_number,
+            "account_name": record.account_name,
+            "transfer_code": transfer_code,
+            "withdrawals_url": f"{site_url}/admanager/withdrawals/",
+        },
     )
     return record
 

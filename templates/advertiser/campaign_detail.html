@@ -22,84 +22,8 @@
 {% endblock %}
 
 {% block content %}
-{% if campaign.status == 'approved' and not campaign.payment or campaign.status == 'approved' and campaign.payment.status == 'failed' %}
-<div class="rounded-2xl border border-success/30 bg-success/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex items-start gap-4">
-        <div class="w-10 h-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <div>
-            <p class="text-sm font-bold text-success">Campaign approved — payment required to go live</p>
-            <p class="text-xs text-base-content/60 mt-1">
-                Your campaign has been reviewed and approved by the ad manager.
-                Complete payment of <strong class="text-base-content">₦{{ campaign.total_price|floatformat:2 }}</strong> to activate your schedule.
-            </p>
-            {% if campaign.payment and campaign.payment.status == 'failed' %}
-            <p class="text-xs text-error mt-1.5 font-medium">Previous payment attempt failed — please try again.</p>
-            {% endif %}
-        </div>
-    </div>
-    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-success btn-sm gap-2 whitespace-nowrap">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-            </svg>
-            Pay ₦{{ campaign.total_price|floatformat:2 }}
-        </button>
-    </form>
-</div>
-{% endif %}
 
-{% if campaign.payment and campaign.payment.status == 'pending' %}
-<div class="alert alert-warning mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span>Payment is in progress — complete the checkout in the Paystack window. This page will update once payment is confirmed.</span>
-</div>
-{% endif %}
-
-{% if campaign.payment and campaign.payment.status == 'completed' %}
-<div class="alert alert-success mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span>Payment received — your campaign is scheduled and will go live on <strong>{{ campaign.start_date|date:"M d, Y" }}</strong>.</span>
-</div>
-{% endif %}
-
-{% if campaign.status == 'draft' %}
-<div class="alert alert-info mb-6 text-sm flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <p>This campaign is a draft. Submit it for review when you're ready.</p>
-    </div>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" name="action" value="submit" class="btn btn-primary btn-sm whitespace-nowrap">
-            Submit for Review
-        </button>
-    </form>
-</div>
-{% endif %}
-
-{% if campaign.status == 'rejected' %}
-<div class="alert alert-error mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <div>
-        <p class="font-medium">Campaign rejected.</p>
-        {% if campaign.rejection_reason %}<p class="text-xs mt-0.5 opacity-80">Reason: {{ campaign.rejection_reason }}</p>{% endif %}
-        <p class="text-xs mt-1 opacity-70">Edit the campaign and resubmit, or contact support.</p>
-    </div>
-</div>
-{% endif %}
+{% include "advertiser/partials/campaign_status_banner.html" %}
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -147,7 +71,7 @@
                     </div>
                     <div>
                         <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Total price</p>
-                        <p class="font-bold text-base-content">₦{{ campaign.total_price|floatformat:2 }}</p>
+                        <p class="font-bold text-base-content">₦{{ campaign.actual_price|floatformat:2 }}</p>
                     </div>
                 </div>
             </div>
@@ -221,15 +145,15 @@
 
     </div>
 
-    <!-- Right: Status sidebar (1/3 width) -->
+    <!-- Right: Sidebar (1/3 width) -->
     <div class="space-y-6">
 
         <!-- Payment Status Card -->
         <div class="card bg-base-200 border border-base-300">
             <div class="card-body p-5">
                 <h3 class="text-xs font-bold uppercase tracking-wider mb-4">Payment</h3>
-                {% if campaign.payment %}
-                    {% with p=campaign.payment %}
+                {% if payment %}
+                    {% with p=payment %}
                     <div class="space-y-3">
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-base-content/60">Status</span>
@@ -277,8 +201,28 @@
             </div>
         </div>
 
+        <!-- Run Again Card — only for completed campaigns -->
+        {% if campaign.status == 'completed' %}
+        <div class="card bg-base-200 border border-base-300">
+            <div class="card-body p-5">
+                <h3 class="text-xs font-bold uppercase tracking-wider mb-2">Run again</h3>
+                <p class="text-xs text-base-content/50 mb-4">
+                    Re-run this campaign with the same billboard, media, and time settings.
+                    You'll pick new dates before submitting.
+                </p>
+                <button onclick="document.getElementById('run-again-modal').showModal()"
+                        class="btn btn-primary btn-sm w-full gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Run this campaign again
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Danger Zone: Cancel -->
-        {% if campaign.status in 'draft,pending_admin_review,pending_manager_review' %}
+        {% if campaign.status == 'draft' or campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
         <div class="card bg-base-200 border border-error/20">
             <div class="card-body p-5">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-error/70 mb-3">Danger zone</h3>
@@ -297,5 +241,7 @@
 
     </div>
 </div>
+
+{% include "advertiser/partials/run_again_modal.html" %}
 
 {% endblock %}

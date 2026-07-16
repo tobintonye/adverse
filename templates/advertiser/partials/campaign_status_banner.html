@@ -1,0 +1,157 @@
+{% with campaign_status=campaign.status payment_status=payment.status|default:"none" %}
+
+{% if campaign_status == "approved" and payment_status == "none" %}
+<div id="campaign-status-banner"
+     class="rounded-2xl border border-success/30 bg-success/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-success">Campaign approved — payment required to go live</p>
+            <p class="text-xs text-base-content/60 mt-1">
+                Complete payment of <strong class="text-base-content">₦{{ campaign.actual_price|floatformat:2 }}</strong> to activate your schedule.
+            </p>
+        </div>
+    </div>
+    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm gap-2 whitespace-nowrap">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            Pay ₦{{ campaign.actual_price|floatformat:2 }}
+        </button>
+    </form>
+</div>
+
+{% elif payment_status == "pending" %}
+<div id="campaign-status-banner"
+     class="alert alert-warning mb-6 text-sm flex items-center gap-3"
+     hx-get="{% url 'advertiser:campaign_status_fragment' campaign.pk %}"
+     hx-trigger="every 8s"
+     hx-target="#campaign-status-banner"
+     hx-swap="outerHTML">
+    <span class="loading loading-spinner loading-xs flex-shrink-0"></span>
+    <span>
+        Payment is being processed — verifying with Paystack.
+        <span class="text-base-content/50 text-xs ml-1">This updates automatically.</span>
+    </span>
+</div>
+
+{% elif payment_status == "completed" %}
+<div id="campaign-status-banner"
+     class="alert alert-success mb-6 text-sm flex items-center gap-3">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>
+        Payment received — your campaign is scheduled and will go live on
+        <strong>{{ campaign.start_date|date:"M d, Y" }}</strong>.
+    </span>
+</div>
+
+{% elif campaign_status == "active" %}
+<div id="campaign-status-banner"
+     class="alert alert-success mb-6 text-sm flex items-center gap-3">
+    <span class="w-2 h-2 rounded-full bg-success animate-pulse flex-shrink-0"></span>
+    <span>
+        Your campaign is <strong>live now</strong> — running until
+        <strong>{{ campaign.end_date|date:"M d, Y" }}</strong>.
+    </span>
+</div>
+
+{% elif payment_status == "failed" %}
+<div id="campaign-status-banner"
+     class="rounded-2xl border border-error/30 bg-error/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-full bg-error/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-error">Payment failed</p>
+            <p class="text-xs text-base-content/60 mt-1">
+                Your previous payment attempt did not go through. Try again to activate this campaign.
+            </p>
+        </div>
+    </div>
+    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-error btn-sm gap-2 whitespace-nowrap">
+            Retry payment
+        </button>
+    </form>
+</div>
+
+{% elif payment_status == "refunded" %}
+<div id="campaign-status-banner"
+     class="alert alert-info mb-6 text-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>This campaign has been refunded. Contact support if you have questions.</span>
+</div>
+
+{% elif campaign_status == "pending_admin_review" or campaign_status == "pending_manager_review" %}
+<div id="campaign-status-banner"
+     class="alert alert-warning mb-6 text-sm flex items-center gap-3"
+     hx-get="{% url 'advertiser:campaign_status_fragment' campaign.pk %}"
+     hx-trigger="every 15s"
+     hx-target="#campaign-status-banner"
+     hx-swap="outerHTML">
+    <span class="loading loading-spinner loading-xs flex-shrink-0"></span>
+    <span>
+        Your campaign is under review.
+        <span class="text-base-content/50 text-xs ml-1">You'll be notified when it's approved.</span>
+    </span>
+</div>
+
+{% elif campaign_status == "completed" %}
+<div id="campaign-status-banner"
+     class="alert mb-6 text-sm bg-base-200 border-base-300">
+    <svg class="w-4 h-4 flex-shrink-0 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span class="text-base-content/60">
+        This campaign completed on {{ campaign.end_date|date:"M d, Y" }}.
+    </span>
+</div>
+
+{% elif campaign_status == "rejected" %}
+<div id="campaign-status-banner"
+     class="alert alert-error mb-6 text-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+        <p class="font-medium">Campaign rejected.</p>
+        {% if campaign.rejection_reason %}
+        <p class="text-xs mt-0.5 opacity-80">Reason: {{ campaign.rejection_reason }}</p>
+        {% endif %}
+        <p class="text-xs mt-1 opacity-70">Edit the campaign and resubmit.</p>
+    </div>
+</div>
+
+{% elif campaign_status == "draft" %}
+<div id="campaign-status-banner"
+     class="alert alert-info mb-6 text-sm flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>This campaign is a draft. Submit it for review when you're ready.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="submit" class="btn btn-primary btn-sm whitespace-nowrap">
+            Submit for review
+        </button>
+    </form>
+</div>
+
+{% endif %}
+{% endwith %}

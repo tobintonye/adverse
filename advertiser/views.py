@@ -13,7 +13,7 @@ from .models import Advertiser, Campaign, CampaignSlot, Media
 from device.models import Billboard
 from django.db import transaction
 from payments.services import initialize_campaign_payment
-
+from .tasks import _notify_campaign_submitted
 
 def _get_advertiser(request):
     """Single place to resolve the advertiser — raises if profile missing."""
@@ -28,6 +28,20 @@ def _campaign_error_messages(request, form):
                 label = form.fields[field].label or field.replace("_", " ").capitalize()
                 messages.error(request, f"{label}: {error}")
 
+def _display_validation_error(request, e):
+    if hasattr(e, "message_dict"):
+        for field, errors in e.message_dict.items():
+            for error in errors:
+                if field in ("__all__", "billboard"):
+                    messages.error(request, error)
+                else:
+                    label = field.replace("_", " ").capitalize()
+                    messages.error(request, f"{label}: {error}")
+    elif hasattr(e, "messages"):
+        for error in e.messages:
+            messages.error(request, error)
+    else:
+        messages.error(request, str(e))
 
 @login_required(login_url='security:login')
 def advertiser_create_profile(request):
@@ -340,7 +354,7 @@ def campaign_create(request):
                     messages.success(request, f"'{campaign.name}' saved as draft.")
                     return redirect("advertiser:campaign_detail", pk=campaign.pk)
                 except ValidationError as e:
-                    messages.error(request, e.message if hasattr(e,"message") else str(e))
+                    _display_validation_error(request, e)
         else:
             _campaign_error_messages(request, form)
     else:
@@ -365,6 +379,68 @@ class _BillboardChoiceField:
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
+
+# rerun campaign if completed 
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_run_again(request, pk):
+    if request.method != "POST":
+        return redirect("advertiser:campaign_detail", pk=pk)
+    advertiser = _get_advertiser(request)
+    original = get_object_or_404(Campaign.objects.prefetch_related("campaign_slots__billboard"), pk=pk, advertiser=advertiser)
+
+    # Guard — only completed campaigns can be re-run
+    if original.status != Campaign.Status.COMPLETED:
+        messages.error(request, "Only completed campaigns can be run again.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+
+    # Get the original billboard slot
+    original_slot = original.campaign_slots.select_related("billboard").first()
+    if not original_slot:
+        messages.error(request, "Cannot re-run this campaign — no billboard slot found." )
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    billboard = original_slot.billboard
+
+    # Check billboard is still available
+    if billboard.availability != billboard.Availability.AVAILABLE:
+        messages.error(request, f"'{billboard.name}' is no longer available." "Please create a new campaign and select a different billboard.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    try:
+        with transaction.atomic():
+            # Validate media is still approved
+            if original.media and original.media.status != original.media.Status.FULLY_APPROVED:
+                messages.error(request, f"The media '{original.media.title}' is no longer approved." "Please create a new campaign and select approved media.")
+                return redirect("advertiser:campaign_detail", pk=pk)
+
+            # Create new draft — direct ORM, bypasses CampaignForm validation
+            new_campaign = Campaign(
+            advertiser=advertiser,
+            name=original.name,
+            media=original.media,
+            start_date=None,   # ← was original.start_date
+            end_date=None,     # ← was original.end_date
+            daily_start_time=original.daily_start_time,
+            daily_end_time=original.daily_end_time,
+            budget=original.budget,
+            status=Campaign.Status.DRAFT,
+        )
+            # Save without full_clean() to bypass form-level media choice validation
+            new_campaign.save()
+
+            CampaignSlot.objects.create(
+                campaign=new_campaign,
+                billboard=billboard,
+                slots_per_day=original_slot.slots_per_day,
+            )
+            new_campaign.sync_estimated_price()
+
+        messages.info(request, f"New draft created from '{original.name}'." "Update the dates and submit when you're ready.")
+        return redirect("advertiser:campaign_edit", pk=new_campaign.pk)
+    except Exception as e:
+        messages.error(request, f"Could not create campaign: {e}")
+        return redirect("advertiser:campaign_detail", pk=pk)
 
 @login_required(login_url="security:login")
 @advertiser_required        
@@ -402,7 +478,7 @@ def campaign_edit(request, pk):
                         messages.success(request, f"'{updated.name}' updated.")
                         return redirect("advertiser:campaign_detail", pk=updated.pk)
                 except ValidationError as e:
-                    messages.error(request, e.messages if hasattr(e, "message") else str(e))
+                    _display_validation_error(request, e)
         else:
             _campaign_error_messages(request, form)
     else:
@@ -464,21 +540,62 @@ def campaign_detail(request, pk):
         if action == "submit":
             try:
                 campaign.submit_for_approval()
+                # _notify_campaign_submitted.delay(str(campaign.id)) # for prod
+                _notify_campaign_submitted(str(campaign.id))
                 messages.success(request, "Campaign submitted for review.")
             except ValidationError as e:
-                messages.error(request, e.message if hasattr(e, "message") else str(e))
+                _display_validation_error(request, e)
         elif action == "cancel":
             try:
                 campaign.cancel()
                 messages.success(request, f"'{campaign.name}' has been cancelled.")
                 return redirect("advertiser:campaign_list")
             except ValidationError as e:
-                messages.error(request, e.message if hasattr(e, "message") else str(e))
+                _display_validation_error(request, e)
         return redirect("advertiser:campaign_detail", pk=campaign.pk)
 
     return render(request, "advertiser/campaign_detail.html", {
         "campaign": campaign,
         "slots": slots,
+        "payment": payment,
+    })
+
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_status_fragment(request, pk):
+    """
+    GET /advertiser/campaigns/<pk>/status/
+ 
+    HTMX polling endpoint. Returns just the banner HTML fragment.
+    Called every 8 seconds by HTMX on the campaign detail page.
+ 
+    Auto-verifies pending payments with Paystack on each poll.
+    Stops polling once payment is completed or campaign is active/failed.
+    """
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign.objects.select_related("media", "advertiser", "payment"),pk=pk,advertiser=advertiser,)
+ 
+    payment = None
+    try:
+        payment = campaign.payment
+ 
+        # Auto-verify pending payment on each poll
+        if payment and payment.status == "pending":
+            from payments.services import handle_charge_success
+            try:
+                handle_charge_success({
+                    "event": "charge.success",
+                    "data": {"reference": payment.reference}
+                })
+                payment.refresh_from_db()
+                campaign.refresh_from_db()
+            except Exception:
+                pass
+    except Exception:
+        payment = None
+ 
+    return render(request, "advertiser/partials/campaign_status_banner.html", {
+        "campaign": campaign,
         "payment": payment,
     })
 

@@ -42,3 +42,4 @@ htmlcov/
 # Python bytecode files
 *.pyc
 *.pyo
+celerybeat-schedule*

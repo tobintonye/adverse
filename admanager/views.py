@@ -21,6 +21,7 @@ from advertiser.services import approve_campaign_by_manager, reject_campaign
 from django.db.models import Q
 from scheduling.models import ScheduleGenerationLog
 from decimal import Decimal
+from django.core.paginator import Paginator
 
 try:
     from payments.models import AdManagerSubaccount
@@ -250,12 +251,22 @@ def campaign_requests(request):
     selected_status = request.GET.get("status", "").strip()
     if selected_status:
         campaigns = campaigns.filter(status=selected_status)
- 
+    
+    paginator = Paginator(campaigns, 15)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        "campaigns": campaigns,
+        "campaigns": page_obj,
+        "page_obj": page_obj,
         "search_query": search_query,
         "selected_status": selected_status,
     }
+
+    # HTMX pagination/filter request — return just the table partial
+    if request.headers.get("HX-Request"):
+        return render(request, "adManager/partials/campaign_requests_table.html", context)
+ 
     return render(request, "adManager/campaign_requests.html", context)
  
 
@@ -432,7 +443,7 @@ def payment_setup(request):
                     subaccount.delete()
 
                 subaccount = create_paystack_subaccount(ad_manager=ad_manager, bank_code=bank_code, account_number=account_number, business_name=business_name)
-                messages.success(request, "Bank account connected successfully." "Your subaccount will be verified before payments are processed.")
+                messages.success(request, "Bank account connected successfully. Your subaccount will be verified before payments are processed.")
                 return redirect("admanager:payment_setup")
             except ValidationError as e:
                 messages.error(request, str(e))
@@ -508,7 +519,7 @@ def payment_verify_subaccount(request):
     if not subaccount:
         messages.error(request, "No subaccount found. Please set up payment details first.")
         return redirect("admanager:payment_setup")
-    if subaccount.is_verified:
+    if subaccount.is_verified and subaccount.is_active:
         messages.info(request, "Your subaccount is already verified.")
         return redirect("admanager:payment_setup")
 
@@ -522,6 +533,8 @@ def payment_verify_subaccount(request):
 
         if is_verified:
             subaccount.mark_verified(changed_by=request.user)
+            if not subaccount.is_active:
+                subaccount.reactivate(changed_by=request.user)
             messages.success(request, "Subaccount verified successfully. You can now receive payments.")
         else:
             messages.warning(request, "Paystack has not verified this subaccount yet. Please try again shortly.")

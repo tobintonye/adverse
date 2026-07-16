@@ -18,6 +18,8 @@ urlpatterns = [
     path("campaigns/", views.campaign_list, name="campaign_list"),
     path("campaigns/create/", views.campaign_create, name="campaign_create"),
     path("campaigns/<uuid:pk>/", views.campaign_detail, name="campaign_detail"),
+    path("campaigns/<uuid:pk>/run-again/", views.campaign_run_again, name="campaign_run_again"),
+    path("campaigns/<uuid:pk>/status/", views.campaign_status_fragment, name="campaign_status_fragment"),
     path("campaigns/<uuid:pk>/edit/", views.campaign_edit, name="campaign_edit"),
     path("campaigns/<uuid:pk>/pay/", views.campaign_pay, name="campaign_pay"), 
 

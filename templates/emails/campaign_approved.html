@@ -1,0 +1,42 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Great news! Your campaign has been reviewed and approved by the billboard operator.
+    Complete your payment to activate it and go live on schedule.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Start date</td>
+        <td class="td-value">{{ start_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">End date</td>
+        <td class="td-value">{{ end_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Amount due</td>
+        <td class="td-value amount">&#8358;{{ amount }}</td>
+    </tr>
+</table>
+
+<p class="text">
+    Your campaign activates automatically once payment is confirmed by Paystack.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ payment_url }}" class="btn">Pay &#8358;{{ amount }}</a>
+</div>
+
+<hr class="divider">
+<p class="note">Payment link expires when the campaign start date passes.</p>
+{% endblock %}

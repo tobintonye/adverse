@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'common',
     'scheduling',
     'axes',
-    'django_q',
     'core',
     'payments',
     'admin_panel',
@@ -217,7 +216,7 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
-
+ADMIN_BASE_URL = env('ADMIN_BASE_URL')
 RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 
@@ -227,31 +226,30 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 # Merge them into one:
 CELERY_BEAT_SCHEDULE = {
-    'activate-due-campaigns': {
-        'task': 'scheduling.tasks.activate_due_campaigns',
-        'schedule': crontab(hour=0, minute=5),
+    "activate-due-campaigns": {
+        "task": "scheduling.tasks.activate_due_campaigns",
+        "schedule": crontab(hour=0, minute=5), # 12:05am
     },
-    'expire-old-campaigns': {
-        'task': 'scheduling.tasks.expire_old_campaigns',
-        'schedule': crontab(hour=0, minute=10),
-    },
-    "flag-suspicious-payouts": {
-        "task": "payments.tasks.flag_suspicious_payouts",
-        "schedule": crontab(hour="*/6"),
+    "expire-old-campaigns": {
+        "task": "scheduling.tasks.expire_old_campaigns",
+        "schedule": crontab(hour=0, minute=10), # 12:10am
     },
     "expire-stale-payments": {
         "task": "payments.tasks.expire_stale_campaign_payments",
-        "schedule": crontab(hour="0", minute="0"),
+        "schedule": crontab(hour=0, minute=15),  # 12:15am 
+    },
+    "flag-suspicious-payouts": {
+        "task": "payments.tasks.flag_suspicious_payouts",
+        "schedule": crontab(hour="*/6"), # every 6 hours
     },
     "reconciliation-alert": {
         "task": "payments.tasks.send_reconciliation_alert",
-        "schedule": crontab(hour="8", minute="0"),
+        "schedule": crontab(hour=8, minute=0), # 8:00am
     },
-
     "sync-subaccounts": {
-    "task": "payments.tasks.sync_all_subaccounts",
-    "schedule": crontab(hour=2, minute=0),  # runs at 2am daily
-},
+        "task": "payments.tasks.sync_all_subaccounts",
+        "schedule": crontab(hour=2, minute=0), # 2:00am
+    },
 }
 
 # CACHE CONFIGURATION 

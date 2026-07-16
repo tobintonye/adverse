@@ -1,0 +1,45 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Your payment has been received and confirmed. Your campaign is scheduled
+    and will go live on {{ start_date }}.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Goes live</td>
+        <td class="td-value">{{ start_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Ends</td>
+        <td class="td-value">{{ end_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Amount paid</td>
+        <td class="td-value amount">&#8358;{{ amount }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Reference</td>
+        <td class="td-value mono">{{ reference }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-success">Active</span></td>
+    </tr>
+</table>
+
+<p class="text">Keep this email as your payment receipt.</p>
+
+<div class="btn-wrap">
+    <a href="{{ campaign_url }}" class="btn">View Campaign</a>
+</div>
+{% endblock %}

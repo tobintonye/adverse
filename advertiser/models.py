@@ -67,8 +67,6 @@ class Advertiser(TimeStampedModel):
             models.Index(fields=["business_category"]),
         ]
         
-    
-
 def media_upload_path(instance, filename):
     # Organise S3 uploads by advertiser UUID -> advertiser/abc-111-uuid/media/... advertiser/xyz-222-uuid/media/..
     ext = filename.rsplit(".", 1)[-1].lower()
@@ -165,7 +163,7 @@ class Media(TimeStampedModel):
     def fully_approve(self, manager_user):
         if self.status != self.Status.ADMIN_APPROVED:
              raise ValidationError("Media must be admin-approved before manager approval.")
-        self.status = self.Status.FULLY_APPROVED
+        self.status = self.Status.FULLY_APPROVED  # this should be checked because the media isn't forwarded to the admanger -> media is fowarded together with the campaign not media alone. fix needed
         self.manager_reviewed_by = manager_user
         self.manager_reviewed_at = timezone.now()
         self.save(update_fields=[
@@ -269,10 +267,10 @@ class Campaign(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     advertiser  = models.ForeignKey(Advertiser, on_delete=models.CASCADE, related_name="campaigns")
     name = models.CharField(max_length=100)
-    media = models.ForeignKey(Media, on_delete=models.PROTECT, related_name="campaigns", limit_choices_to={"status": Media.Status.ADMIN_APPROVED}) # only admin approved media can be used when building a campaign
+    media = models.ForeignKey(Media, on_delete=models.PROTECT, related_name="campaigns") #limit_choices_to={"status": [Media.Status.ADMIN_APPROVED, Media.Status.FULLY_APPROVED]}) # only admin approved media can be used when building a campaign
     # Schedule
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
     daily_start_time = models.TimeField(default="06:00")
     daily_end_time = models.TimeField(default="22:00")
     # Budget & pricing
@@ -321,8 +319,6 @@ class Campaign(TimeStampedModel):
         if not self.advertiser.is_verified:
             raise ValidationError("Your advertiser account must be verified before submitting campaigns.")
         
-
-
         # Enforce budget bounds early
         self.estimated_price = self.calculate_estimated_price()
         if self.estimated_price > self.budget:
@@ -416,16 +412,37 @@ class Campaign(TimeStampedModel):
         except ObjectDoesNotExist:
             has_media = False
 
-        if has_media and self.media.status != Media.Status.ADMIN_APPROVED:
-            raise ValidationError({"media": "The chosen media file must be approved before scheduling campaigns."})
+        if has_media:
+            approved_statuses = [
+                Media.Status.ADMIN_APPROVED,
+                Media.Status.FULLY_APPROVED,
+            ]
+            if self.media.status not in approved_statuses:
+                raise ValidationError({
+                    "media": "The chosen media file must be approved before scheduling campaigns."
+                })
         
         if self.start_date and self.end_date:
             if self.end_date < self.start_date:
                 raise ValidationError({"end_date": "End date cannot be before start date."})
-            # Prevent users from booking retroactive dates in production
-            if self.status == self.Status.DRAFT and self.start_date < timezone.now().date():
+            # Prevent booking past dates — applies to every DRAFT save, always.
+            today = timezone.now().date()
+            if self.status == self.Status.DRAFT and self.start_date < today:
                 raise ValidationError({"start_date": "Start date cannot be in the past."})
             
+            # if starting today, the daily start time must still be ahead
+            # of the current clock time — you can't schedule an ad to start at 6am today if it's already past 6am.
+            """
+            if (self.status == self.Status.DRAFT and self.start_date == today and self.daily_end_time):
+                current_time = timezone.localtime(timezone.now()).time()
+                if current_time >= self.daily_end_time:
+                    raise ValidationError({
+                        "start_date": (
+                            "Today's daily window has already ended. Please choose a "
+                            "later daily end time, or set the start date to tomorrow."
+                        )
+                    })
+            """
         # Operations timeframe bounds
         if self.daily_start_time and self.daily_end_time:
             if self.daily_end_time <= self.daily_start_time:
@@ -456,6 +473,25 @@ class CampaignSlot(TimeStampedModel):
     def slot_price(self):
         return ( self.billboard.price_per_slot * self.slots_per_day * self.campaign.duration_days)
     
+    def clean(self):
+        super().clean()
+        if self.campaign_id and self.billboard_id:
+            campaign_start = self.campaign.daily_start_time
+            campaign_end = self.campaign.daily_end_time
+            bb_start = self.billboard.operating_hours_start
+            bb_end = self.billboard.operating_hours_end
+
+            if campaign_start < bb_start or campaign_end > bb_end:
+                raise ValidationError({
+                    "billboard": (
+                        f"'{self.billboard.name}' only operates "
+                        f"{bb_start.strftime('%I:%M %p')}–{bb_end.strftime('%I:%M %p')}. "
+                        f"Your campaign's daily window "
+                        f"({campaign_start.strftime('%I:%M %p')}–{campaign_end.strftime('%I:%M %p')}) "
+                        f"falls outside that range."
+                    )
+                })
+
     class Meta:
         unique_together = [("campaign", "billboard")]
         indexes = [
@@ -467,6 +503,7 @@ class CampaignSlot(TimeStampedModel):
         # Prevent slots modification if campaign is already locked for review/running
         if self.campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]: 
             raise ValidationError("Cannot modify billboard slots on a locked or active campaign.")
+        self.full_clean()
         super().save(*args, **kwargs)
         # Dynamic calculation engine hook: Auto-update campaign metadata metrics
         self.campaign.sync_estimated_price()

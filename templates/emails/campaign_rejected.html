@@ -1,0 +1,38 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Unfortunately your campaign was not approved at this time.
+    Please review the reason below and make the necessary changes before resubmitting.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Reviewed by</td>
+        <td class="td-value">{{ rejected_by }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Reason</td>
+        <td class="td-value" style="color: #555555;">{{ reason }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-error">Rejected</span></td>
+    </tr>
+</table>
+
+<p class="text">
+    You can edit your campaign and resubmit it for review from your dashboard.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ campaign_url }}" class="btn btn-warning">Edit and Resubmit</a>
+</div>
+
+<hr class="divider">
+<p class="note">If you believe this rejection was made in error, please contact our support team.</p>
+{% endblock %}

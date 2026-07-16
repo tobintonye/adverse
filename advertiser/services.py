@@ -1,10 +1,11 @@
 from django.db import transaction
 import logging
 from scheduling.models import generate_schedule
-from .tasks import _notify_campaign_approved, _notify_campaign_rejected, _notify_forwarded_to_manager
+from .tasks import _notify_campaign_approved, _notify_campaign_rejected, _notify_forwarded_to_manager, _notify_campaign_submitted, _notify_campaign_completed
 # from payments.models import process_campaign_payment
 
 logger = logging.getLogger("advertiser.services")
+
 @transaction.atomic
 def approve_campaign_by_manager(campaign, manager_user):
     """
