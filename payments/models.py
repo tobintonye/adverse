@@ -55,6 +55,8 @@ class AdManagerSubaccount(TimeStampedModel):
         "admanager.Admanager",
         on_delete=models.PROTECT,
         related_name="paystack_subaccount",
+        null=True,
+        blank=True,
     )
     subaccount_code = models.CharField(max_length=120, unique=True)
     business_name = models.CharField(max_length=180) # to be changed 
@@ -326,7 +328,7 @@ class CampaignPayment(TimeStampedModel):
         with transaction.atomic():
             payment = (
                 CampaignPayment.objects
-                .select_for_update()
+                .select_for_update(of=("self",))
                 .select_related("campaign", "subaccount__ad_manager")
                 .get(pk=self.pk)
             )

@@ -235,6 +235,7 @@ def campaign_requests(request):
  
     campaigns = (
         Campaign.objects.filter(campaign_slots__billboard__ad_manager=ad_manager)
+        .exclude(status=Campaign.Status.DRAFT) 
         .select_related("advertiser", "media")
         .distinct()
         .order_by("-created_at")
@@ -438,9 +439,17 @@ def payment_setup(request):
                 messages.error(request, e)
         else:
             try:
-                # If old subaccount exists but inactive, delete it first
+                # Detach the old inactive subaccount instead of deleting
                 if subaccount_inactive:
-                    subaccount.delete()
+                    old_subaccount = subaccount
+                    old_subaccount.ad_manager = None
+                    old_subaccount.subaccount_code = (
+                        f"{old_subaccount.subaccount_code}__superseded_"
+                        f"{timezone.now().strftime('%Y%m%d%H%M%S')}"
+                        )
+                    old_subaccount.save(
+                        update_fields=["ad_manager", "subaccount_code", "updated_at"]
+                        )
 
                 subaccount = create_paystack_subaccount(ad_manager=ad_manager, bank_code=bank_code, account_number=account_number, business_name=business_name)
                 messages.success(request, "Bank account connected successfully. Your subaccount will be verified before payments are processed.")
