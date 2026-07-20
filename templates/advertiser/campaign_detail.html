@@ -55,11 +55,15 @@
                     </div>
                     <div>
                         <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Start date</p>
-                        <p class="font-medium">{{ campaign.start_date|date:"M d, Y" }}</p>
+                        <p class="font-medium">{% if campaign.start_date %}{{ campaign.start_date|date:"M d, Y" }}{% else %}<span class="text-base-content/40">Not yet selected</span>{% endif %}</p>
                     </div>
                     <div>
                         <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">End date</p>
-                        <p class="font-medium">{{ campaign.end_date|date:"M d, Y" }}</p>
+                        <p class="font-medium">{% if campaign.end_date %}{{ campaign.end_date|date:"M d, Y" }}{% else %}<span class="text-base-content/40">Not yet selected</span>{% endif %}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Duration</p>
+                        <p class="font-medium">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
                     </div>
                     <div>
                         <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Daily hours</p>

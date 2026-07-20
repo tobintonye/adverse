@@ -1,0 +1,18 @@
+/* Used on inner pages (About, How It Works) — the closing CTA banner */
+.cta-banner{
+  margin: 0 32px 90px;
+  max-width: 1180px;
+  margin-left:auto;
+  margin-right:auto;
+  background: linear-gradient(180deg, var(--panel), #0d0d0f);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  padding: 56px;
+  text-align:center;
+}
+.cta-banner h3{
+  font-family:'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight:600;
+  margin-bottom: 20px;
+}

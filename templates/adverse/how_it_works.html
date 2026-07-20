@@ -1,420 +1,107 @@
+{% extends 'adverse/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html class="scroll-smooth" lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>How it Works | Advers | Modernizing Nigerian OOH Advertising</title>
-    
-    <!-- daisyUI 5 & Tailwind CSS v4 -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    
-    <!-- Google Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-    
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-    
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow-x: hidden;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-entrance {
-            animation: fadeIn 0.8s ease-out forwards;
-        }
 
-        /* Glassmorphism that responds to dark/light theme */
-        .glass-card {
-            background: color-mix(in oklch, var(--color-base-100) 70%, transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid color-mix(in oklch, var(--color-base-content) 15%, transparent);
-        }
+{% block title %}How It Works — Advers{% endblock %}
 
-        /* Floating Background Shapes */
-        .floating-shape {
-            position: absolute;
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(1px);
-            opacity: 0.3;
-        }
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<link rel="stylesheet" href="{% static 'css/how_it_works.css' %}">
+{% endblock %}
 
-        /* Custom Typography Utilities */
-        .font-body-lg, .font-body-md, .font-headline-sm, .font-headline-md, .font-display-lg-mobile, .font-display-lg {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .text-body-lg {
-            font-size: 18px;
-            line-height: 1.6;
-            font-weight: 400;
-        }
-        .text-body-md {
-            font-size: 16px;
-            line-height: 1.6;
-            font-weight: 400;
-        }
-        .text-headline-sm {
-            font-size: 24px;
-            line-height: 1.4;
-            font-weight: 700;
-        }
-        .text-headline-md {
-            font-size: 36px;
-            line-height: 1.3;
-            letter-spacing: -0.01em;
-            font-weight: 700;
-        }
-        .text-display-lg-mobile {
-            font-size: 40px;
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            font-weight: 800;
-        }
-        .text-display-lg {
-            font-size: 64px;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-            font-weight: 800;
-        }
-        .text-label-caps {
-            font-size: 12px;
-            line-height: 1;
-            letter-spacing: 0.05em;
-            font-weight: 700;
-        }
+{% block content %}
 
-        /* Card Hover Effects */
-        .step-card-hover {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .step-card-hover:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px color-mix(in oklch, var(--color-primary) 12%, transparent);
-        }
+<header class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">How Advers works</span>
+    <h1>One platform, two journeys one network.</h1>
+    <p>Whether you're placing a campaign or hosting a screen, Advers handles the entire lifecycle automatically.</p>
+  </div>
+</header>
 
-        /* Scroll reveal animation for sections */
-        .reveal-section {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
-            will-change: transform, opacity;
-        }
-        .reveal-section.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    </style>
-</head>
-<body class="bg-base-100 text-base-content min-h-screen">
+<div class="toggle-wrap">
+  <div class="toggle">
+    <button id="tab-advertisers" class="active" onclick="showTrack('advertisers')">For advertisers</button>
+    <button id="tab-owners" onclick="showTrack('owners')">For screen owners</button>
+  </div>
+</div>
+<p style="text-align:center; margin-top:-46px; margin-bottom:30px; font-size:13px; color:var(--text-low); font-family:'JetBrains Mono', monospace;">SCREEN OWNERS ARE CALLED "AD MANAGERS" INSIDE ADVERSE</p>
 
-<!-- Floating Background Elements -->
-<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div class="floating-shape top-[10%] left-[5%] parallax" data-speed="2">
-        <svg fill="none" height="120" viewBox="0 0 100 100" width="120" xmlns="http://www.w3.org/2000/svg">
-            <path class="text-primary/25" d="M50 0 L93.3 25 L93.3 75 L50 100 L6.7 75 L6.7 25 Z" stroke="currentColor" stroke-width="0.5"></path>
-        </svg>
+<section id="advertisers" class="track active wrap">
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <div><h3>Submit your campaign</h3><p>Upload creative, set your budget, and choose target screens or regions in a guided submission flow.</p></div>
     </div>
-    <div class="floating-shape top-[40%] right-[10%] parallax" data-speed="4">
-        <svg fill="none" height="80" viewBox="0 0 100 100" width="80" xmlns="http://www.w3.org/2000/svg">
-            <rect class="text-secondary/25" height="80" rx="12" stroke="currentColor" stroke-width="0.5" transform="rotate(15, 50, 50)" width="80" x="10" y="10"></rect>
-        </svg>
+    <div class="step reveal" style="transition-delay:70ms">
+      <div class="step-num">02</div>
+      <div><h3>Review &amp; approval</h3><p>Your campaign is checked against screen availability and content guidelines before confirmation.</p></div>
     </div>
-    <div class="floating-shape bottom-[20%] left-[15%] parallax" data-speed="3">
-        <svg fill="none" height="150" viewBox="0 0 100 100" width="150" xmlns="http://www.w3.org/2000/svg">
-            <circle class="text-primary/15" cx="50" cy="50" r="40" stroke="currentColor" stroke-width="0.5"></circle>
-        </svg>
+    <div class="step reveal" style="transition-delay:140ms">
+      <div class="step-num">03</div>
+      <div><h3>Scheduling</h3><p>Adverse slots your campaign into the network's schedule, coordinating timing across every screen involved.</p></div>
     </div>
+    <div class="step reveal" style="transition-delay:210ms">
+      <div class="step-num">04</div>
+      <div><h3>Live delivery</h3><p>Your ad is pushed directly to the Android players and plays on schedule no manual intervention required.</p></div>
+    </div>
+    <div class="step reveal" style="transition-delay:280ms">
+      <div class="step-num">05</div>
+      <div><h3>Reporting &amp; proof-of-play</h3><p>Get confirmation of exactly when and where your campaign played, in real time.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="owners" class="track wrap">
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <div><h3>Register your screen</h3><p>Add your screen's details, location, and availability to the Adverse network in a few minutes.</p></div>
+    </div>
+    <div class="step reveal" style="transition-delay:70ms">
+      <div class="step-num">02</div>
+      <div><h3>Install the player</h3><p>Set up the Adverse Android player on your device it handles content sync and playback automatically.</p></div>
+    </div>
+    <div class="step reveal" style="transition-delay:140ms">
+      <div class="step-num">03</div>
+      <div><h3>Set pricing &amp; availability</h3><p>Define your ad slots, rates, and open hours. Adverse matches demand to your screen automatically.</p></div>
+    </div>
+    <div class="step reveal" style="transition-delay:210ms">
+      <div class="step-num">04</div>
+      <div><h3>Receive &amp; display ads</h3><p>Approved campaigns are delivered and played automatically, with no manual content management.</p></div>
+    </div>
+    <div class="step reveal" style="transition-delay:280ms">
+      <div class="step-num">05</div>
+      <div><h3>Get paid &amp; track performance</h3><p>See exactly what played, when, and track your earnings from a simple performance view.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="loop reveal">
+  <div class="wrap">
+    <div class="loop-head">
+      <span class="eyebrow">The full loop</span>
+      <h2>How it all connects.</h2>
+    </div>
+    <div class="loop-diagram">
+      <div class="loop-node"><span class="tag">Step 1</span><div class="name">Advertiser</div></div>
+      <span class="loop-arrow">→</span>
+      <div class="loop-node"><span class="tag">Step 2</span><div class="name">Adverse platform</div></div>
+      <span class="loop-arrow">→</span>
+      <div class="loop-node"><span class="tag">Step 3</span><div class="name">Android player</div></div>
+      <span class="loop-arrow">→</span>
+      <div class="loop-node"><span class="tag">Step 4</span><div class="name">Physical screen</div></div>
+    </div>
+    <p class="loop-note">PROOF-OF-PLAY DATA FLOWS BACK TO ADVERTISER &amp; SCREEN OWNER</p>
+  </div>
+</section>
+
+<div class="cta-banner reveal">
+  <h3 id="cta-heading">Ready to get started?</h3>
+  <a href="{% url 'adverse:contact' %}" class="btn btn-primary" id="cta-btn">Get started</a>
 </div>
 
-<!-- Drawer for mobile nav -->
-<div class="drawer">
-    <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
-    <div class="drawer-content flex flex-col min-h-screen relative z-10">
-        
-        <!-- TopNavBar -->
-        <header class="fixed top-0 w-full z-[100] bg-base-100/60 backdrop-blur-xl border-b border-base-300/40">
-            <div class="flex justify-between items-center max-w-[1200px] mx-auto px-6 h-20">
-                <div class="flex items-center gap-2">
-                    <label for="mobile-drawer" class="btn btn-ghost btn-square drawer-button lg:hidden">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </label>
-                    <a href="{% url 'adverse:home' %}" class="flex items-center gap-2">
-                        <img alt="Advers Logo" class="h-10 w-auto" src="{% static 'images/logo.png' %}">
-                        <div class="font-headline-sm text-headline-sm font-bold text-base-content">Advers</div>
-                    </a>
-                </div>
-                
-                <nav class="hidden lg:flex items-center space-x-8">
-                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:home' %}">Home</a>
-                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:about' %}">About</a>
-                    <a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md" href="{% url 'adverse:how_it_works' %}">How It Works</a>
-                    <a class="text-base-content/75 font-medium hover:text-primary transition-colors font-body-md text-body-md" href="{% url 'adverse:contact' %}">Contact</a>
-                </nav>
-                
-                <div class="flex items-center space-x-3">
-                    <a href="{% url 'security:login' %}" class="btn btn-ghost btn-md font-medium hover:text-primary transition-colors font-body-md text-body-md">Log In</a>
-                    <a href="{% url 'security:register' %}" class="btn btn-primary btn-md rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all">Get Started</a>
-                </div>
-            </div>
-        </header>
+{% endblock %}
 
-        <main class="relative z-10 pt-20">
-            <!-- Hero Section -->
-            <section class="relative pt-24 pb-24 overflow-hidden">
-                <div class="max-w-[1200px] mx-auto px-6 animate-entrance">
-                    <h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-base-content mb-6 leading-tight">
-                        Simple Steps to Launch <br class="hidden md:block"> Your Campaign
-                    </h1>
-                    <p class="font-body-lg text-body-lg text-base-content/70 max-w-2xl mb-12">
-                        Experience the future of Out-of-Home advertising. From upload to deployment, we've streamlined the entire process to put your brand in the spotlight faster than ever.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="{% url 'security:register' %}" class="btn btn-primary btn-lg rounded-xl font-bold shadow-3d hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-                            Start Uploading
-                            <span class="material-symbols-outlined">upload</span>
-                        </a>
-                        <a href="{% url 'adverse:home' %}" class="btn btn-neutral btn-lg rounded-xl font-bold hover:bg-base-300 transition-all flex items-center justify-center gap-2">
-                            Explore Inventory
-                            <span class="material-symbols-outlined">map</span>
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Process Section -->
-            <section class="py-24 md:py-32 bg-base-200/20 border-y border-base-300/30 relative">
-                <div class="max-w-[1200px] mx-auto px-6">
-                    <div class="space-y-24 relative">
-                        <!-- Progress Line -->
-                        <div class="absolute left-6 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-secondary/20 to-transparent -translate-x-1/2 hidden md:block"></div>
-                        
-                        <!-- Step 1 -->
-                        <div class="relative flex flex-col md:flex-row items-center gap-8 md:gap-24 reveal-section">
-                            <div class="w-full md:w-1/2 order-2 md:order-1 text-center md:text-right">
-                                <span class="text-primary font-label-caps block mb-2">Step 01</span>
-                                <h3 class="font-headline-md text-headline-md text-base-content mb-4">Upload Media</h3>
-                                <p class="font-body-md text-base-content/75">
-                                    Upload your campaign media (MP3/MP4) for administrative review to ensure compliance with community standards. Our AI-driven check speeds up the initial validation.
-                                </p>
-                            </div>
-                            <div class="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-lg shadow-lg flex-shrink-0">1</div>
-                            <div class="w-full md:w-1/2 order-3 bg-base-200 border border-base-300/40 rounded-3xl p-8 step-card-hover aspect-[4/3] flex items-center justify-center overflow-hidden">
-                                <img class="w-full h-full object-cover rounded-2xl shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD95jGNS8hDroWL1JfhENywWhLHN75XSHtmEqMSukVQ-WSEzfwXWeA6qlu7GkNkwhB8Bik3d6IZtKVNMsl3YqPa5zWAIMnBA2tYR9K7Oa8fFV8o5PU95na6dSpy834cZaCaTzKAj3Q5eeq1lOcqHZ7x2W95NjQV2CSq-WuhPzSufoAsJZE1Fw3Gnw0SAgRxkRywN7BZtFKteS4iy9grR8cLF-Zn-DaXpsUxNBnIwmm33UWgmFVak3NWkiblula3GmbGAQK1oGSJmOQ" alt="Secure video and audio upload illustration">
-                            </div>
-                        </div>
-                        
-                        <!-- Step 2 -->
-                        <div class="relative flex flex-col md:flex-row items-center gap-8 md:gap-24 reveal-section">
-                            <div class="w-full md:w-1/2 order-3 md:order-1 bg-base-200 border border-base-300/40 rounded-3xl p-8 step-card-hover aspect-[4/3] flex items-center justify-center overflow-hidden">
-                                <img class="w-full h-full object-cover rounded-2xl shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL0PZ5kfa0hiliC3IOGOa7G-Z7f10rA6tEnZyWPJv7LouFSOnbMZnOmw8F4xnRUE6Sb3rrttJLbxhb9B7KiwcF7qnMFiI-eF45ab6CXAMda6IBjQ7RQu5fgw-wl7R5SuPg4FvlUHNrSku-dQCnEHeHvveQFylLtRuuC2y5TmRlIvpiWS4DvS4YoS5LRNGKMMzU-Rb8nx8MqzAyufpwFTHSviAW_5b2gYB2ByJgR-AqjSZfoL08rRXmIG6RqkqWr6KaBK66Dn52r2I" alt="Urban LED billboards selection illustration">
-                            </div>
-                            <div class="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-lg shadow-lg flex-shrink-0">2</div>
-                            <div class="w-full md:w-1/2 order-2 text-center md:text-left">
-                                <span class="text-primary font-label-caps block mb-2">Step 02</span>
-                                <h3 class="font-headline-md text-headline-md text-base-content mb-4">Select &amp; Create</h3>
-                                <p class="font-body-md text-base-content/75">
-                                    Once approved, select your preferred billboard locations from our extensive network and create your campaign using your verified media assets.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 3 -->
-                        <div class="relative flex flex-col md:flex-row items-center gap-8 md:gap-24 reveal-section">
-                            <div class="w-full md:w-1/2 order-2 md:order-1 text-center md:text-right">
-                                <span class="text-primary font-label-caps block mb-2">Step 03</span>
-                                <h3 class="font-headline-md text-headline-md text-base-content mb-4">Approval &amp; Acknowledgment</h3>
-                                <p class="font-body-md text-base-content/75">
-                                    Your campaign is reviewed and acknowledged by both the Advers Admin and the Billboard Owner (Ad Manager). This dual-verification ensures quality and transparency for all parties.
-                                </p>
-                            </div>
-                            <div class="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-lg shadow-lg flex-shrink-0">3</div>
-                            <div class="w-full md:w-1/2 order-3 bg-base-200 border border-base-300/40 rounded-3xl p-8 step-card-hover aspect-[4/3] flex items-center justify-center overflow-hidden">
-                                <img class="w-full h-full object-cover rounded-2xl shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAD3uAl_LoFq62btpvC_Xw7g9E9PJIJiYB2PK0tRyEEQz_gCHr8-n9kRyHrLVkZ8UozSo1q-jczgRhdtcN4u3nxIywT2OYW_DFSPeubuSBKHALZWRBLAjiGbVyqKikpMPhTd9jbvXD8Eowb-KpVLBAgpp0ETX0OEG73Zeqh2FhNEn7ocKGPuljxog8ovly_1mX9yHxS4qfqhwEFZCiqPV8NRFm8bwFgpwMMlckdjWspW0z_AOBfqGb37WST4V3uBbdUAiVo3Dh-Y4o" alt="Dual approval dashboard concept">
-                            </div>
-                        </div>
-                        
-                        <!-- Step 4 -->
-                        <div class="relative flex flex-col md:flex-row items-center gap-8 md:gap-24 reveal-section">
-                            <div class="w-full md:w-1/2 order-3 md:order-1 bg-base-200 border border-base-300/40 rounded-3xl p-8 step-card-hover aspect-[4/3] flex items-center justify-center overflow-hidden">
-                                <img class="w-full h-full object-cover rounded-2xl shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm_Tn294FT0RCzodLa1yLASVhQFREuM19NrjnWMq9I9_HcbvPQBpSlE2C1yLMFFecyUs-Jco8iYfc5EZ8vVOQOf_5-9ax7DfCsg5GltdFuBnTuTgOMNhILmqEN3cmuxpyPBuMupA050Z_XAaMG1XejBsvfYncWD7PIbL4v6i1O6c38Vy_el6SdPOnzBOoPdBR0ADG370zUwBFRmpC4JUG-Xo4uype9qmFuKRU5-tErMb4IYZIYWIrxbiHsg_PKnvFQOuWCNcgrhPA" alt="Secure payment credit card illustration">
-                            </div>
-                            <div class="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-lg shadow-lg flex-shrink-0">2</div>
-                            <div class="w-full md:w-1/2 order-2 text-center md:text-left">
-                                <span class="text-primary font-label-caps block mb-2">Step 04</span>
-                                <h3 class="font-headline-md text-headline-md text-base-content mb-4">Secure Payment</h3>
-                                <p class="font-body-md text-base-content/75">
-                                    Complete your payment securely through our platform to finalize the booking. We support all major payment providers with bank-grade encryption.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 5 -->
-                        <div class="relative flex flex-col md:flex-row items-center gap-8 md:gap-24 reveal-section">
-                            <div class="w-full md:w-1/2 order-2 md:order-1 text-center md:text-right">
-                                <span class="text-primary font-label-caps block mb-2">Step 05</span>
-                                <h3 class="font-headline-md text-headline-md text-base-content mb-4">Go Live in 30 Mins</h3>
-                                <p class="font-body-md text-base-content/75">
-                                    Your media is deployed and displayed on your chosen LED billboards within 30 minutes of payment confirmation. Real-time advertising at its finest.
-                                </p>
-                            </div>
-                            <div class="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-lg shadow-lg flex-shrink-0">3</div>
-                            <div class="w-full md:w-1/2 order-3 bg-base-200 border border-base-300/40 rounded-3xl p-8 step-card-hover aspect-[4/3] flex items-center justify-center overflow-hidden">
-                                <img class="w-full h-full object-cover rounded-2xl shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiGXld0ULyUikzP6Z0NPMUm6NqwMdPknXbj9AdapZCmTMEpIDw0pk0fPXm7ZlT-SnStd32eGtZk3OmAyoR-M_SC0n9astJyyo33prTktt9bn86JZM1JClOF-CKTPTbAkJMEt1vFlEqYAdvK3eDgJ3YUa_E4sY-1QZjbWAf07xmZksrekwAO4fbbt78pTa4A16SzGBBpn8XEGIwgVo4xkKK7xv56t-fLZ5FdjVLM-eZ5b5_7F7bhq3NBsgO-djyVUD6cXDKBT8M1AA" alt="Digital clock and billboard at night illustration">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Final CTA Section -->
-            <section class="py-24 max-w-[1200px] mx-auto px-6 reveal-section">
-                <div class="bg-primary text-primary-content rounded-[3rem] p-12 md:p-24 text-center relative overflow-hidden shadow-3d group">
-                    <div class="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-primary opacity-30"></div>
-                    <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-                    <div class="relative z-10 space-y-8">
-                        <h2 class="font-display-lg text-headline-md md:text-headline-md mb-6 leading-tight text-white">Ready to see your brand in lights?</h2>
-                        <p class="text-body-lg mb-10 max-w-xl mx-auto opacity-95 text-white/80">
-                            Join hundreds of advertisers already using Advers to reach their audience on the streets.
-                        </p>
-                        <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                            <a href="{% url 'security:register' %}" class="btn btn-neutral btn-xl px-12 py-5 rounded-2xl font-extrabold text-xl shadow-3d hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all">Create Campaign <span class="material-symbols-outlined">arrow_forward</span></a>
-                            <a href="{% url 'adverse:contact' %}" class="btn btn-outline text-primary-content border-primary-content/30 hover:bg-white/10 px-12 py-5 rounded-2xl font-extrabold text-xl transition-all">Talk to Sales</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer id="contact" class="relative z-10 bg-base-200 border-t border-base-300/40 w-full py-20">
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-[1200px] mx-auto px-6">
-                <div class="col-span-2 lg:col-span-1">
-                    <div class="font-headline-sm text-headline-sm font-bold text-base-content mb-6">Advers</div>
-                    <p class="font-body-md text-body-md text-base-content/65 max-w-xs">
-                        The modern operating system for outdoor advertising across West Africa.
-                    </p>
-                </div>
-                <div class="space-y-4">
-                    <h5 class="font-bold text-base-content font-body-md text-body-md">Platform</h5>
-                    <ul class="space-y-2">
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:home' %}#features">Features</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:how_it_works' %}">How It Works</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Pricing</a></li>
-                    </ul>
-                </div>
-                <div class="space-y-4">
-                    <h5 class="font-bold text-base-content font-body-md text-body-md">Company</h5>
-                    <ul class="space-y-2">
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:about' %}">About Us</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Careers</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="{% url 'adverse:contact' %}">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="space-y-4">
-                    <h5 class="font-bold text-base-content font-body-md text-body-md">Legal</h5>
-                    <ul class="space-y-2">
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Terms</a></li>
-                        <li><a class="text-base-content/75 font-medium hover:text-primary transition-all font-body-md text-body-md" href="#">Privacy</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="max-w-[1200px] mx-auto px-6 mt-20 pt-8 border-t border-base-300/40">
-                <p class="text-base-content/50 font-body-md text-body-md">© {% now "Y" %} Advers. All rights reserved.</p>
-            </div>
-        </footer>
-        
-    </div>
-
-    <!-- Drawer sidebar for mobile nav -->
-    <div class="drawer-side z-[200]">
-        <label for="mobile-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-        <div class="bg-base-200 min-h-full w-72 p-5 border-r border-base-300/30 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center gap-3 pb-5 mb-5 border-b border-base-300/30">
-                    <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-8 h-8 object-contain">
-                    <span class="text-lg font-bold text-base-content">Advers</span>
-                </div>
-                <ul class="menu gap-1 p-0">
-                    <li><a href="{% url 'adverse:home' %}" class="text-sm text-base-content/80 font-medium">Home</a></li>
-                    <li><a href="{% url 'adverse:about' %}" class="text-sm text-base-content/80 font-medium">About</a></li>
-                    <li><a href="{% url 'adverse:how_it_works' %}" class="text-sm text-base-content/80 font-medium">How It Works</a></li>
-                    <li><a href="{% url 'adverse:contact' %}" class="text-sm text-base-content/80 font-medium">Contact</a></li>
-                </ul>
-            </div>
-            <div class="pt-5 border-t border-base-300/30 space-y-2">
-                <a href="{% url 'security:login' %}" class="btn btn-ghost btn-block btn-sm">Log In</a>
-                <a href="{% url 'security:register' %}" class="btn btn-primary btn-block btn-sm">Get Started</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Include local Theme Toggle Floating Button -->
-{% include "partials/theme_toggle.html" %}
-
-<!-- Scripts -->
-<script>
-    // Intersection Observer for entrance animations (e.g. Hero title on load)
-    const entranceObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate-entrance');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.animate-entrance').forEach((el) => entranceObserver.observe(el));
-
-    // Intersection Observer for scroll reveal animations on sections
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('revealed');
-                revealObserver.unobserve(entry.target);
-            }
-        });
-    }, {
-        threshold: 0.15,
-        rootMargin: "0px 0px -50px 0px"
-    });
-
-    document.querySelectorAll('.reveal-section').forEach((section) => {
-        revealObserver.observe(section);
-    });
-
-    // Parallax Scroll Effect
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        document.querySelectorAll('.parallax').forEach(el => {
-            const speed = el.getAttribute('data-speed');
-            el.style.transform = `translateY(${scrolled * (speed / 10)}px)`;
-        });
-    });
-</script>
-
-</body>
-</html>
+{% block extra_js %}
+<script src="{% static 'js/how_it_works.js' %}"></script>
+{% endblock %}

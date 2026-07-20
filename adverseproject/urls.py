@@ -10,7 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('adverse-auth/', include('security.urls')),
-    path('adverse/', include('adverse.urls')),
+    #path('adverse/', include('adverse.urls')),
     path('admanager/', include('admanager.urls')),
     path('advertiser/', include('advertiser.urls')),
     path('admin-panel/', include('admin_panel.urls')),

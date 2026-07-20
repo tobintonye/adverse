@@ -10,7 +10,13 @@ Scheduling engine — decides what plays, when, and where.
 Flow triggered by campaign approval:
   manager_approve(campaign) → generate_schedule(campaign) → TimeSlot rows created
 """
-
+class ScheduleGenerationError(Exception):
+    """Raised when a campaign's date range can't be fully scheduled.
+    Carries the list of (billboard, date) conflicts for display to the user."""
+    def __init__(self, message, conflicts=None):
+        super().__init__(message)
+        self.conflicts = conflicts or []
+        
 class TimeSlot(TimeStampedModel):
   # one allocated play of one campaign's ad on one billboard on one date(stores every scheduled advertisement play.)
   id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -111,50 +117,58 @@ def check_capacity(billboard, start_date, end_date, slots_per_day):
 @transaction.atomic
 def generate_schedule(campaign):
     """
-    Called when a campaign is approved by the ad manager.
-    Creates TimeSlot rows for every day in the campaign date range.
- 
-    Strategy:
-      - For each day, find the next available play_order positions on each billboard.
-      - If a billboard is full on a given day, skip that day and log it.
+    Called after the advertiser confirms real calendar dates (post-approval).
+    All-or-nothing: pre-checks capacity for every day across every billboard
+    slot BEFORE creating any TimeSlot rows. If any day anywhere is short on
+    capacity, nothing is created and ScheduleGenerationError is raised
+    the caller (confirm_campaign_dates) rolls back the date assignment too.
     """
-    slots_created = 0
-    slots_skipped = 0
  
     campaign_slots = campaign.campaign_slots.select_related(
         "billboard", "billboard__capacity"
     ).all()
- 
+    
+    if not campaign_slots:
+        raise ScheduleGenerationError("Campaign has no billboard slots assigned.")
+    
+     # Pre-flight: check every slot's full date range before touching the DB
+    all_conflicts = []  # list of (billboard, date) tuples
+    for cs in campaign_slots:
+       ok, conflicts = check_capacity(
+          cs.billboard, campaign.start_date, campaign.end_date, cs.slots_per_day
+       )
+       if not ok:
+            all_conflicts.extend((cs.billboard, d) for d in conflicts)
+
+    if all_conflicts:
+        ScheduleGenerationLog.objects.create(
+            campaign=campaign,
+            result=ScheduleGenerationLog.Result.FAILED,
+            slots_created=0,
+            slots_skipped=len(all_conflicts),
+            error_message=(
+                f"{len(all_conflicts)} date(s) had insufficient capacity: "
+                + ", ".join(f"{b.name} on {d}" for b, d in all_conflicts[:10])
+                + ("..." if len(all_conflicts) > 10 else "")
+            ),
+        )
+        raise ScheduleGenerationError(
+            f"{len(all_conflicts)} date(s) in your chosen range are unavailable "
+            f"on one or more billboards. Please pick a different date range.",
+            conflicts=all_conflicts,
+        )
+    
+    # All clear now actually create every TimeSlot row 
+    slots_created = 0
     current_date = campaign.start_date
     while current_date <= campaign.end_date:
         for cs in campaign_slots:
             billboard = cs.billboard
- 
-            # Find highest play_order already allocated on this date
             last_order = TimeSlot.objects.filter(
-                billboard=billboard,
-                date=current_date,
-                is_active=True,
+                billboard=billboard, date=current_date, is_active=True,
             ).aggregate(models.Max("play_order"))["play_order__max"] or 0
- 
-            # Check capacity
-            try:
-                max_slots = billboard.capacity.max_slots_per_day
-            except BillboardCapacity.DoesNotExist:
-                slots_skipped += cs.slots_per_day
-                continue
- 
-            already_booked = TimeSlot.objects.filter(
-                billboard=billboard,
-                date=current_date,
-                is_active=True,
-            ).count()
- 
-            free_slots = max_slots - already_booked
-            to_allocate = min(cs.slots_per_day, free_slots)
-            skipped     = cs.slots_per_day - to_allocate
- 
-            for i in range(to_allocate):
+
+            for i in range(cs.slots_per_day):
                 TimeSlot.objects.create(
                     billboard=billboard,
                     campaign=campaign,
@@ -164,25 +178,14 @@ def generate_schedule(campaign):
                     duration_seconds=campaign.media.duration_seconds or 30,
                 )
                 slots_created += 1
- 
-            slots_skipped += skipped
- 
         current_date += timedelta(days=1)
- 
-    result = (
-        ScheduleGenerationLog.Result.SUCCESS if slots_skipped == 0
-        else ScheduleGenerationLog.Result.PARTIAL
-    )
- 
     ScheduleGenerationLog.objects.create(
         campaign=campaign,
-        result=result,
+        result=ScheduleGenerationLog.Result.SUCCESS,
         slots_created=slots_created,
-        slots_skipped=slots_skipped,
+        slots_skipped=0,
     )
- 
-    return slots_created, slots_skipped
-
+    return slots_created
 def get_playlist_for_billboard(billboard, target_date=None):
     """
     Returns the ordered list of active TimeSlots for a billboard on a given date.

@@ -52,6 +52,34 @@ def expire_old_campaigns():
     )
     return f"Completed {count} campaigns."
 
+@shared_task
+def expire_unconfirmed_approvals():
+    """
+    Finds APPROVED campaigns with no start_date set (dates never confirmed)
+    where approved_at is more than 7 days old. Marks them APPROVAL_EXPIRED
+    and notifies the advertiser they need to resubmit.
+    """
+    from advertiser.tasks import _notify_approval_expired
+    from datetime import timedelta
+
+    cutoff = timezone.now() - timedelta(days=7)
+    stale = Campaign.objects.filter(
+        status=Campaign.Status.APPROVED,
+        start_date__isnull=True,
+        approved_at__lt=cutoff,
+    ).select_related("advertiser__user")
+
+    count = 0
+    for campaign in stale:
+        campaign.expire_approval()
+        _notify_approval_expired.delay(str(campaign.id))
+        count += 1
+
+    logger.info("expire_unconfirmed_approvals: %d campaign(s) expired.", count)
+    return f"Expired {count} unconfirmed approvals."
+
+
+
 """
 @shared_task
 def expire_old_campaigns():

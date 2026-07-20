@@ -1,0 +1,53 @@
+/* PAGE HEADER (Contact variant) */
+.page-head{ padding: 180px 0 60px; }
+.page-head h1{
+  font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(34px, 4.6vw, 50px);
+  line-height: 1.08; margin: 16px 0 16px; max-width: 620px;
+}
+.page-head p{ font-size: 17px; line-height: 1.65; color: var(--text-mid); max-width: 560px; }
+
+/* CONTACT LAYOUT */
+.contact-grid{
+  padding-bottom: 120px; display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items:start;
+}
+.form-panel{
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 18px; padding: 40px;
+}
+.field{ margin-bottom: 22px; }
+.field label{ display:block; font-size: 13px; color: var(--text-mid); margin-bottom: 8px; }
+.field input, .field select, .field textarea{
+  width:100%; background: #0d0d0f; border: 1px solid var(--panel-border); border-radius: 8px;
+  padding: 12px 14px; color: var(--text-hi); font-size: 14.5px;
+}
+.field textarea{ resize: vertical; min-height: 110px; }
+.field input::placeholder, .field textarea::placeholder{ color: var(--text-low); }
+.field-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+/* Only the form's submit button should go full-width — the shared nav's
+   "Get started" button (also .btn-primary) must stay its normal size. */
+.form-panel button[type="submit"].btn-primary{ width: 100%; }
+
+.info-panel{ display:flex; flex-direction:column; gap: 24px; }
+.info-card{
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 28px;
+}
+.info-card .label{ font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-low); margin-bottom: 10px; }
+.info-card .value{ font-size: 16px; font-weight: 500; }
+.info-card .value a:hover{ color: var(--accent); }
+.social-row{ display:flex; gap: 14px; margin-top: 4px; }
+.social-row a{
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--panel-border);
+  display:flex; align-items:center; justify-content:center; font-size: 13px; color: var(--text-mid);
+}
+.social-row a:hover{ color: var(--text-hi); border-color: var(--chrome-2); }
+.response-note{ font-size: 13.5px; color: var(--text-low); display:flex; align-items:center; gap:8px; }
+.response-note::before{
+  content:""; width:6px; height:6px; border-radius:50%; background: var(--accent);
+  box-shadow: 0 0 8px 1px var(--accent-dim);
+}
+
+@media (max-width: 760px){
+  .page-head{ padding: 150px 0 40px; }
+  .contact-grid{ grid-template-columns: 1fr; }
+  .field-row{ grid-template-columns: 1fr; }
+}

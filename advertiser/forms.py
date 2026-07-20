@@ -128,11 +128,13 @@ class MediaUploadForm(forms.ModelForm):
     
 class CampaignForm(forms.ModelForm):
     """
-        Mirrors CampaignWriteSerializer's validate() rules.
-        Media choices are scoped to this advertiser's ADMIN_APPROVED files only —
-        same as Campaign.media limit_choices_to, but enforced at form level too
-        so the queryset in the dropdown is already pre-filtered (no need for the
-        user to guess which of their media items are eligible).
+    Mirrors CampaignWriteSerializer's validate() rules.
+    Media choices are scoped to this advertiser's ADMIN_APPROVED files only.
+
+    NOTE: start_date/end_date are NOT collected here anymore. The advertiser
+    only picks duration_days at creation time actual calendar dates are
+    chosen after approval via the campaign_select_dates view. This prevents
+    dates going stale while the campaign sits in review.
     """
     def __init__(self, advertiser, *args, **kwargs):
         self.advertiser = advertiser
@@ -146,18 +148,17 @@ class CampaignForm(forms.ModelForm):
 
     class Meta:
         model = Campaign
-        fields = ['name', 'media', 'start_date', 'end_date', 'budget', 'daily_start_time', 'daily_end_time', "budget",]
+        fields = ['name', 'media', 'duration_days', 'budget', 'daily_start_time', 'daily_end_time']
         widgets = {
-             "name": forms.TextInput(attrs={"placeholder": "e.g. Eid Sale 2026"}),
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "name": forms.TextInput(attrs={"placeholder": "e.g. Eid Sale 2026"}),
+            "duration_days": forms.NumberInput(attrs={"min": 1, "max": 365, "placeholder": "e.g. 7"}),
             "daily_start_time": forms.TimeInput(attrs={"type": "time"}),
             "daily_end_time": forms.TimeInput(attrs={"type": "time"}),
             "budget": forms.NumberInput(attrs={"placeholder": "e.g. 150000", "min": "0"}),
         }
     
         def clean_media(self):
-            media = self.clean_date.get("media")
+            media = self.cleaned_data.get("media")
             if not media:
                 return media
             if media.status != Media.Status.ADMIN_APPROVED: 
@@ -165,6 +166,12 @@ class CampaignForm(forms.ModelForm):
             if media.advertiser != self.advertiser:
                 raise ValidationError("You do not own this media asset.")
             return media
+        
+        def clean_duration_days(self):
+            duration = self.cleaned_data.get("duration_days")
+            if duration is not None and duration < 1:
+                raise ValidationError("Campaign must run for at least 1 day.")
+            return duration
         
         def clean_name(self): 
             name = self.cleaned_data.get("name", "").strip()
@@ -182,19 +189,12 @@ class CampaignForm(forms.ModelForm):
                 raise ValidationError(f"You already have an active or draft campaign named '{name}'.")
             return name
         
-        def clean(self): 
+        def clean(self):
             cleaned_data = super().clean()
-            start_date = cleaned_data.get("start_date")
-            end_date = cleaned_data.get("end_date")
             daily_start = cleaned_data.get("daily_start_time")
             daily_end = cleaned_data.get("daily_end_time")
-
-            if start_date and end_date and end_date < start_date:
-                self.add_error("end_date", "End date cannot be before start date.")
- 
             if daily_start and daily_end and daily_end <= daily_start:
                 self.add_error("daily_end_time", "Daily end time must be after daily start time.")
-    
             return cleaned_data
 
 class CampaignSlotForm(forms.ModelForm):

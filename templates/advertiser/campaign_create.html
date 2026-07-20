@@ -1,9 +1,7 @@
 {% extends "advertiser/base.html" %}
-
-{% block title %}Create Campaign{% endblock %}
+{% block title %}{% if is_edit %}Edit Campaign{% else %}Create Campaign{% endif %}{% endblock %}
 {% block page_title %}Create Campaign{% endblock %}
 {% block page_description %}Create a new advertising campaign with your media and billboard slots.{% endblock %}
-
 {% block breadcrumbs %}
 <nav class="breadcrumbs text-sm">
     <ul>
@@ -12,19 +10,16 @@
     </ul>
 </nav>
 {% endblock %}
-
 {% block page_container_class %}max-w-5xl mx-auto{% endblock %}
-
 {% block content %}
 <div>
     <div class="card card-border bg-base-200 border-base-300">
         <div class="card-body">
-            <h2 class="card-title">New Campaign</h2>
-            <p class="text-sm text-base-content/50">Select a billboard, choose your media and schedule. Costs calculate automatically.</p>
-
+            
+        <h2 class="card-title">{% if is_edit %}Edit Campaign{% else %}New Campaign{% endif %}</h2>
+            <p class="text-sm text-base-content/50">Select a billboard, choose your media and set a duration. Costs calculate automatically. You'll pick exact calendar dates after your campaign is approved.</p>
             <form method="post" class="space-y-5 mt-4">
                 {% csrf_token %}
-
                 <!-- Campaign Name -->
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Campaign Name</legend>
@@ -32,7 +27,6 @@
                            class="input w-full">
                     {% if form.name.errors %}<p class="text-error text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
                 </fieldset>
-
                 <!-- Billboard Selector -->
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Select Billboard</legend>
@@ -47,7 +41,6 @@
                     </select>
                     {% if form.billboard.errors %}<p class="text-error text-xs mt-1">{{ form.billboard.errors.0 }}</p>{% endif %}
                 </fieldset>
-
                 <!-- Billboard Info Card (shown when a billboard is selected) -->
                 <div id="bb-info-card" class="hidden card bg-base-300 border border-base-300 overflow-hidden">
                     <!-- Media Preview -->
@@ -94,7 +87,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Quantity Field (label changes based on charge unit) -->
                 <div id="qty-row" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                     <fieldset class="fieldset">
@@ -104,7 +96,6 @@
                         <p id="qty-hint" class="text-xs text-base-content/50 mt-1"></p>
                     </fieldset>
                 </div>
-
                 <!-- Media -->
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Select Media <span class="text-base-content/50 normal-case">(admin-approved)</span></legend>
@@ -121,35 +112,30 @@
                     <p class="text-warning text-xs mt-1">You have no approved media yet. <a href="{% url 'advertiser:upload_media' %}" class="link">Upload media</a> first and wait for admin approval.</p>
                     {% endif %}
                 </fieldset>
+                <!-- Duration + Daily Hours -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">Duration (days)</legend>
+                        <input type="number" id="duration-days" name="duration_days"
+                               value="{{ form.duration_days.value|default:'1' }}" min="1" max="365" required
+                               class="input w-full">
+                        <p class="text-xs text-base-content/50 mt-1">
+                            You'll pick exact calendar dates after approval.
+                        </p>
+                        {% if form.duration_days.errors %}<p class="text-error text-xs mt-1">{{ form.duration_days.errors.0 }}</p>{% endif %}
+                    </fieldset>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">Daily Start Time</legend>
+                        <input type="time" id="daily-start-time" name="daily_start_time" value="{{ form.daily_start_time.value|default:'' }}" required class="input w-full">
+                        {% if form.daily_start_time.errors %}<p class="text-error text-xs mt-1">{{ form.daily_start_time.errors.0 }}</p>{% endif %}
+                    </fieldset>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">Daily End Time</legend>
+                        <input type="time" id="daily-end-time" name="daily_end_time" value="{{ form.daily_end_time.value|default:'' }}" required class="input w-full">
+                        {% if form.daily_end_time.errors %}<p class="text-error text-xs mt-1">{{ form.daily_end_time.errors.0 }}</p>{% endif %}
+                    </fieldset>
+                </div>
 
-                <!-- Schedule -->
-                <div class="grid grid-cols-2 gap-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Start Date</legend>
-                    <input type="date" id="start-date" name="start_date" value="{{ form.start_date.value|default:'' }}" required class="input w-full">
-                    {% if form.start_date.errors %}<p class="text-error text-xs mt-1">{{ form.start_date.errors.0 }}</p>{% endif %}
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">End Date</legend>
-                    <input type="date" id="end-date" name="end_date" value="{{ form.end_date.value|default:'' }}" required class="input w-full">
-                    {% if form.end_date.errors %}<p class="text-error text-xs mt-1">{{ form.end_date.errors.0 }}</p>{% endif %}
-                </fieldset>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mt-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Daily Start Time</legend>
-                    <input type="time" id="daily-start-time" name="daily_start_time" value="{{ form.daily_start_time.value|default:'' }}" required class="input w-full">
-                    {% if form.daily_start_time.errors %}<p class="text-error text-xs mt-1">{{ form.daily_start_time.errors.0 }}</p>{% endif %}
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Daily End Time</legend>
-                    <input type="time" id="daily-end-time" name="daily_end_time" value="{{ form.daily_end_time.value|default:'' }}" required class="input w-full">
-                    {% if form.daily_end_time.errors %}<p class="text-error text-xs mt-1">{{ form.daily_end_time.errors.0 }}</p>{% endif %}
-                </fieldset>
-            </div>
-                
-                
                 <!-- Live Price Breakdown -->
                 <div id="price-estimate" class="hidden card bg-base-100 border border-base-300">
                     <div class="card-body p-4">
@@ -174,7 +160,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Budget -->
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Budget (₦)</legend>
@@ -183,7 +168,6 @@
                     <p id="budget-warning" class="text-error text-xs mt-1 hidden">⚠ Budget is below the estimated cost.</p>
                     {% if form.budget.errors %}<p class="text-error text-xs mt-1">{{ form.budget.errors.0 }}</p>{% endif %}
                 </fieldset>
-
                 <div class="flex items-center gap-3 pt-2 border-t border-base-300">
                     <button type="submit" class="btn btn-primary">Save as Draft</button>
                     <a href="{% url 'advertiser:campaign_list' %}" class="link link-hover text-sm text-base-content/50 hover:text-base-content">Cancel</a>
@@ -192,18 +176,14 @@
         </div>
     </div>
 </div>
-
 <script>
 (function () {
     // Billboard data from server
     var BILLBOARDS = {{ billboards_json|safe }};
-
     var selectEl      = document.getElementById('billboard-select');
-    var startDateEl   = document.getElementById('start-date');
-    var endDateEl     = document.getElementById('end-date');
+    var durationEl    = document.getElementById('duration-days');
     var slotsEl       = document.getElementById('slots-per-day');
     var budgetEl      = document.getElementById('budget-input');
-
     // Billboard info card elements
     var infoCard      = document.getElementById('bb-info-card');
     var qtyRow        = document.getElementById('qty-row');
@@ -216,7 +196,6 @@
     var bbPreviewImg  = document.getElementById('bb-preview-img');
     var bbPreviewVid  = document.getElementById('bb-preview-vid');
     var bbNoPreview   = document.getElementById('bb-no-preview');
-
     // Price estimate elements
     var pricePanel    = document.getElementById('price-estimate');
     var estRate       = document.getElementById('est-rate');
@@ -227,28 +206,17 @@
     var qtyLabel      = document.getElementById('qty-label');
     var qtyHint       = document.getElementById('qty-hint');
     var budgetWarning = document.getElementById('budget-warning');
-
     var currentBillboard = null;
-
     function fmt(n) {
         return n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-
     function getDays() {
-        var s = startDateEl.value ? new Date(startDateEl.value) : null;
-        var e = endDateEl.value   ? new Date(endDateEl.value)   : null;
-        if (s && e && e >= s) return Math.round((e - s) / 86400000) + 1;
-        return 0;
+        // Duration is now a direct number of days — no date math needed.
+        var d = parseInt(durationEl.value, 10);
+        return (d && d > 0) ? d : 0;
     }
-
-    function getHoursPerDay() {
-        // Use model defaults: 06:00 to 22:00 = 16 hours
-        return 16;
-    }
-
     function updateBillboardCard(bb) {
         currentBillboard = bb;
-
         // Media preview
         if (bb.media_url) {
             if (bb.media_is_video) {
@@ -267,14 +235,12 @@
             bbPreviewVid.classList.add('hidden');
             bbNoPreview.classList.remove('hidden');
         }
-
         // Details
         bbName.textContent       = bb.name;
         bbLocation.textContent   = (bb.state ? bb.state + ', ' : '') + bb.country;
         bbScreenType.textContent = bb.screen_type;
         bbHours.textContent      = bb.hours_start + ' – ' + bb.hours_end;
         bbRate.textContent       = '₦' + fmt(bb.price);
-
         // Charge unit
         var unitLabel, qLabel, qHint;
         if (bb.charge_unit === 'hourly') {
@@ -290,34 +256,26 @@
             qLabel    = 'Ad Slots Per Day';
             qHint     = 'Number of times your ad plays on this screen per day.';
         }
-
         bbChargeLabel.textContent  = unitLabel;
         qtyLabel.textContent       = qLabel;
         qtyHint.textContent        = qHint;
-
         // Always show the quantity field for all billing types
         slotsEl.closest('div').classList.remove('hidden');
-
         infoCard.classList.remove('hidden');
         qtyRow.classList.remove('hidden');
         recalculate();
     }
-
     function recalculate() {
         if (!currentBillboard) {
             pricePanel.classList.add('hidden');
             return;
         }
-
         var days     = getDays();
-        var hours    = getHoursPerDay();
         var qty      = parseInt(slotsEl.value, 10) || 1;
         var price    = currentBillboard.price;
         var unit     = currentBillboard.charge_unit;
         var total    = 0;
-
         var rateText, qLabel, qVal;
-
         if (unit === 'daily') {
             total    = price * qty * days;
             rateText = '₦' + fmt(price) + ' / day';
@@ -334,19 +292,16 @@
             qLabel   = 'Slots × days';
             qVal     = qty + ' slot' + (qty !== 1 ? 's' : '') + ' × ' + days + ' day' + (days !== 1 ? 's' : '');
         }
-
         estRate.textContent      = rateText;
         estQtyLabel.textContent  = qLabel;
         estQtyVal.textContent    = qVal;
         estDays.textContent      = days + ' day' + (days !== 1 ? 's' : '');
         estTotal.textContent     = fmt(total);
-
         if (days > 0) {
             pricePanel.classList.remove('hidden');
         } else {
             pricePanel.classList.add('hidden');
         }
-
         // Budget warning
         if (budgetEl.value && total > 0) {
             var budget = parseFloat(budgetEl.value);
@@ -359,7 +314,6 @@
             budgetWarning.classList.add('hidden');
         }
     }
-
     // Billboard select change handler
     selectEl.addEventListener('change', function () {
         var pk = this.value;
@@ -372,13 +326,10 @@
             pricePanel.classList.add('hidden');
         }
     });
-
-    // Recalculate on schedule/quantity changes
-    startDateEl.addEventListener('change', recalculate);
-    endDateEl.addEventListener('change', recalculate);
+    // Recalculate on duration/quantity changes
+    durationEl.addEventListener('input', recalculate);
     slotsEl.addEventListener('input', recalculate);
     if (budgetEl) budgetEl.addEventListener('input', recalculate);
-
     // Initialize on page load (handles preselect from Book button or POST back)
     var initialPk = selectEl.value;
     if (initialPk && BILLBOARDS[initialPk]) {

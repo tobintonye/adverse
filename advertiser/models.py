@@ -258,6 +258,7 @@ class Campaign(TimeStampedModel):
         PENDING_ADMIN_REVIEW = "pending_admin_review", "Pending Admin Review"
         PENDING_MANAGER_REVIEW = "pending_manager_review", "Pending Manager Review"
         APPROVED = "approved", "Approved"
+        APPROVAL_EXPIRED = "approval_expired", "Approval Expired"  
         REJECTED = "rejected", "Rejected"
         ACTIVE = "active", "Active"
         PAUSED = "paused", "Paused"
@@ -271,6 +272,7 @@ class Campaign(TimeStampedModel):
     # Schedule
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+    duration_days = models.PositiveSmallIntegerField(default=1, help_text="How many days the campaign runs. Real calendar dates are chosen after approval.",)
     daily_start_time = models.TimeField(default="06:00")
     daily_end_time = models.TimeField(default="22:00")
     # Budget & pricing
@@ -285,17 +287,15 @@ class Campaign(TimeStampedModel):
     admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     manager_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_manager") 
     manager_reviewed_at = models.DateTimeField(null=True, blank=True)
-
-    @property
-    def duration_days(self):
-        if self.start_date and self.end_date:
-            return (self.end_date - self.start_date).days + 1
-        return 0
+    approved_at = models.DateTimeField(null=True, blank=True)          # starts the 7-day clock
+    dates_confirmed_at = models.DateTimeField(null=True, blank=True)   # when advertiser picked dates
     
     @property
     def is_active(self):
         today = timezone.now().date()
-        return (self.status == self.Status.ACTIVE and self.start_date <= today <= self.end_date)
+        if not (self.start_date and self.end_date):
+            return False
+        return self.status == self.Status.ACTIVE and self.start_date <= today <= self.end_date
     
     def calculate_estimated_price(self):
         # Sum of (billboard.price_per_slot × slots_per_day × duration_days)
@@ -346,6 +346,7 @@ class Campaign(TimeStampedModel):
         self.status = self.Status.APPROVED
         self.manager_reviewed_by = manager_user
         self.manager_reviewed_at = timezone.now()
+        self.approved_at = timezone.now() # starts 7 days expiry count
         self.rejection_reason = ""
         
         # Calculate split prices based on current RevenueSetting
@@ -359,7 +360,7 @@ class Campaign(TimeStampedModel):
         self.admanager_split_price = self.actual_price * (setting.admanager_percentage / Decimal('100.00'))
         
         self.save(update_fields=[
-            "status", "manager_reviewed_by", "manager_reviewed_at",
+            "status", "manager_reviewed_by", "manager_reviewed_at", "approved_at",
             "rejection_reason", "actual_price", "admin_split_price", "admanager_split_price", "updated_at",
         ])
         # Fully approve the media at the same time
@@ -401,6 +402,33 @@ class Campaign(TimeStampedModel):
         if self.status not in allowed:
             raise ValidationError("Campaign cannot be cancelled from its current status.")
         self.status = self.Status.CANCELLED
+        self.save(update_fields=["status", "updated_at"])
+
+    def confirm_dates(self, start_date):
+        """
+        Called when the advertiser picks a start date after approval.
+        end_date is derived from duration_days they never pick an end date.
+        Actual TimeSlot generation + capacity check happens in the service
+        layer (advertiser/services.py), wrapped in a transaction so a capacity
+        failure rolls this back cleanly.
+        """
+        if self.status != self.Status.APPROVED:
+            raise ValidationError("Campaign must be approved before selecting dates.")
+        if start_date < timezone.now().date():
+            raise ValidationError({"start_date": "Start date cannot be in the past."})
+        
+        from datetime import timedelta
+        self.start_date = start_date
+        self.end_date = start_date + timedelta(days=self.duration_days - 1)
+        self.dates_confirmed_at = timezone.now()
+        self.save(update_fields=["start_date", "end_date", "dates_confirmed_at", "updated_at"])
+
+    def expire_approval(self):
+        """Called by the daily expiry task for APPROVED campaigns with no
+        confirmed dates after 7 days."""
+        if self.status != self.Status.APPROVED or self.start_date:
+            return  # dates already picked, or not in the right state — skip
+        self.status = self.Status.APPROVAL_EXPIRED
         self.save(update_fields=["status", "updated_at"])
 
     def clean(self):

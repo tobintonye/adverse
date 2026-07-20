@@ -22,6 +22,7 @@ urlpatterns = [
     path("campaigns/<uuid:pk>/status/", views.campaign_status_fragment, name="campaign_status_fragment"),
     path("campaigns/<uuid:pk>/edit/", views.campaign_edit, name="campaign_edit"),
     path("campaigns/<uuid:pk>/pay/", views.campaign_pay, name="campaign_pay"), 
-
+    # advertiser/urls.py — add
+path("campaigns/<uuid:pk>/select-dates/", views.campaign_select_dates, name="campaign_select_dates"),
     path("settings/", views.advertiser_settings, name="settings"),
 ]

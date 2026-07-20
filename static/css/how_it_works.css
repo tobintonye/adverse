@@ -1,0 +1,58 @@
+/* PAGE HEADER (How It Works variant — centered, shorter) */
+.page-head{ padding: 180px 0 50px; text-align:center; }
+.page-head h1{
+  font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(34px, 4.6vw, 52px);
+  line-height: 1.08; margin: 16px auto 20px; max-width: 720px;
+}
+.page-head p{ font-size: 17px; line-height: 1.65; color: var(--text-mid); max-width: 560px; margin: 0 auto; }
+
+/* TOGGLE */
+.toggle-wrap{ display:flex; justify-content:center; padding: 30px 0 70px; }
+.toggle{
+  display:inline-flex; background: var(--panel); border: 1px solid var(--panel-border);
+  border-radius: 999px; padding: 5px; gap: 4px;
+}
+.toggle button{
+  border:none; background: transparent; color: var(--text-mid); font-size: 14px; font-weight: 500;
+  padding: 10px 22px; border-radius: 999px; transition: all .25s ease;
+}
+.toggle button.active{ background: var(--accent); color: #06101F; font-weight:600; }
+
+/* STEPS */
+.track{ display:none; padding-bottom: 100px; }
+.track.active{ display:block; }
+.steps{ display:flex; flex-direction:column; gap: 0; max-width: 760px; margin: 0 auto; }
+.step{
+  display:grid; grid-template-columns: 56px 1fr; gap: 24px; padding: 32px 0;
+  border-top: 1px solid var(--panel-border);
+}
+.step:last-child{ border-bottom: 1px solid var(--panel-border); }
+.step-num{
+  font-family:'Space Grotesk', sans-serif; font-size: 15px; font-weight:600; color: var(--text-low);
+  width: 40px; height:40px; border-radius:10px; border:1px solid var(--panel-border);
+  display:flex; align-items:center; justify-content:center;
+}
+.step h3{ font-family:'Space Grotesk', sans-serif; font-size: 19px; font-weight:600; margin-bottom:8px; }
+.step p{ font-size: 14.5px; line-height:1.65; color: var(--text-mid); max-width: 540px; }
+
+/* LOOP DIAGRAM */
+.loop{ padding: 90px 0 110px; border-top: 1px solid var(--panel-border); text-align:center; }
+.loop-head{ max-width: 560px; margin: 0 auto 56px; }
+.loop-head h2{ font-family:'Space Grotesk', sans-serif; font-size: 28px; font-weight:600; margin-top:12px; }
+.loop-diagram{
+  display:flex; align-items:center; justify-content:center; gap: 14px; flex-wrap:wrap;
+}
+.loop-node{
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px;
+  padding: 20px 24px; min-width: 150px;
+}
+.loop-node .tag{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-low); text-transform:uppercase; letter-spacing:0.08em; }
+.loop-node .name{ font-family:'Space Grotesk', sans-serif; font-size: 15px; font-weight:600; margin-top:6px; }
+.loop-arrow{ color: var(--accent); font-size: 20px; }
+.loop-note{ margin-top: 34px; font-size: 13.5px; color: var(--text-low); font-family:'JetBrains Mono', monospace; }
+
+@media (max-width: 760px){
+  .page-head{ padding: 150px 0 40px; }
+  .loop-diagram{ flex-direction:column; }
+  .loop-arrow{ transform: rotate(90deg); }
+}

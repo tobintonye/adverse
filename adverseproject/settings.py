@@ -250,6 +250,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "payments.tasks.sync_all_subaccounts",
         "schedule": crontab(hour=2, minute=0), # 2:00am
     },
+
+    "expire-unconfirmed-approvals": {
+    "task": "scheduling.tasks.expire_unconfirmed_approvals",
+    "schedule": crontab(hour=0, minute=20),  # daily, staggered from your other midnight tasks
+    },
 }
 
 # CACHE CONFIGURATION 

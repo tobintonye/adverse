@@ -1,6 +1,6 @@
 from django.db import transaction
 import logging
-from scheduling.models import generate_schedule
+from scheduling.models import generate_schedule, ScheduleGenerationError
 from .tasks import _notify_campaign_approved, _notify_campaign_rejected, _notify_forwarded_to_manager, _notify_campaign_submitted, _notify_campaign_completed
 # from payments.models import process_campaign_payment
 
@@ -9,41 +9,54 @@ logger = logging.getLogger("advertiser.services")
 @transaction.atomic
 def approve_campaign_by_manager(campaign, manager_user):
     """
-        Single entry point for ad manager campaign approval.
-        
-        What happens here (all visible, all intentional):
-        1. Campaign status → APPROVED
-        2. Media status    → FULLY_APPROVED  
-        3. Payment         → deducted from advertiser, credited to ad manager
-        4. Schedule        → TimeSlots generated for every day of campaign
-        5. Notification    → queued via Celery (non-blocking)
-        
-        Everything runs in one transaction.
-        If anything fails, the entire approval is rolled back.
+    Single entry point for ad manager campaign approval.
+
+    What happens here:
+    1. Campaign status → APPROVED, approved_at stamped (starts 7-day expiry clock)
+    2. Media status    → FULLY_APPROVED
+    3. Notification    → advertiser told to pick real dates next
+
+    Scheduling (TimeSlot generation) does NOT happen here anymore — it only
+    happens once the advertiser confirms real calendar dates via
+    confirm_campaign_dates(), since dates aren't known at approval time.
     """
     campaign.manager_approve(manager_user)
-
-    # If advertiser has insufficient funds, this raises and rolls back
-    # payment = process_campaign_payment(campaign)
-    slots_created, slots_skipped = generate_schedule(campaign)
-
-    if slots_skipped > 0:
-        logger.warning(
-            f"Campaign {campaign.id} approved but {slots_skipped} slots "
-            f"skipped due to billboard capacity."
-        )
 
     # queue notifications (outside transaction is fine,
     # Celery task runs after commit so campaign is visible in DB)
     _notify_campaign_approved.delay(str(campaign.id))
 
     return {
-    "campaign_id":   str(campaign.id),
-    "status":        campaign.status,
-    # "payment_total": payment.total_amount,
-    "slots_created": slots_created,
-    "slots_skipped": slots_skipped,
+    "campaign_id": str(campaign.id),
+    "status": campaign.status,
 }
+
+@transaction.atomic
+def confirm_campaign_dates(campaign, start_date):
+    """
+    Called when the advertiser picks a start date after approval.
+    end_date is derived from campaign.duration_days automatically.
+
+    Atomic: if capacity check fails anywhere in the range, the date
+    assignment itself is rolled back too the campaign stays APPROVED
+    with no dates set, so the advertiser can simply try a different range.
+    """
+    campaign.confirm_dates(start_date)
+    try:
+        slots_created = generate_schedule(campaign)
+    except ScheduleGenerationError as e:
+        raise
+    
+    logger.info(
+        "Campaign %s dates confirmed: %s — %s (%d slots created)",
+        campaign.id, campaign.start_date, campaign.end_date, slots_created,
+    )
+    return {
+        "campaign_id": str(campaign.id),
+        "start_date": campaign.start_date,
+        "end_date": campaign.end_date,
+        "slots_created": slots_created,
+    }
 
 @transaction.atomic
 def reject_campaign(campaign, reviewer, reason):
@@ -58,7 +71,7 @@ def reject_campaign(campaign, reviewer, reason):
 @transaction.atomic  
 def admin_forward_campaign(campaign, admin_user):
     """
-    Global Tech Admin forwards campaign to ad manager for review.
+    Global Tech Admin forwards campaign to ad managsser for review.
     PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW
     """
     campaign.admin_forward_to_manager(admin_user)

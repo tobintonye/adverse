@@ -1,6 +1,6 @@
 <div id="campaign-table-container">
 
-
+{# Results count  #}
 {% if search_query or selected_status %}
 <p class="text-xs text-base-content/50 mb-4">
     {{ page_obj.paginator.count }} campaign{{ page_obj.paginator.count|pluralize }} found.
@@ -55,10 +55,17 @@
                         {{ campaign.advertiser.business_name }}
                     </td>
                     <td class="px-6 py-4 align-middle">
+                        {% if campaign.start_date and campaign.end_date %}
                         <div class="flex flex-col">
                             <span class="font-medium text-xs">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
                             <span class="text-base-content/50 text-xs mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
+                        {% else %}
+                        <div class="flex flex-col">
+                            <span class="font-medium text-xs text-base-content/40">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }} · dates pending</span>
+                            <span class="text-base-content/50 text-xs mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                        </div>
+                        {% endif %}
                     </td>
                     <td class="px-6 py-4 align-middle font-mono font-medium">
                         ₦{{ campaign.budget|floatformat:2 }}
@@ -83,6 +90,11 @@
                             <span class="badge badge-info badge-sm gap-1">
                                 <span class="w-1.5 h-1.5 rounded-full bg-info"></span>
                                 Completed
+                            </span>
+                        {% elif campaign.status == 'approval_expired' %}
+                            <span class="badge badge-error badge-outline badge-sm gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                Approval Expired
                             </span>
                         {% elif campaign.status == 'rejected' %}
                             <span class="badge badge-error badge-sm gap-1">
@@ -116,6 +128,8 @@
             </tbody>
         </table>
     </div>
+
+    {#  Pagination controls  #}
     {% if page_obj.paginator.num_pages > 1 %}
     <div class="flex items-center justify-between px-6 py-4 border-t border-base-300">
         <p class="text-xs text-base-content/40">
@@ -143,7 +157,8 @@
                 Prev
             </button>
             {% endif %}
-            
+
+            {# Page number buttons — show a small window around current page #}
             {% for num in page_obj.paginator.page_range %}
                 {% if num == page_obj.number %}
                     <span class="btn btn-primary btn-xs pointer-events-none">{{ num }}</span>

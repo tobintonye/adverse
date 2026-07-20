@@ -1,0 +1,99 @@
+{% extends "advertiser/base.html" %}
+{% block title %}Select Dates — {{ campaign.name }}{% endblock %}
+{% block page_title %}Select your campaign dates{% endblock %}
+{% block page_description %}Choose when '{{ campaign.name }}' goes live.{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'advertiser:campaign_list' %}" class="text-base-content/50 hover:text-base-content transition text-xs">Campaigns</a>
+<span class="text-base-content/30 text-xs">/</span>
+<a href="{% url 'advertiser:campaign_detail' campaign.pk %}" class="text-base-content/50 hover:text-base-content transition text-xs">{{ campaign.name }}</a>
+<span class="text-base-content/30 text-xs">/</span>
+<span class="text-base-content text-xs">Select dates</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <div class="alert alert-info text-sm">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>
+            Your campaign runs for <strong>{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</strong>.
+            Pick a start date — your end date is calculated automatically.
+        </span>
+    </div>
+
+    <div class="card bg-base-200 border border-base-300">
+        <div class="card-body p-6">
+            <h3 class="text-sm font-bold mb-4">Next 30 days availability</h3>
+            <p class="text-xs text-base-content/50 mb-4">
+                Green days have capacity on your billboard. This is a guide only —
+                your full {{ campaign.duration_days }}-day range is checked when you submit.
+            </p>
+
+            <div class="grid grid-cols-6 sm:grid-cols-10 gap-1.5 mb-6">
+                {% for day in preview_days %}
+                <div class="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium
+                    {% if day.available %}bg-success/15 text-success border border-success/30
+                    {% else %}bg-error/10 text-error/50 border border-error/20{% endif %}"
+                    title="{{ day.date|date:'M d, Y' }}">
+                    {{ day.date|date:"j" }}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex items-center gap-4 mb-6 text-xs text-base-content/50">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-success/15 border border-success/30"></span>
+                    Available
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-error/10 border border-error/20"></span>
+                    Unavailable
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-control mb-4">
+                    <label class="label pb-1">
+                        <span class="label-text text-xs font-medium">Start date <span class="text-error">*</span></span>
+                    </label>
+                    <input type="date" name="start_date" min="{{ min_date }}"
+                           class="input input-bordered input-sm w-full" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm w-full gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Confirm dates
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg-base-200 border border-base-300">
+        <div class="card-body p-5">
+            <h3 class="text-xs font-bold uppercase tracking-wider mb-3">Campaign details</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Duration</p>
+                    <p class="font-medium">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Daily hours</p>
+                    <p class="font-medium font-mono">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
+                </div>
+                {% for slot in slots %}
+                <div class="col-span-2">
+                    <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Billboard</p>
+                    <p class="font-medium">{{ slot.billboard.name }} — {{ slot.slots_per_day }} slot{{ slot.slots_per_day|pluralize }}/day</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

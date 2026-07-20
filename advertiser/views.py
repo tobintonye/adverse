@@ -6,6 +6,7 @@ from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 from datetime import timedelta
+from datetime import datetime
 import json
 from .forms import AdvertiserProfileForm, MediaUploadForm, CampaignForm
 from advertiser.decorators import advertiser_required
@@ -379,17 +380,116 @@ class _BillboardChoiceField:
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
+    
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_select_dates(request, pk):
+    """
+    GET  — shows a 30-day availability preview for the campaign's billboard(s)
+           and a start-date picker (duration_days is fixed; end_date is derived).
+    POST — confirms the dates via confirm_campaign_dates(), which does the real
+           all-or-nothing capacity check across the FULL date range and creates
+           TimeSlots. The calendar preview below is a guide only — the actual
+           enforcement happens server-side on submit.
+    """
+    
+    from advertiser.services import confirm_campaign_dates
+    from scheduling.models import ScheduleGenerationError
+   
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign.objects.prefetch_related("campaign_slots__billboard__capacity"),pk=pk, advertiser=advertiser,)
+    if campaign.status == Campaign.Status.APPROVAL_EXPIRED:
+        messages.error(request, "This campaign's approval window has expired. Please resubmit for review.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    if campaign.status != Campaign.Status.APPROVED:
+        messages.info(request, "This campaign doesn't need date selection right now.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+           
+    if campaign.start_date:
+        messages.info(request, "Dates have already been confirmed for this campaign.")
+        return redirect("advertiser:campaign_detail", pk=pk)
+    
+    today = timezone.now().date() # current date
 
-# rerun campaign if completed 
+    if request.method == "POST":
+        start_date_str = request.POST.get("start_date", "").strip()
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "Please select a valid start date.")
+            return redirect("advertiser:campaign_select_dates", pk=pk)
+
+        try:
+            confirm_campaign_dates(campaign, start_date=start_date)
+            messages.success(
+                request,
+                f"Dates confirmed: {campaign.start_date.strftime('%b %d')} — "
+                f"{campaign.end_date.strftime('%b %d, %Y')}. Proceed to payment below."
+            )
+            return redirect("advertiser:campaign_detail", pk=pk)
+        except ScheduleGenerationError as e:
+            conflict_dates = sorted(set(d.strftime("%b %d") for _, d in e.conflicts))
+            messages.error(
+                request,
+                f"{e} Unavailable dates: {', '.join(conflict_dates[:8])}"
+                + ("..." if len(conflict_dates) > 8 else "")
+            )
+        except ValidationError as e:
+            messages.error(request, e.message if hasattr(e, "message") else str(e))
+
+    # Build 30-day single-day availability preview 
+    # NOTE: this shows per-day capacity as a guide only. A day marked "available" here doesn't guarantee the FULL duration_days range
+    # starting there is free — that's verified server-side on submit.
+    preview_days = []
+    slots = list(campaign.campaign_slots.select_related("billboard__capacity").all())
+    for i in range(30):
+        day = today + timedelta(days=i + 1)  # start from tomorrow
+        day_ok = True
+        for cs in slots:
+            try:
+                available = cs.billboard.capacity.available_slots_on(day)
+            except Exception:
+                available = 0
+            if available < cs.slots_per_day:
+                day_ok = False
+                break
+        preview_days.append({"date": day, "available": day_ok})
+
+    return render(request, "advertiser/campaign_select_dates.html", {
+        "campaign": campaign,
+        "slots": slots,
+        "preview_days": preview_days,
+        "min_date": (today + timedelta(days=1)).strftime("%Y-%m-%d"),
+    })
+
 @login_required(login_url="security:login")
 @advertiser_required
 def campaign_run_again(request, pk):
+    """
+    POST /advertiser/campaigns/<pk>/run-again/
+
+    Creates a new DRAFT campaign copying media, billboard, duration, daily
+    hours, and budget from a completed campaign. Dates are NEVER copied 
+    they don't exist on the new draft. It goes through the full approval +
+    date-selection flow again, exactly like any new campaign.
+
+    Daily hours are clamped to fit the billboard's CURRENT operating hours,
+    since those can change between when the original campaign ran and now.
+    If there's no overlap at all, the advertiser is told to create a fresh
+    campaign with new hours instead.
+    """
     if request.method != "POST":
         return redirect("advertiser:campaign_detail", pk=pk)
-    advertiser = _get_advertiser(request)
-    original = get_object_or_404(Campaign.objects.prefetch_related("campaign_slots__billboard"), pk=pk, advertiser=advertiser)
 
-    # Guard — only completed campaigns can be re-run
+    advertiser = _get_advertiser(request)
+    original = get_object_or_404(
+        Campaign.objects.prefetch_related("campaign_slots__billboard"),
+        pk=pk,
+        advertiser=advertiser,
+    )
+
+    # Guard only completed campaigns can be re-run
     if original.status != Campaign.Status.COMPLETED:
         messages.error(request, "Only completed campaigns can be run again.")
         return redirect("advertiser:campaign_detail", pk=pk)
@@ -397,36 +497,69 @@ def campaign_run_again(request, pk):
     # Get the original billboard slot
     original_slot = original.campaign_slots.select_related("billboard").first()
     if not original_slot:
-        messages.error(request, "Cannot re-run this campaign — no billboard slot found." )
+        messages.error(
+            request, "Cannot re-run this campaign — no billboard slot found."
+        )
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
     billboard = original_slot.billboard
 
     # Check billboard is still available
     if billboard.availability != billboard.Availability.AVAILABLE:
-        messages.error(request, f"'{billboard.name}' is no longer available." "Please create a new campaign and select a different billboard.")
+        messages.error(
+            request,
+            f"'{billboard.name}' is no longer available. "
+            "Please create a new campaign and select a different billboard."
+        )
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
+    # Check media is still approved
+    if original.media and original.media.status not in (
+        original.media.Status.ADMIN_APPROVED,
+        original.media.Status.FULLY_APPROVED,
+    ):
+        messages.error(
+            request,
+            f"The media '{original.media.title}' is no longer approved. "
+            "Please create a new campaign and select approved media."
+        )
+        return redirect("advertiser:campaign_detail", pk=pk)
+
+    bb_start = billboard.operating_hours_start
+    bb_end = billboard.operating_hours_end
+
+    daily_start = max(original.daily_start_time, bb_start)
+    daily_end = min(original.daily_end_time, bb_end)
+
+    if daily_start >= daily_end:
+        messages.error(
+            request,
+            f"'{billboard.name}''s operating hours have changed "
+            f"({bb_start.strftime('%I:%M %p')}–{bb_end.strftime('%I:%M %p')}) "
+            f"and no longer overlap with this campaign's original schedule "
+            f"({original.daily_start_time.strftime('%I:%M %p')}–"
+            f"{original.daily_end_time.strftime('%I:%M %p')}). "
+            "Please create a new campaign with fresh daily hours."
+        )
+        return redirect("advertiser:campaign_detail", pk=pk)
+
+    hours_were_clamped = (
+        daily_start != original.daily_start_time
+        or daily_end != original.daily_end_time
+    )
+
     try:
         with transaction.atomic():
-            # Validate media is still approved
-            if original.media and original.media.status != original.media.Status.FULLY_APPROVED:
-                messages.error(request, f"The media '{original.media.title}' is no longer approved." "Please create a new campaign and select approved media.")
-                return redirect("advertiser:campaign_detail", pk=pk)
-
-            # Create new draft — direct ORM, bypasses CampaignForm validation
             new_campaign = Campaign(
-            advertiser=advertiser,
-            name=original.name,
-            media=original.media,
-            start_date=None,   # ← was original.start_date
-            end_date=None,     # ← was original.end_date
-            daily_start_time=original.daily_start_time,
-            daily_end_time=original.daily_end_time,
-            budget=original.budget,
-            status=Campaign.Status.DRAFT,
-        )
-            # Save without full_clean() to bypass form-level media choice validation
+                advertiser=advertiser,
+                name=original.name,
+                media=original.media,
+                duration_days=original.duration_days,
+                daily_start_time=daily_start,
+                daily_end_time=daily_end,
+                budget=original.budget,
+                status=Campaign.Status.DRAFT,
+            )
             new_campaign.save()
 
             CampaignSlot.objects.create(
@@ -436,8 +569,25 @@ def campaign_run_again(request, pk):
             )
             new_campaign.sync_estimated_price()
 
-        messages.info(request, f"New draft created from '{original.name}'." "Update the dates and submit when you're ready.")
-        return redirect("advertiser:campaign_edit", pk=new_campaign.pk)
+        if hours_were_clamped:
+            messages.warning(
+                request,
+                f"New draft created from '{original.name}'. Note: "
+                f"'{billboard.name}''s operating hours have changed, so your "
+                f"daily window was adjusted to "
+                f"{daily_start.strftime('%I:%M %p')}–{daily_end.strftime('%I:%M %p')} "
+                f"to fit. Review before submitting."
+            )
+        else:
+            messages.info(
+                request,
+                f"New draft created from '{original.name}'. Submit it for "
+                "review when you're ready — you'll pick fresh dates once "
+                "it's approved."
+            )
+
+        return redirect("advertiser:campaign_detail", pk=new_campaign.pk)
+
     except Exception as e:
         messages.error(request, f"Could not create campaign: {e}")
         return redirect("advertiser:campaign_detail", pk=pk)
@@ -496,6 +646,7 @@ def campaign_edit(request, pk):
         "billboards_json": _build_billboards_json(available_billboards),
         "preselected_billboard": initial_billboard_pk,
         "initial_slots_per_day": initial_slots_per_day,
+        "is_edit": True,
     }
     return render(request, "advertiser/campaign_create.html", context)
 
@@ -622,29 +773,43 @@ def advertiser_settings(request):
 def campaign_pay(request, pk):
     """
     POST /advertiser/campaigns/<pk>/pay/
- 
-    Initiates a Paystack payment for an APPROVED campaign.
-    Creates a CampaignPayment record (PENDING) then redirects the
+
+    Initiates a Paystack payment for an APPROVED campaign that has confirmed
+    dates. Creates a CampaignPayment record (PENDING) then redirects the
     advertiser to Paystack's hosted checkout page.
- 
+
     On return from Paystack, the advertiser lands back on campaign_detail.
     The actual mark_completed() happens via the Paystack webhook — NOT here.
- 
+
     Guards:
     - Campaign must belong to this advertiser
     - Campaign must be APPROVED
+    - Campaign must have confirmed dates (start_date set) — this is the
+      guard that closes the original bug: an advertiser could otherwise
+      reach payment for a campaign whose dates had gone stale during
+      approval, or that never had dates confirmed at all. Since dates are
+      now decoupled from approval (chosen only via campaign_select_dates,
+      which runs the full capacity check before setting start_date), this
+      check guarantees payment can never happen without a valid, checked
+      schedule already in place.
     - No active PENDING or COMPLETED payment already exists
     """
     if request.method != "POST":
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
     advertiser = _get_advertiser(request)
-    campaign = get_object_or_404(Campaign.objects.select_related("advertiser", "payment"), pk=pk, advertiser=advertiser)
+    campaign = get_object_or_404(
+        Campaign.objects.select_related("advertiser", "payment"), pk=pk, advertiser=advertiser
+    )
 
     if campaign.status != Campaign.Status.APPROVED:
         messages.error(request, "Only approved campaigns can be paid for.")
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
+    if not campaign.start_date:
+        messages.error(request, "Please select your campaign dates before paying.")
+        return redirect("advertiser:campaign_select_dates", pk=pk)
+
     try:
         from payments.services import initialize_campaign_payment
         paystack_data = initialize_campaign_payment(campaign)
@@ -652,11 +817,11 @@ def campaign_pay(request, pk):
     except ValidationError as e:
         messages.error(request, str(e))
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
     authorization_url = paystack_data.get("authorization_url")
     if not authorization_url:
         messages.error(request, "Could not initialize payment. Please try again.")
         return redirect("advertiser:campaign_detail", pk=pk)
-    
+
     # Redirect advertiser to Paystack's hosted checkout
     return redirect(authorization_url)
