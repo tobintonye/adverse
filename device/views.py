@@ -243,7 +243,6 @@ def device_pair(request):
     }
     return render(request, "adManager/device_pair.html", context)
 
-
 @login_required(login_url='security:login')
 @ad_manager_required
 def device_detail(request, pk):

@@ -1,17 +1,11 @@
 {% extends "adManager/base.html" %}
-{% block title %}Campaign Requests{% endblock %}
-{% block page_description %}Review and manage campaign scheduling requests from advertisers.{% endblock %}
-{% block breadcrumbs %}
-<nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span class="font-semibold truncate">Campaign Requests</span>
-</nav>
-{% endblock %}
-{% block content %}
+{% load static %}
 
+{% block title %}Campaign Requests{% endblock %}
+{% block page_title %}Campaign Requests{% endblock %}
+{% block page_description %}Review and manage campaign scheduling requests from advertisers.{% endblock %}
+
+{% block content %}
 <form hx-get="{% url 'admanager:campaign_requests' %}"
       hx-target="#campaign-table-container"
       hx-swap="outerHTML"
@@ -19,15 +13,17 @@
       hx-trigger="submit, change from:#status-select"
       class="mb-6">
     <div class="flex flex-wrap items-end gap-3">
-        <div class="form-control flex-1 min-w-[220px] max-w-md">
-            <label class="label py-0.5">
-                <span class="label-text text-xs text-base-content/60">Search campaigns</span>
+        
+        {# Search Input #}
+        <div class="flex-1 min-w-[240px] max-w-md space-y-1.5">
+            <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
+                Search campaigns
             </label>
             <div class="relative">
                 <input type="text" name="search" value="{{ search_query }}"
                        placeholder="Search by name, advertiser, or media…"
-                       class="input input-bordered input-sm w-full pl-8">
-                <svg class="w-3.5 h-3.5 text-base-content/40 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                       class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 pl-9 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition">
+                <svg class="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
@@ -35,39 +31,41 @@
             </div>
         </div>
 
-        <div class="form-control w-40">
-            <label class="label py-0.5">
-                <span class="label-text text-xs text-base-content/60">Status</span>
+        {# Status Dropdown #}
+        <div class="w-44 space-y-1.5">
+            <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
+                Status
             </label>
-            <select name="status" id="status-select" class="select select-bordered select-sm">
-                <option value="">All statuses</option>
-                <option value="pending_manager_review" {% if selected_status == 'pending_manager_review' %}selected{% endif %}>Pending Review</option>
-                <option value="approved"  {% if selected_status == 'approved'  %}selected{% endif %}>Approved</option>
-                <option value="active"    {% if selected_status == 'active'    %}selected{% endif %}>Active</option>
-                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
-                <option value="rejected"  {% if selected_status == 'rejected'  %}selected{% endif %}>Rejected</option>
-                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                <option value="paused"    {% if selected_status == 'paused'    %}selected{% endif %}>Paused</option>
+            <select name="status" id="status-select" 
+                    class="w-full h-[34px] bg-black/40 border border-white/10 rounded-xl px-3 text-xs text-white focus:outline-none focus:border-white/30 transition cursor-pointer">
+                <option value="" class="bg-zinc-900 text-white">All statuses</option>
+                <option value="pending_manager_review" {% if selected_status == 'pending_manager_review' %}selected{% endif %} class="bg-zinc-900 text-white">Pending Review</option>
+                <option value="approved"  {% if selected_status == 'approved'  %}selected{% endif %} class="bg-zinc-900 text-white">Approved</option>
+                <option value="active"    {% if selected_status == 'active'    %}selected{% endif %} class="bg-zinc-900 text-white">Active</option>
+                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %} class="bg-zinc-900 text-white">Completed</option>
+                <option value="rejected"  {% if selected_status == 'rejected'  %}selected{% endif %} class="bg-zinc-900 text-white">Rejected</option>
+                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %} class="bg-zinc-900 text-white">Cancelled</option>
+                <option value="paused"    {% if selected_status == 'paused'    %}selected{% endif %} class="bg-zinc-900 text-white">Paused</option>
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-sm">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {# Subtle Submit Button #}
+        <button type="submit" class="h-[34px] px-4 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-medium text-xs rounded-xl transition flex items-center gap-1.5 shrink-0">
+            <svg class="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
             </svg>
+            <span>Search</span>
         </button>
 
+        {# Clear Filter Button #}
         {% if search_query or selected_status %}
-        <div class="form-control">
-            <label class="label py-0.5"><span class="label-text opacity-0"> </span></label>
-            <a href="{% url 'admanager:campaign_requests' %}"
-               class="btn btn-ghost btn-sm text-base-content/60 hover:text-base-content">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                Clear
-            </a>
-        </div>
+        <a href="{% url 'admanager:campaign_requests' %}"
+           class="h-[34px] px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-medium text-white/60 hover:text-white flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span>Clear</span>
+        </a>
         {% endif %}
     </div>
 </form>

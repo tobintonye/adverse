@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.core.mail import send_mail
-from django.conf import settings
+from adverseproject.emails import send_adverse_email
 from .forms import ContactForm
 
 
 def home(request):
-    return render (request, 'adverse/home.html')
+    return render(request, 'adverse/home.html')
 
 def about(request):
     return render(request, 'adverse/about.html')
@@ -19,25 +18,34 @@ def contact(request):
         form = ContactForm(request.POST)
         if form.is_valid():
             contact_msg = form.save()
-    
-            subject = f"[Advers Contact] New message from {contact_msg.name} ({contact_msg.role})"
-            body = (
-                f"Name: {contact_msg.name}\n"
-                f"Email: {contact_msg.email}\n"
-                f"Role: {contact_msg.role}\n\n"
-                f"Message:\n{contact_msg.message}"
+
+            context = {
+                "contact_name": contact_msg.name,
+                "contact_email": contact_msg.email,
+                "contact_role": contact_msg.role,
+                "contact_message": contact_msg.message,
+            }
+
+            send_adverse_email(
+                template="contact_message",
+                to="teetobin31@gmail.com", # to be changed
+                context=context,
+                subject_prefix=f"[AdVers Contact - {contact_msg.role}]"
             )
 
-            try:
-                send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, ['teetobin31@gmail.com'], fail_silently=True,)        # email to be changed 
-            except Exception as e:
-                pass
+            if request.headers.get('HX-Request'):
+                return render(request, 'adverse/partials/contact_success.html')
+            
             messages.success(request, "Thank you! Your message has been received. We'll get back to you shortly.")
             return redirect('adverse:contact')
         else:
             messages.error(request, "There was an error with your submission. Please check the fields below.")
+
+            if request.headers.get('HX-Request'):
+                return render(request, 'adverse/contact.html', {'form': form})
+            
+            return redirect('adverse:contact')
     else:
         form = ContactForm()
-
+        
     return render(request, 'adverse/contact.html', {'form': form})
-    

@@ -1,17 +1,9 @@
 {% extends "adManager/base.html" %}
 
 {% block title %}Settings{% endblock %}
-
-{% block page_description %}Manage your business profile, bank accounts, and account security.{% endblock %}
-
-{% block breadcrumbs %}
-<nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span class="font-semibold truncate">Settings</span>
-</nav>
+{% block page_title %}Settings{% endblock %}
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Manage your business profile, bank accounts, and account security.</p>
 {% endblock %}
 
 {% block page_container_class %}max-w-5xl mx-auto{% endblock %}
@@ -19,140 +11,185 @@
 {% block content %}
 <div class="space-y-6">
 
-    {# ── Tab Nav ──────────────────────────────────────────────────── #}
-    <div role="tablist" class="tabs tabs-border">
-        <input type="radio" name="settings_tabs" role="tab" class="tab font-semibold"
-               aria-label="Business Info"
-               {% if active_tab == 'business' %}checked{% endif %} />
-        <div class="tab-content">
-        <div class="card card-border bg-base-200 border-base-300">
-            <div class="card-body">
-                <h2 class="card-title gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                    </div>
-                    <div>
-                        Business Information
-                        <p class="text-sm text-base-content/50 font-normal">Keep your business details up to date</p>
-                    </div>
-                </h2>
+    <!-- Tab Navigation -->
+    <div class="border-b border-white/10 flex gap-6">
+        <button type="button" 
+                id="tab-btn-business"
+                onclick="switchTab('business')"
+                class="pb-3 text-sm font-semibold border-b-2 transition-colors duration-150 flex items-center gap-2 {% if active_tab != 'bank' %}border-blue-500 text-white{% else %}border-transparent text-white/50 hover:text-white/80{% endif %}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            Business Info
+        </button>
+        <button type="button" 
+                id="tab-btn-bank"
+                onclick="switchTab('bank')"
+                class="pb-3 text-sm font-semibold border-b-2 transition-colors duration-150 flex items-center gap-2 {% if active_tab == 'bank' %}border-blue-500 text-white{% else %}border-transparent text-white/50 hover:text-white/80{% endif %}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            Bank Details
+        </button>
+    </div>
 
-                <form method="post" action="{% url 'admanager:settings' %}" class="space-y-5 mt-4">
-                    {% csrf_token %}
-
-                    {# Messages #}
-                    {% for msg in messages %}
-                    <div class="alert {% if msg.tags == 'success' %}alert-success{% elif msg.tags == 'error' %}alert-error{% else %}alert-info{% endif %} text-sm">
-                        {{ msg }}
-                    </div>
-                    {% endfor %}
-
-                    {# Business Name + Type #}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Business Name</legend>
-                            <input name="business_name" type="text" class="input w-full" value="{{ form.business_name.value|default:'' }}" placeholder="e.g. Acme Media Group" required>
-                            {% if form.business_name.errors %}<p class="text-error text-xs mt-1">{{ form.business_name.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Business Type</legend>
-                            <select name="business_type" class="select w-full">
-                                {% for val, label in form.fields.business_type.choices %}
-                                <option value="{{ val }}" {% if form.business_type.value == val %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </fieldset>
-                    </div>
-
-                    {# Reg No + Tax ID #}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Company Registration No.</legend>
-                            <input name="company_registration_number" type="text" class="input w-full" value="{{ form.company_registration_number.value|default:'' }}" placeholder="CAC number (if company)">
-                            {% if form.company_registration_number.errors %}<p class="text-error text-xs mt-1">{{ form.company_registration_number.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Tax Identification No.</legend>
-                            <input name="tax_identification_number" type="text" class="input w-full" value="{{ form.tax_identification_number.value|default:'' }}" placeholder="TIN (optional)">
-                        </fieldset>
-                    </div>
-
-                    {# Email + Phone #}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Business Email</legend>
-                            <input name="business_email" type="email" class="input w-full" value="{{ form.business_email.value|default:'' }}" placeholder="business@example.com" required>
-                            {% if form.business_email.errors %}<p class="text-error text-xs mt-1">{{ form.business_email.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Business Phone</legend>
-                            <input name="business_phone" type="text" class="input w-full" value="{{ form.business_phone.value|default:'' }}" placeholder="e.g. 08012345678" required>
-                            {% if form.business_phone.errors %}<p class="text-error text-xs mt-1">{{ form.business_phone.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                    </div>
-
-                    {# Website #}
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Website <span class="text-base-content/30 font-normal">(optional)</span></legend>
-                        <input name="website" type="url" class="input w-full" value="{{ form.website.value|default:'' }}" placeholder="https://yoursite.com">
-                    </fieldset>
-
-                    {# Address #}
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Address</legend>
-                        <textarea name="address" rows="2" class="textarea w-full resize-none" placeholder="Full business address...">{{ form.address.value|default:'' }}</textarea>
-                        {% if form.address.errors %}<p class="text-error text-xs mt-1">{{ form.address.errors.0 }}</p>{% endif %}
-                    </fieldset>
-
-                    {# City + State + Country #}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">City</legend>
-                            <input name="city" type="text" class="input w-full" value="{{ form.city.value|default:'' }}" placeholder="Lagos" required>
-                            {% if form.city.errors %}<p class="text-error text-xs mt-1">{{ form.city.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">State</legend>
-                            <input name="state" type="text" class="input w-full" value="{{ form.state.value|default:'' }}" placeholder="Lagos State" required>
-                            {% if form.state.errors %}<p class="text-error text-xs mt-1">{{ form.state.errors.0 }}</p>{% endif %}
-                        </fieldset>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Country</legend>
-                            <input name="country" type="text" class="input w-full" value="{{ form.country.value|default:'' }}" placeholder="Nigeria" required>
-                        </fieldset>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-2 border-t border-base-300/60">
-                        <p class="text-xs text-base-content/40">Changes take effect immediately.</p>
-                        <button type="submit" name="save_business" value="1" class="btn btn-primary gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Save Changes
-                        </button>
-                    </div>
-                </form>
+    <!-- Business Tab Content -->
+    <div id="tab-content-business" class="space-y-6 {% if active_tab == 'bank' %}hidden{% endif %}">
+        
+        <!-- Business Information Panel -->
+        <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+            <div class="flex items-center gap-3 pb-5 border-b border-white/10">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-white">Business Information</h2>
+                    <p class="text-xs text-white/50 mt-0.5">Keep your business details up to date</p>
+                </div>
             </div>
+
+            <form method="post" action="{% url 'admanager:settings' %}" class="space-y-4 mt-5">
+                {% csrf_token %}
+
+                <!-- Django Messages -->
+                {% for msg in messages %}
+                <div class="p-3.5 rounded-lg text-xs font-medium flex items-center gap-2.5 
+                    {% if msg.tags == 'success' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+                    {% elif msg.tags == 'error' %}bg-rose-500/10 text-rose-400 border border-rose-500/20
+                    {% else %}bg-sky-500/10 text-sky-400 border border-sky-500/20{% endif %}">
+                    <span>{{ msg }}</span>
+                </div>
+                {% endfor %}
+
+                <!-- Business Name + Type -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Business Name</label>
+                        <input name="business_name" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.business_name.value|default:'' }}" placeholder="e.g. Acme Media Group" required>
+                        {% if form.business_name.errors %}<p class="text-rose-400 text-xs">{{ form.business_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Business Type</label>
+                        <select name="business_type" class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500/60 transition cursor-pointer">
+                            {% for val, label in form.fields.business_type.choices %}
+                            <option value="{{ val }}" class="bg-[#121212] text-white" {% if form.business_type.value == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Reg No + Tax ID -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Company Registration No.</label>
+                        <input name="company_registration_number" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.company_registration_number.value|default:'' }}" placeholder="CAC number (if company)">
+                        {% if form.company_registration_number.errors %}<p class="text-rose-400 text-xs">{{ form.company_registration_number.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Tax Identification No.</label>
+                        <input name="tax_identification_number" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.tax_identification_number.value|default:'' }}" placeholder="TIN (optional)">
+                    </div>
+                </div>
+
+                <!-- Email + Phone -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Business Email</label>
+                        <input name="business_email" type="email" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.business_email.value|default:'' }}" placeholder="business@example.com" required>
+                        {% if form.business_email.errors %}<p class="text-rose-400 text-xs">{{ form.business_email.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Business Phone </label>
+                        <input name="business_phone" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.business_phone.value|default:'' }}" placeholder="e.g. 08012345678" required>
+                        {% if form.business_phone.errors %}<p class="text-rose-400 text-xs">{{ form.business_phone.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Website -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-white/70">
+                        Website <span class="text-white/30 font-normal">(optional)</span>
+                    </label>
+                    <input name="website" type="url" 
+                           class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                           value="{{ form.website.value|default:'' }}" placeholder="https://yoursite.com">
+                </div>
+
+                <!-- Address -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-white/70">Address</label>
+                    <textarea name="address" rows="2" 
+                              class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition resize-none" 
+                              placeholder="Full business address...">{{ form.address.value|default:'' }}</textarea>
+                    {% if form.address.errors %}<p class="text-rose-400 text-xs">{{ form.address.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- City + State + Country -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">City</label>
+                        <input name="city" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.city.value|default:'' }}" placeholder="Lagos" required>
+                        {% if form.city.errors %}<p class="text-rose-400 text-xs">{{ form.city.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">State</label>
+                        <input name="state" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.state.value|default:'' }}" placeholder="Lagos State" required>
+                        {% if form.state.errors %}<p class="text-rose-400 text-xs">{{ form.state.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Country</label>
+                        <input name="country" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               value="{{ form.country.value|default:'' }}" placeholder="Nigeria" required>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-white/10 mt-6">
+                    <p class="text-xs text-white/40">Changes take effect immediately.</p>
+                    <button type="submit" name="save_business" value="1" 
+                            class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
 
-        {# Security card #}
-        <div class="card card-border bg-base-200 border-base-300 mt-4">
-            <div class="card-body">
-                <h2 class="card-title gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Security Panel -->
+        <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/60 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                     </div>
                     <div>
-                        Security
-                        <p class="text-sm text-base-content/50 font-normal">Manage your account password</p>
+                        <h2 class="text-base font-bold text-white">Security</h2>
+                        <p class="text-xs text-white/50 mt-0.5">Manage your account password and authentication</p>
                     </div>
-                </h2>
-                <a href="{% url 'security:change_password' %}" class="btn btn-ghost gap-2 mt-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                </div>
+                <a href="{% url 'security:change_password' %}" 
+                   class="px-3.5 py-2 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition flex items-center gap-2">
+                    <svg class="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                     </svg>
                     Change Password
@@ -160,134 +197,156 @@
             </div>
         </div>
     </div>
-        <input type="radio" name="settings_tabs" role="tab" class="tab font-semibold"
-               aria-label="Bank Details"
-               {% if active_tab == 'bank' %}checked{% endif %} />
-        <div class="tab-content">
-        <div class="space-y-4">
 
-            {# Header info #}
-            <div class="alert alert-info text-sm">
-                <p>You can add up to <strong>2 bank accounts</strong>. The <strong>default account</strong> will be used for all withdrawal disbursements.</p>
-            </div>
+    <!-- Bank Tab Content -->
+    <div id="tab-content-bank" class="space-y-4 {% if active_tab != 'bank' %}hidden{% endif %}">
 
-            {# Existing bank account cards #}
-            {% for acct in bank_accounts %}
-            <div class="card bg-base-200 border {% if acct.is_default %}border-success/40 shadow-lg shadow-success/10{% else %}border-base-300{% endif %} rounded-xl">
-                <div class="card-body flex flex-row items-center justify-between gap-4 p-5">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-lg bg-base-300 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-semibold truncate">{{ acct.bank_name }}</p>
-                                {% if acct.is_default %}
-                                <span class="badge badge-success badge-sm gap-1">
-                                    <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                    Default
-                                </span>
-                                {% endif %}
-                            </div>
-                            <p class="text-xs text-base-content/60 truncate">{{ acct.account_name }}</p>
-                            <p class="text-xs text-base-content/50 font-mono">{{ acct.account_number }}</p>
-                        </div>
+        <!-- Header Info Banner -->
+        <div class="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 text-xs text-sky-300 flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 text-sky-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="leading-relaxed">
+                You can add up to <strong class="text-sky-200">2 bank accounts</strong>. The <strong class="text-sky-200">default account</strong> will be used for all withdrawal disbursements.
+            </span>
+        </div>
+
+        <!-- Existing Bank Account Cards -->
+        {% for acct in bank_accounts %}
+        <div class="bg-panel border {% if acct.is_default %}border-blue-500/40 shadow-lg shadow-blue-500/5{% else %}border-white/10{% endif %} rounded-xl p-5">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-white/50">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        {% if not acct.is_default %}
-                        <form method="post" action="{% url 'admanager:bank_account_set_default' acct.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" title="Set as default" class="btn btn-ghost btn-sm text-xs">
-                                Set Default
-                            </button>
-                        </form>
-                        {% endif %}
-                        <form method="post" action="{% url 'admanager:bank_account_delete' acct.pk %}"
-                              onsubmit="return confirm('Remove this bank account?')">
-                            {% csrf_token %}
-                            <button type="submit" title="Remove account" class="btn btn-ghost btn-sm text-error">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-bold text-white truncate">{{ acct.bank_name }}</p>
+                            {% if acct.is_default %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                                <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
-                            </button>
-                        </form>
+                                Default
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-white/60 truncate mt-0.5">{{ acct.account_name }}</p>
+                        <p class="text-xs text-white/40 font-mono mt-0.5">{{ acct.account_number }}</p>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
 
-            {# Add Account Form — only show if < 2 accounts #}
-            {% if bank_accounts|length < 2 %}
-            <div class="card border-2 border-dashed border-base-300 rounded-xl hover:border-primary transition-colors" id="add-account-section">
-                <div class="card-body">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            <h3 class="text-sm font-semibold">Add Bank Account</h3>
-                        </div>
-                    </div>
-
-                    <form method="post" action="#" class="space-y-4">
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    {% if not acct.is_default %}
+                    <form method="post" action="{% url 'admanager:bank_account_set_default' acct.pk %}">
                         {% csrf_token %}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Bank Name</legend>
-                                <input name="bank_name" type="text" class="input w-full" placeholder="e.g. GTBank, Access Bank" required>
-                            </fieldset>
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Account Number</legend>
-                                <input name="account_number" type="text" class="input w-full" placeholder="10-digit account number" maxlength="20" required>
-                            </fieldset>
-                        </div>
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Account Name</legend>
-                            <input name="account_name" type="text" class="input w-full" placeholder="Full name as it appears on the account" required>
-                        </fieldset>
-                        {% if bank_accounts %}
-                        <div class="form-control">
-                            <label class="label cursor-pointer justify-start gap-2">
-                                <input type="checkbox" name="is_default" id="is_default" class="checkbox checkbox-primary">
-                                <span class="label-text text-xs">Set as default account for disbursements</span>
-                            </label>
-                        </div>
-                        {% endif %}
-                        <div class="flex justify-end pt-1">
-                            <button type="submit" class="btn btn-primary gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Add Account
-                            </button>
-                        </div>
+                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition">
+                            Set Default
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'admanager:bank_account_delete' acct.pk %}"
+                          onsubmit="return confirm('Remove this bank account?')">
+                        {% csrf_token %}
+                        <button type="submit" title="Remove account" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
                     </form>
                 </div>
             </div>
-            {% else %}
-            <div class="text-center py-4 text-xs text-base-content/40">
-                Maximum of 2 accounts reached. Remove one to add a new account.
-            </div>
-            {% endif %}
-
         </div>
+        {% endfor %}
+
+        <!-- Add Account Form (if < 2 accounts) -->
+        {% if bank_accounts|length < 2 %}
+        <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl" id="add-account-section">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <h3 class="text-sm font-bold text-white">Add Bank Account</h3>
+            </div>
+
+            <form method="post" action="#" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Bank Name</label>
+                        <input name="bank_name" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               placeholder="e.g. GTBank, Access Bank" required>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-white/70">Account Number</label>
+                        <input name="account_number" type="text" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm font-mono tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               placeholder="10-digit account number" maxlength="20" required>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-white/70">Account Name</label>
+                    <input name="account_name" type="text" 
+                           class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                           placeholder="Full name as it appears on the account" required>
+                </div>
+
+                {% if bank_accounts %}
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" name="is_default" id="is_default" 
+                           class="w-4 h-4 bg-bg border border-white/20 rounded accent-blue-500 cursor-pointer">
+                    <label for="is_default" class="text-xs text-white/70 cursor-pointer select-none">Set as default account for disbursements</label>
+                </div>
+                {% endif %}
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Account
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-xs text-white/40 bg-panel/40 border border-white/5 rounded-xl">
+            Maximum of 2 accounts reached. Remove one to add a new account.
+        </div>
+        {% endif %}
+
     </div>
 </div>
 
-</div>
-
 <script>
-// Handle tab changes to update URL param (daisyUI CSS handles visibility)
-document.querySelectorAll('.tabs input[type="radio"][name="settings_tabs"]').forEach(function(radio) {
-    radio.addEventListener('change', function() {
-        const tab = this.getAttribute('aria-label').toLowerCase().includes('bank') ? 'bank' : 'business';
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tab);
-        window.history.replaceState({}, '', url);
-    });
-});
-</script>
+function switchTab(tab) {
+    const businessContent = document.getElementById('tab-content-business');
+    const bankContent = document.getElementById('tab-content-bank');
+    const businessBtn = document.getElementById('tab-btn-business');
+    const bankBtn = document.getElementById('tab-btn-bank');
 
+    if (tab === 'bank') {
+        businessContent.classList.add('hidden');
+        bankContent.classList.remove('hidden');
+        
+        bankBtn.className = 'pb-3 text-sm font-semibold border-b-2 border-blue-500 text-white transition-colors duration-150 flex items-center gap-2';
+        businessBtn.className = 'pb-3 text-sm font-semibold border-b-2 border-transparent text-white/50 hover:text-white/80 transition-colors duration-150 flex items-center gap-2';
+    } else {
+        bankContent.classList.add('hidden');
+        businessContent.classList.remove('hidden');
+
+        businessBtn.className = 'pb-3 text-sm font-semibold border-b-2 border-blue-500 text-white transition-colors duration-150 flex items-center gap-2';
+        bankBtn.className = 'pb-3 text-sm font-semibold border-b-2 border-transparent text-white/50 hover:text-white/80 transition-colors duration-150 flex items-center gap-2';
+    }
+
+    // Keep URL parameter synchronized
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+}
+</script>
 {% endblock %}

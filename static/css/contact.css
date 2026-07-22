@@ -46,6 +46,92 @@
   box-shadow: 0 0 8px 1px var(--accent-dim);
 }
 
+/* ---------- BUTTON & HTMX LOADING STATE ---------- */
+.form-panel button[type="submit"].btn-primary {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 46px; /* Maintains button height during loading */
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+/* Disabled state when sending */
+.form-panel button[type="submit"].btn-primary:disabled,
+button.htmx-request {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Hide indicator by default */
+.htmx-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show spinner & hide text whether .htmx-request is on the button or form */
+.htmx-request .btn-text,
+button.htmx-request .btn-text {
+  display: none !important;
+}
+
+.htmx-request .htmx-indicator,
+button.htmx-request .htmx-indicator {
+  display: flex !important;
+}
+
+/* Spinner Animation */
+.spinner {
+  animation: spin 0.75s linear infinite;
+  display: block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- SUCCESS CARD STATE ---------- */
+.form-panel.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 32px;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--accent-dim);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.success-state h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin-bottom: 12px;
+}
+
+.success-state p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-mid);
+  max-width: 380px;
+  margin: 0 auto;
+}
+
 @media (max-width: 760px){
   .page-head{ padding: 150px 0 40px; }
   .contact-grid{ grid-template-columns: 1fr; }

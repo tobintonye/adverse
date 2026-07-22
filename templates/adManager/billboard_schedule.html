@@ -1,129 +1,124 @@
 {% extends "adManager/base.html" %}
+{% load static %}
 
 {% block title %}Schedule — {{ billboard.name }}{% endblock %}
+
 {% block page_title %}{{ billboard.name }} Schedule{% endblock %}
 {% block page_description %}What's playing on this screen, and when.{% endblock %}
-
-{% block breadcrumbs %}
-<nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <a href="{% url 'device:billboard_list' %}" class="link link-hover text-base-content/50">Billboards</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span class="font-semibold truncate">{{ billboard.name }}</span>
-</nav>
-{% endblock %}
 
 {% block page_container_class %}max-w-5xl mx-auto{% endblock %}
 
 {% block content %}
+<div class="space-y-6">
 
-{% if not has_capacity_set %}
-<div class="alert alert-warning mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-    </svg>
-    <p class="font-medium">No capacity has been calculated for this billboard yet, so no slots can be scheduled here. Capacity is set automatically from operating hours.</p>
-</div>
-{% endif %}
+    {# Capacity Warning Banner #}
+    {% if not has_capacity_set %}
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 text-amber-400 text-xs">
+        <svg class="w-5 h-5 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="font-medium">No capacity has been calculated for this billboard yet, so no slots can be scheduled here. Capacity is set automatically from operating hours.</p>
+    </div>
+    {% endif %}
 
-
-<div class="card card-border bg-base-200 border-base-300 mb-6">
-    <div class="card-body py-4 flex-row items-center justify-between gap-4">
-        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-ghost btn-sm gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {# Date Controls #}
+    <div class="bg-panel border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-xl">
+        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
-            {{ prev_date|date:"M j" }}
+            <span>{{ prev_date|date:"M j" }}</span>
         </a>
 
         <div class="text-center">
-            <p class="text-sm font-bold">{{ target_date|date:"l, F j, Y" }}</p>
+            <p class="text-sm font-bold text-white tracking-wide">{{ target_date|date:"l, F j, Y" }}</p>
             {% if is_today %}
-                <span class="badge badge-primary badge-xs mt-1">Today</span>
+                <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-accent/10 border border-accent/30 text-accent">Today</span>
             {% endif %}
         </div>
 
-        <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-ghost btn-sm gap-1">
-            {{ next_date|date:"M j" }}
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="?date={{ next_date|date:'Y-m-d' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition">
+            <span>{{ next_date|date:"M j" }}</span>
+            <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
         </a>
     </div>
-</div>
 
-{# ── Capacity summary ──────────────────────────────────────────── #}
-<div class="grid grid-cols-3 gap-4 mb-6">
-    <div class="stat bg-base-200 border border-base-300 rounded-xl">
-        <div class="stat-title text-xs uppercase tracking-widest">Total Capacity</div>
-        <div class="stat-value text-2xl">{{ max_slots_per_day }}</div>
-        <div class="stat-desc text-[10px]">slots/day</div>
-    </div>
-    <div class="stat bg-base-200 border border-base-300 rounded-xl">
-        <div class="stat-title text-xs uppercase tracking-widest">Booked</div>
-        <div class="stat-value text-2xl text-primary">{{ booked_count }}</div>
-        <div class="stat-desc text-[10px]">slots on this date</div>
-    </div>
-    <div class="stat bg-base-200 border border-base-300 rounded-xl">
-        <div class="stat-title text-xs uppercase tracking-widest">Free</div>
-        <div class="stat-value text-2xl text-success">{{ free_count }}</div>
-        <div class="stat-desc text-[10px]">slots still open</div>
-    </div>
-</div>
+    {# Capacity Summary Stats #}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
+            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Total Capacity</p>
+            <div class="text-2xl font-bold text-white font-mono">{{ max_slots_per_day }}</div>
+            <p class="text-[11px] text-white/40 mt-1">slots / day</p>
+        </div>
 
-{# ── Playlist ──────────────────────────────────────────── #}
-{% if time_slots %}
-<div class="card card-border bg-base-200 border-base-300">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-            <thead>
-                <tr class="border-b border-base-300 bg-base-200/50 select-none">
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-16">#</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-20">Creative</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Campaign</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Advertiser</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Duration</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-base-300/60">
-                {% for slot in time_slots %}
-                <tr class="hover:bg-base-300/20 transition-colors">
-                    <td class="px-6 py-3 align-middle font-mono text-base-content/50">{{ slot.play_order }}</td>
-                    <td class="px-6 py-3 align-middle">
-                        {% if slot.campaign.media.file %}
-                            <div class="w-14 h-9 rounded-lg overflow-hidden bg-base-100 border border-base-300 flex items-center justify-center">
-                                {% if slot.campaign.media.media_type == 'video' %}
-                                    <video src="{{ slot.campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                                {% else %}
-                                    <img src="{{ slot.campaign.media.file.url }}" alt="" class="w-full h-full object-cover">
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-3 align-middle font-semibold">{{ slot.campaign.name }}</td>
-                    <td class="px-6 py-3 align-middle text-base-content/70">{{ slot.campaign.advertiser.business_name }}</td>
-                    <td class="px-6 py-3 align-middle font-mono text-xs text-base-content/50">{{ slot.duration_seconds }}s</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% else %}
-<div class="flex flex-col items-center justify-center py-20 text-center bg-base-200/20 border border-base-300 rounded-xl">
-    <div class="w-14 h-14 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-base-content/30 mb-4 shadow-lg">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-        </svg>
-    </div>
-    <p class="font-semibold tracking-tight text-base">Nothing scheduled</p>
-    <p class="text-base-content/50 text-xs mt-1.5 max-w-sm">No campaigns are playing on this billboard for {{ target_date|date:"M j, Y" }}.</p>
-</div>
-{% endif %}
+        <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
+            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Booked</p>
+            <div class="text-2xl font-bold text-accent font-mono">{{ booked_count }}</div>
+            <p class="text-[11px] text-white/40 mt-1">slots on this date</p>
+        </div>
 
+        <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
+            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Free</p>
+            <div class="text-2xl font-bold text-emerald-400 font-mono">{{ free_count }}</div>
+            <p class="text-[11px] text-white/40 mt-1">slots still open</p>
+        </div>
+    </div>
+
+    {# Playlist / Slots Table #}
+    {% if time_slots %}
+    <div class="bg-panel border border-white/10 rounded-xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead>
+                    <tr class="border-b border-white/10 bg-black/30 select-none">
+                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest w-16">#</th>
+                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest w-24">Creative</th>
+                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest">Campaign</th>
+                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest">Advertiser</th>
+                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest text-right">Duration</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for slot in time_slots %}
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/40">{{ slot.play_order }}</td>
+                        <td class="px-6 py-4 align-middle">
+                            {% if slot.campaign.media.file %}
+                                <div class="w-16 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center shrink-0">
+                                    {% if slot.campaign.media.media_type == 'video' %}
+                                        <video src="{{ slot.campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
+                                    {% else %}
+                                        <img src="{{ slot.campaign.media.file.url }}" alt="" class="w-full h-full object-cover">
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="w-16 h-10 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-[10px] text-white/20">
+                                    No media
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 align-middle font-semibold text-white">{{ slot.campaign.name }}</td>
+                        <td class="px-6 py-4 align-middle text-xs text-white/60">{{ slot.campaign.advertiser.business_name }}</td>
+                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/90 text-right">{{ slot.duration_seconds }}s</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-panel border border-white/10 rounded-xl p-16 flex flex-col items-center justify-center text-center shadow-xl">
+        <div class="w-12 h-12 bg-black/40 border border-white/10 rounded-full flex items-center justify-center text-white/30 mb-4 shadow-inner">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <h3 class="text-sm font-bold text-white tracking-tight">Nothing scheduled</h3>
+        <p class="text-xs text-white/40 mt-1 max-w-xs">No campaigns are playing on this billboard for {{ target_date|date:"M j, Y" }}.</p>
+    </div>
+    {% endif %}
+
+</div>
 {% endblock %}

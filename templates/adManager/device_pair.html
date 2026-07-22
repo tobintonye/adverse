@@ -3,80 +3,80 @@
 
 {% block title %}Pair a Device{% endblock %}
 {% block page_title %}Pair a Device{% endblock %}
-{% block page_description %}Connect a physical Android box to one of your billboards.{% endblock %}
-
-{% block breadcrumbs %}
-<nav class="flex items-center gap-1.5 text-sm min-w-0">
-    <a href="{% url 'admanager:dashboard' %}" class="link link-hover text-base-content/50">Dashboard</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <a href="{% url 'device:billboard_list' %}" class="link link-hover text-base-content/50">Billboards</a>
-    <svg class="w-3 h-3 text-base-content/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span class="font-semibold truncate">Pair Device</span>
-</nav>
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Connect a physical Android box to one of your billboards.</p>
 {% endblock %}
 
 {% block page_container_class %}max-w-xl mx-auto{% endblock %}
 
 {% block content %}
 
-<div class="card card-border bg-base-200 border-base-300">
-    <div class="card-body">
+<!-- Pair Device Panel Card -->
+<div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
 
-        <!-- Instructions -->
-        <div class="flex items-start gap-3 mb-6 p-4 bg-base-300/30 border border-base-300/60 rounded-xl">
-            <svg class="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            <div>
-                <p class="text-sm font-semibold">Power on the Android box</p>
-                <p class="text-xs text-base-content/50 mt-1 leading-relaxed">
-                    A pairing code in the format <span class="font-mono text-base-content/70">ABC-1234</span> will appear on screen. Enter it below along with the billboard you want to assign it to.
-                </p>
-            </div>
+    <!-- Instructions Notice -->
+    <div class="flex items-start gap-3 mb-6 p-4 bg-white/5 border border-white/10 rounded-xl">
+        <svg class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <div>
+            <p class="text-sm font-semibold text-white">Power on the Android box</p>
+            <p class="text-xs text-white/50 mt-1 leading-relaxed">
+                A pairing code in the format <span class="font-mono text-white/80 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">ABC-1234</span> will appear on screen. Enter it below along with the billboard you want to assign it to.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+
+        <!-- Pairing Code Input -->
+        <div>
+            <label class="block text-xs font-medium text-white/70 mb-1.5">Pairing Code</label>
+            <input type="text" name="pairing_code" placeholder="e.g. ABC-1234" required
+                   maxlength="12" autocomplete="off"
+                   class="w-full bg-bg border border-white/10 rounded-lg p-3 text-lg font-mono text-center uppercase tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/60 transition"
+                   style="letter-spacing: 0.15em;">
         </div>
 
-        <form method="post" class="space-y-5">
-            {% csrf_token %}
-
-            <!-- Pairing Code -->
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">Pairing Code</legend>
-                <input type="text" name="pairing_code" placeholder="e.g. ABC-1234" required
-                       maxlength="12" autocomplete="off"
-                       class="input w-full font-mono text-lg tracking-widest text-center uppercase"
-                       style="letter-spacing: 0.15em;">
-            </fieldset>
-
-            <!-- Billboard Select -->
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">Assign to Billboard</legend>
-                {% if available_billboards %}
-                <select name="billboard_id" required class="select w-full">
-                    <option value="">Select a billboard...</option>
+        <!-- Billboard Select -->
+        <div>
+            <label class="block text-xs font-medium text-white/70 mb-1.5">Assign to Billboard</label>
+            {% if available_billboards %}
+            <div class="relative">
+                <select name="billboard_id" required 
+                        class="w-full bg-bg border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-emerald-500/60 transition appearance-none pr-10">
+                    <option value="" disabled selected class="bg-panel text-white/50">Select a billboard...</option>
                     {% for bb in available_billboards %}
-                    <option value="{{ bb.pk }}">{{ bb.name }} — {{ bb.location_name }}</option>
+                    <option value="{{ bb.pk }}" class="bg-panel text-white">{{ bb.name }} — {{ bb.location_name }}</option>
                     {% endfor %}
                 </select>
-                {% else %}
-                <div class="alert alert-warning text-sm">
-                    <p>You don't have any billboards available to pair. Every billboard you own already has an active device, or you haven't registered one yet.</p>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white/40">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
                 </div>
-                {% endif %}
-            </fieldset>
-
-            <div class="flex items-center justify-end gap-3 pt-2">
-                <a href="{% url 'device:billboard_list' %}" class="link link-hover text-base-content/50 text-sm">Cancel</a>
-                <button type="submit" class="btn btn-primary" {% if not available_billboards %}disabled{% endif %}>
-                    Pair Device
-                </button>
             </div>
-        </form>
+            {% else %}
+            <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3.5 text-xs text-amber-300 leading-relaxed">
+                <p>You don't have any billboards available to pair. Every billboard you own already has an active device, or you haven't registered one yet.</p>
+            </div>
+            {% endif %}
+        </div>
 
-    </div>
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
+            <a href="{% url 'device:billboard_list' %}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-white/50 hover:text-white transition">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition" 
+                    {% if not available_billboards %}disabled{% endif %}>
+                Pair Device
+            </button>
+        </div>
+    </form>
+
 </div>
 
 {% endblock %}

@@ -63,6 +63,10 @@ EMAIL_TEMPLATES = {
         "Suspicious Payout(s) Flagged",
         "emails/staff_flagged_payouts.html",
     ),
+    "contact_message": (
+        "New contact message received",
+        "emails/contact_message.html",
+    ),
 }
 
 def send_adverse_email(template: str, to: str | list[str], context: dict, subject_prefix: str = "[AdVerse]",) -> bool:

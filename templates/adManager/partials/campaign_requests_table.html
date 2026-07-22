@@ -1,37 +1,38 @@
-<div id="campaign-table-container">
+<div id="campaign-table-container" class="w-full space-y-4">
 
-{# Results count  #}
-{% if search_query or selected_status %}
-<p class="text-xs text-base-content/50 mb-4">
-    {{ page_obj.paginator.count }} campaign{{ page_obj.paginator.count|pluralize }} found.
-</p>
-{% endif %}
+    {# Results count #}
+    {% if search_query or selected_status %}
+    <p class="text-xs text-white/50 font-mono">
+        {{ page_obj.paginator.count }} campaign{{ page_obj.paginator.count|pluralize }} found.
+    </p>
+    {% endif %}
 
-{% if campaigns %}
-<div class="card card-border bg-base-200 border-base-300">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
+    {% if campaigns %}
+    <div class="bg-panel border border-white/10 rounded-xl shadow-xl overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse min-w-[700px]">
             <thead>
-                <tr class="border-b border-base-300 bg-base-200/50 select-none">
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest w-20">Creative</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Campaign Name</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Advertiser</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Schedule</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Budget</th>
-                    <th class="px-6 py-4 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Status</th>
-                    <th class="px-6 py-4 w-24"></th>
+                <tr class="border-b border-white/10 bg-black/40 select-none">
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest w-16">Creative</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Campaign</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Advertiser</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Schedule</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Budget</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Status</th>
+                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest text-right w-16">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-base-300/60">
+            <tbody class="divide-y divide-white/5">
                 {% for campaign in campaigns %}
-                <tr class="hover:bg-base-300/20 transition-all duration-200 group">
-                    <td class="px-6 py-4 align-middle">
+                <tr class="hover:bg-white/[0.02] transition-all duration-200 group">
+                    
+                    {# Media Preview #}
+                    <td class="px-4 py-3.5 align-middle">
                         {% if campaign.media.file %}
-                            <div class="w-16 h-10 rounded-lg overflow-hidden bg-base-100 border border-base-300 flex items-center justify-center relative flex-shrink-0 shadow-md">
+                            <div class="w-12 h-8 rounded-lg overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center relative shrink-0 shadow-md">
                                 {% if campaign.media.media_type == 'video' %}
                                     <video src="{{ campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                                    <div class="absolute inset-0 bg-base-100/40 flex items-center justify-center">
-                                        <svg class="w-3.5 h-3.5 text-white opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-white opacity-80" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
                                         </svg>
                                     </div>
@@ -40,86 +41,93 @@
                                 {% endif %}
                             </div>
                         {% else %}
-                            <div class="w-16 h-10 rounded-lg bg-base-100 border border-base-300/60 flex items-center justify-center text-base-content/40 flex-shrink-0">
-                                <svg class="w-4 h-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-12 h-8 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-white/30 shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="font-semibold tracking-tight group-hover:text-primary transition-colors">{{ campaign.name }}</div>
-                        <div class="text-xs text-base-content/50 mt-1 truncate max-w-[200px]" title="{{ campaign.media.title }}">{{ campaign.media.title }}</div>
+
+                    {# Campaign Info #}
+                    <td class="px-4 py-3.5 align-middle">
+                        <div class="font-semibold text-xs text-white tracking-tight group-hover:text-white/90 transition-colors line-clamp-1">{{ campaign.name }}</div>
+                        <div class="text-[11px] text-white/40 truncate max-w-[140px]" title="{{ campaign.media.title }}">{{ campaign.media.title }}</div>
                     </td>
-                    <td class="px-6 py-4 align-middle font-medium">
+
+                    {# Advertiser #}
+                    <td class="px-4 py-3.5 align-middle text-xs font-mono text-white/70 whitespace-nowrap">
                         {{ campaign.advertiser.business_name }}
                     </td>
-                    <td class="px-6 py-4 align-middle">
+
+                    {# Schedule #}
+                    <td class="px-4 py-3.5 align-middle text-xs">
                         {% if campaign.start_date and campaign.end_date %}
                         <div class="flex flex-col">
-                            <span class="font-medium text-xs">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
-                            <span class="text-base-content/50 text-xs mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                            <span class="font-medium text-white/90 whitespace-nowrap">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
+                            <span class="text-[11px] text-white/40 font-mono whitespace-nowrap">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
                         {% else %}
                         <div class="flex flex-col">
-                            <span class="font-medium text-xs text-base-content/40">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }} · dates pending</span>
-                            <span class="text-base-content/50 text-xs mt-0.5">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                            <span class="font-medium text-white/60 whitespace-nowrap">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }} · dates pending</span>
+                            <span class="text-[11px] text-white/40 font-mono whitespace-nowrap">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 align-middle font-mono font-medium">
+
+                    {# Budget #}
+                    <td class="px-4 py-3.5 align-middle font-mono font-semibold text-xs text-white whitespace-nowrap">
                         ₦{{ campaign.budget|floatformat:2 }}
                     </td>
-                    <td class="px-6 py-4 align-middle">
-                        {% if campaign.status == 'pending_manager_review' %}
-                            <span class="badge badge-warning badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
-                                Pending Review
+
+                    {# Status Badges #}
+                    <td class="px-4 py-3.5 align-middle whitespace-nowrap">
+                        {% if campaign.status == 'pending_manager_review' or campaign.status == 'pending_admin_review' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                {% if campaign.status == 'pending_admin_review' %}Pending Admin Review{% else %}Pending Review{% endif %}
                             </span>
                         {% elif campaign.status == 'approved' %}
-                            <span class="badge badge-success badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 Approved
                             </span>
                         {% elif campaign.status == 'active' %}
-                            <span class="badge badge-success badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                 Active
                             </span>
                         {% elif campaign.status == 'completed' %}
-                            <span class="badge badge-info badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-info"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
                                 Completed
                             </span>
                         {% elif campaign.status == 'approval_expired' %}
-                            <span class="badge badge-error badge-outline badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                                 Approval Expired
                             </span>
-                        {% elif campaign.status == 'rejected' %}
-                            <span class="badge badge-error badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
-                                Rejected
-                            </span>
-                        {% elif campaign.status == 'cancelled' %}
-                            <span class="badge badge-neutral badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-neutral-content"></span>
-                                Cancelled
+                        {% elif campaign.status == 'rejected' or campaign.status == 'cancelled' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                {{ campaign.status|title }}
                             </span>
                         {% elif campaign.status == 'paused' %}
-                            <span class="badge badge-warning badge-outline badge-sm gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                 Paused
                             </span>
                         {% else %}
-                            <span class="badge badge-neutral badge-sm">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-white/5 border border-white/10 text-white/60">
                                 {{ campaign.status|title }}
                             </span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 align-middle text-right">
+
+                    {# Action Link #}
+                    <td class="px-4 py-3.5 align-middle text-right whitespace-nowrap">
                         <a href="{% url 'admanager:campaign_request_detail' campaign.pk %}"
-                           class="btn btn-ghost btn-xs">
+                           class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white transition inline-block">
                             {% if campaign.status == 'pending_manager_review' %}Review{% else %}View{% endif %}
                         </a>
                     </td>
@@ -127,106 +135,108 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
 
-    {#  Pagination controls  #}
-    {% if page_obj.paginator.num_pages > 1 %}
-    <div class="flex items-center justify-between px-6 py-4 border-t border-base-300">
-        <p class="text-xs text-base-content/40">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            &middot; {{ page_obj.paginator.count }} total
-        </p>
-        <div class="flex items-center gap-1.5">
-            {% if page_obj.has_previous %}
-            <button
-                hx-get="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                hx-target="#campaign-table-container"
-                hx-swap="outerHTML"
-                hx-push-url="true"
-                class="btn btn-ghost btn-xs gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Prev
-            </button>
-            {% else %}
-            <button disabled class="btn btn-ghost btn-xs gap-1 opacity-30">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Prev
-            </button>
-            {% endif %}
-
-            {# Page number buttons — show a small window around current page #}
-            {% for num in page_obj.paginator.page_range %}
-                {% if num == page_obj.number %}
-                    <span class="btn btn-primary btn-xs pointer-events-none">{{ num }}</span>
-                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-                    <button
-                        hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                        hx-target="#campaign-table-container"
-                        hx-swap="outerHTML"
-                        hx-push-url="true"
-                        class="btn btn-ghost btn-xs">
-                        {{ num }}
-                    </button>
-                {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                    <button
-                        hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                        hx-target="#campaign-table-container"
-                        hx-swap="outerHTML"
-                        hx-push-url="true"
-                        class="btn btn-ghost btn-xs">
-                        {{ num }}
-                    </button>
-                {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-                    <span class="text-base-content/30 text-xs px-1">&hellip;</span>
+        {# Pagination Controls #}
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-black/20">
+            <p class="text-xs text-white/40 font-mono">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                &middot; {{ page_obj.paginator.count }} total
+            </p>
+            <div class="flex items-center gap-1.5">
+                {% if page_obj.has_previous %}
+                <button
+                    hx-get="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                    hx-target="#campaign-table-container"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span>Prev</span>
+                </button>
+                {% else %}
+                <button disabled class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/20 flex items-center gap-1 cursor-not-allowed">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span>Prev</span>
+                </button>
                 {% endif %}
-            {% endfor %}
 
-            {% if page_obj.has_next %}
-            <button
-                hx-get="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                hx-target="#campaign-table-container"
-                hx-swap="outerHTML"
-                hx-push-url="true"
-                class="btn btn-ghost btn-xs gap-1">
-                Next
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </button>
-            {% else %}
-            <button disabled class="btn btn-ghost btn-xs gap-1 opacity-30">
-                Next
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </button>
-            {% endif %}
+                {# Page Numbers #}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                        <span class="px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white font-semibold font-mono text-xs">{{ num }}</span>
+                    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                        <button
+                            hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                            hx-target="#campaign-table-container"
+                            hx-swap="outerHTML"
+                            hx-push-url="true"
+                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                            {{ num }}
+                        </button>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                        <button
+                            hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                            hx-target="#campaign-table-container"
+                            hx-swap="outerHTML"
+                            hx-push-url="true"
+                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                            {{ num }}
+                        </button>
+                    {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+                        <span class="text-white/30 text-xs px-1">&hellip;</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <button
+                    hx-get="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                    hx-target="#campaign-table-container"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1 transition">
+                    <span>Next</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                {% else %}
+                <button disabled class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/20 flex items-center gap-1 cursor-not-allowed">
+                    <span>Next</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
         </div>
+        {% endif %}
     </div>
-    {% endif %}
-</div>
 
-{% else %}
-<div class="flex flex-col items-center justify-center py-24 text-center bg-base-200/20 border border-base-300 rounded-xl backdrop-blur-sm">
-    <div class="w-14 h-14 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-base-content/30 mb-4 shadow-lg">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-    </div>
-    {% if search_query or selected_status %}
-        <p class="font-semibold tracking-tight text-base">No matching campaigns</p>
-        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">Try adjusting your search or filter criteria.</p>
-        <a href="{% url 'admanager:campaign_requests' %}"
-           class="mt-5 btn btn-ghost btn-sm">Clear all filters</a>
+    {# Empty States #}
     {% else %}
-        <p class="font-semibold tracking-tight text-base">No campaign requests yet</p>
-        <p class="text-zinc-500 text-xs mt-1.5 max-w-sm">When advertisers book slots on your screens, campaign requests will appear here for review.</p>
+    <div class="bg-panel border border-white/10 rounded-xl p-12 flex flex-col items-center justify-center text-center shadow-xl">
+        <div class="w-12 h-12 bg-black/40 border border-white/10 rounded-full flex items-center justify-center text-white/30 mb-4 shadow-inner">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+        </div>
+        {% if search_query or selected_status %}
+            <h3 class="text-sm font-bold text-white tracking-tight">No matching campaigns</h3>
+            <p class="text-xs text-white/40 mt-1 max-w-xs">Try adjusting your search or filter criteria.</p>
+            <a href="{% url 'admanager:campaign_requests' %}"
+               class="mt-4 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white transition">
+                Clear all filters
+            </a>
+        {% else %}
+            <h3 class="text-sm font-bold text-white tracking-tight">No campaign requests yet</h3>
+            <p class="text-xs text-white/40 mt-1 max-w-xs">When advertisers book slots on your screens, campaign requests will appear here for review.</p>
+        {% endif %}
+    </div>
     {% endif %}
-</div>
-{% endif %}
 
 </div>

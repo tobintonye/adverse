@@ -1,59 +1,58 @@
 <!-- Bank code -->
-<div class="form-control mb-4">
-    <label class="label pb-1">
-        <span class="label-text text-xs font-medium">Bank <span class="text-error">*</span></span>
+<div class="space-y-1.5 mb-4">
+    <label for="bank-code-select" class="block text-xs font-medium text-white/70">
+        Bank
     </label>
-    <select name="bank_code" id="bank-code-select" class="select select-bordered select-sm w-full" required>
-        <option value="" disabled selected>Select your bank...</option>
-        <option value="044">Access Bank</option>
-        <option value="023">Citibank</option>
-        <option value="063">Diamond Bank</option>
-        <option value="050">Ecobank</option>
-        <option value="011">First Bank of Nigeria</option>
-        <option value="214">First City Monument Bank (FCMB)</option>
-        <option value="070">Fidelity Bank</option>
-        <option value="058">Guaranty Trust Bank (GTBank)</option>
-        <option value="030">Heritage Bank</option>
-        <option value="301">Jaiz Bank</option>
-        <option value="082">Keystone Bank</option>
-        <option value="526">Moniepoint MFB</option>
-        <option value="076">Polaris Bank</option>
-        <option value="101">Providus Bank</option>
-        <option value="221">Stanbic IBTC Bank</option>
-        <option value="068">Standard Chartered Bank</option>
-        <option value="232">Sterling Bank</option>
-        <option value="100">Suntrust Bank</option>
-        <option value="032">Union Bank of Nigeria</option>
-        <option value="033">United Bank for Africa (UBA)</option>
-        <option value="215">Unity Bank</option>
-        <option value="035">Wema Bank</option>
-        <option value="057">Zenith Bank</option>
-        <option value="305">Kuda MFB</option>
-        <option value="565">Carbon (One Finance)</option>
-        <option value="000014">Palmpay</option>
-        <option value="000013">GTMobile (GTBank)</option>
-        <option value="999992">Opay</option>
+    <select name="bank_code" 
+            id="bank-code-select" 
+            class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 transition cursor-pointer" 
+            required>
+        <option value="" disabled selected class="bg-[#121212] text-white/40">Select your bank...</option>
+        <option value="044" class="bg-[#121212] text-white">Access Bank</option>
+        <option value="023" class="bg-[#121212] text-white">Citibank</option>
+        <option value="063" class="bg-[#121212] text-white">Diamond Bank</option>
+        <option value="050" class="bg-[#121212] text-white">Ecobank</option>
+        <option value="011" class="bg-[#121212] text-white">First Bank of Nigeria</option>
+        <option value="214" class="bg-[#121212] text-white">First City Monument Bank (FCMB)</option>
+        <option value="070" class="bg-[#121212] text-white">Fidelity Bank</option>
+        <option value="058" class="bg-[#121212] text-white">Guaranty Trust Bank (GTBank)</option>
+        <option value="030" class="bg-[#121212] text-white">Heritage Bank</option>
+        <option value="301" class="bg-[#121212] text-white">Jaiz Bank</option>
+        <option value="082" class="bg-[#121212] text-white">Keystone Bank</option>
+        <option value="526" class="bg-[#121212] text-white">Moniepoint MFB</option>
+        <option value="076" class="bg-[#121212] text-white">Polaris Bank</option>
+        <option value="101" class="bg-[#121212] text-white">Providus Bank</option>
+        <option value="221" class="bg-[#121212] text-white">Stanbic IBTC Bank</option>
+        <option value="068" class="bg-[#121212] text-white">Standard Chartered Bank</option>
+        <option value="232" class="bg-[#121212] text-white">Sterling Bank</option>
+        <option value="100" class="bg-[#121212] text-white">Suntrust Bank</option>
+        <option value="032" class="bg-[#121212] text-white">Union Bank of Nigeria</option>
+        <option value="033" class="bg-[#121212] text-white">United Bank for Africa (UBA)</option>
+        <option value="215" class="bg-[#121212] text-white">Unity Bank</option>
+        <option value="035" class="bg-[#121212] text-white">Wema Bank</option>
+        <option value="057" class="bg-[#121212] text-white">Zenith Bank</option>
+        <option value="305" class="bg-[#121212] text-white">Kuda MFB</option>
+        <option value="565" class="bg-[#121212] text-white">Carbon (One Finance)</option>
+        <option value="000014" class="bg-[#121212] text-white">Palmpay</option>
+        <option value="000013" class="bg-[#121212] text-white">GTMobile (GTBank)</option>
+        <option value="999992" class="bg-[#121212] text-white">Opay</option>
     </select>
-    <label class="label pt-1">
-        <span class="label-text-alt text-base-content/40">Select the bank where your account is held</span>
-    </label>
+    <p class="text-[11px] text-white/40">Select the bank where your account is held</p>
 </div>
 
 <!-- Account number -->
-<div class="form-control mb-4">
-    <label class="label pb-1">
-        <span class="label-text text-xs font-medium">Account number <span class="text-error">*</span></span>
+<div class="space-y-1.5 mb-4">
+    <label class="block text-xs font-medium text-white/70">
+        Account numbers
     </label>
     <input type="text" name="account_number"
-           class="input input-bordered input-sm w-full font-mono tracking-widest account-number-input"
+           class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm font-mono tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/60 transition account-number-input"
            placeholder="10-digit account number"
            maxlength="10"
            pattern="[0-9]{10}"
            inputmode="numeric"
            required>
-    <label class="label pt-1">
-        <span class="label-text-alt text-base-content/40">Must be exactly 10 digits</span>
-    </label>
+    <p class="text-[11px] text-white/40">Must be exactly 10 digits</p>
 </div>
 
 <script>

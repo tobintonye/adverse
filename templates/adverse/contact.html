@@ -18,52 +18,72 @@
 </header>
 
 <section class="wrap contact-grid">
-  <form method="POST" action="{% url 'adverse:contact' %}" class="form-panel reveal">
-    {% csrf_token %}
+  
+  <!-- HTMX Target Wrapper -->
+  <div id="contact-panel-container" class="form-panel reveal">
+    <form hx-post="{% url 'adverse:contact' %}"
+          hx-target="#contact-panel-container"
+          hx-swap="outerHTML"
+          hx-indicator="#submit-btn"
+          hx-disabled-elt="#submit-btn">
+          
+      {% csrf_token %}
 
-    <!-- Django Flash Messages (Success / Error alerts) -->
-    {% if messages %}
-      <div class="form-messages">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
+      <!-- Django Flash Messages (for standard non-HTMX requests) -->
+      {% if messages %}
+        <div class="form-messages">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="field-row">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" placeholder="Your name" value="{{ form.name.value|default:'' }}" required>
+          {% if form.name.errors %}<span class="field-error">{{ form.name.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@company.com" value="{{ form.email.value|default:'' }}" required>
+          {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+        </div>
       </div>
-    {% endif %}
 
-    <div class="field-row">
       <div class="field">
-        <label for="name">Name</label>
-        <input id="name" name="name" type="text" placeholder="Your name" required>
+        <label for="role">I am a…</label>
+        <select id="role" name="role">
+          <option value="Advertiser" {% if form.role.value == "Advertiser" %}selected{% endif %}>Advertiser</option>
+          <option value="Screen owner" {% if form.role.value == "Screen owner" %}selected{% endif %}>Screen owner</option>
+          <option value="Partnership / Media" {% if form.role.value == "Partnership / Media" %}selected{% endif %}>Partnership / Media</option>
+          <option value="Press" {% if form.role.value == "Press" %}selected{% endif %}>Press</option>
+          <option value="Other" {% if form.role.value == "Other" %}selected{% endif %}>Other</option>
+        </select>
       </div>
+
       <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="you@company.com" required>
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Tell us a bit about what you're looking for..." required>{{ form.message.value|default:'' }}</textarea>
+        {% if form.message.errors %}<span class="field-error">{{ form.message.errors.0 }}</span>{% endif %}
       </div>
-    </div>
 
-    <div class="field">
-      <label for="role">I am a…</label>
-      <select id="role" name="role">
-        <option value="Advertiser">Advertiser</option>
-        <option value="Screen owner">Screen owner</option>
-        <option value="Partnership / Media">Partnership / Media</option>
-        <option value="Press">Press</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="message">Message</label>
-      <textarea id="message" name="message" placeholder="Tell us a bit about what you're looking for..." required></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Send message</button>
-  </form>
+      <button id="submit-btn" type="submit" class="btn btn-primary">
+        <span class="btn-text">Send message</span>
+        <span class="htmx-indicator">
+          <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.2" fill="none"></circle>
+            <path d="M12 2 a 10 10 0 0 1 10 10"></path>
+          </svg>
+        </span>
+      </button>
+    </form>
+  </div>
 
   <div class="info-panel">
     <div class="info-card reveal">
       <div class="label">Email</div>
-      <div class="value"><a href="mailto:hello@advers.io">hello@advers.io</a></div>
+      <div class="value"><a href="mailto:hello@advers.io?subject=Inquiry%20from%20AdVers%20Website">hello@advers.io</a></div>
     </div>
     <div class="info-card reveal" style="transition-delay:80ms">
       <div class="label">Follow along</div>
