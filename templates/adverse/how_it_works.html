@@ -38,7 +38,7 @@
     </div>
     <div class="step reveal" style="transition-delay:140ms">
       <div class="step-num">03</div>
-      <div><h3>Scheduling</h3><p>Adverse slots your campaign into the network's schedule, coordinating timing across every screen involved.</p></div>
+      <div><h3>Scheduling</h3><p>Advers slots your campaign into the network's schedule, coordinating timing across every screen involved.</p></div>
     </div>
     <div class="step reveal" style="transition-delay:210ms">
       <div class="step-num">04</div>
@@ -55,15 +55,15 @@
   <div class="steps">
     <div class="step reveal">
       <div class="step-num">01</div>
-      <div><h3>Register your screen</h3><p>Add your screen's details, location, and availability to the Adverse network in a few minutes.</p></div>
+      <div><h3>Register your screen</h3><p>Add your screen's details, location, and availability to the Advers network in a few minutes.</p></div>
     </div>
     <div class="step reveal" style="transition-delay:70ms">
       <div class="step-num">02</div>
-      <div><h3>Install the player</h3><p>Set up the Adverse Android player on your device it handles content sync and playback automatically.</p></div>
+      <div><h3>Install the player</h3><p>Set up the Advers Android player on your device it handles content sync and playback automatically.</p></div>
     </div>
     <div class="step reveal" style="transition-delay:140ms">
       <div class="step-num">03</div>
-      <div><h3>Set pricing &amp; availability</h3><p>Define your ad slots, rates, and open hours. Adverse matches demand to your screen automatically.</p></div>
+      <div><h3>Set pricing &amp; availability</h3><p>Define your ad slots, rates, and open hours. Advers matches demand to your screen automatically.</p></div>
     </div>
     <div class="step reveal" style="transition-delay:210ms">
       <div class="step-num">04</div>
@@ -79,25 +79,79 @@
 <section class="loop reveal">
   <div class="wrap">
     <div class="loop-head">
-      <span class="eyebrow">The full loop</span>
-      <h2>How it all connects.</h2>
+      <span class="eyebrow">End-to-End Architecture</span>
+      <h2>How the network connects.</h2>
     </div>
-    <div class="loop-diagram">
-      <div class="loop-node"><span class="tag">Step 1</span><div class="name">Advertiser</div></div>
-      <span class="loop-arrow">→</span>
-      <div class="loop-node"><span class="tag">Step 2</span><div class="name">Adverse platform</div></div>
-      <span class="loop-arrow">→</span>
-      <div class="loop-node"><span class="tag">Step 3</span><div class="name">Android player</div></div>
-      <span class="loop-arrow">→</span>
-      <div class="loop-node"><span class="tag">Step 4</span><div class="name">Physical screen</div></div>
+
+    <div class="loop-container">
+      
+      <!-- Forward Flow Pipeline -->
+      <div class="loop-pipeline">
+        
+        <div class="loop-card">
+          <div class="card-num">01</div>
+          <div class="card-body">
+            <span class="card-action">Campaign Creation</span>
+            <div class="card-title">Advertiser Portal</div>
+            <p>Uploads media &amp; sets target schedules</p>
+          </div>
+        </div>
+
+        <div class="loop-connector">
+          <svg class="connector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+
+        <div class="loop-card">
+          <div class="card-num">02</div>
+          <div class="card-body">
+            <span class="card-action">Control Plane</span>
+            <div class="card-title">Advers Platform</div>
+            <p>Approves, schedules &amp; routes payloads</p>
+          </div>
+        </div>
+
+        <div class="loop-connector">
+          <svg class="connector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+
+        <div class="loop-card">
+          <div class="card-num">03</div>
+          <div class="card-body">
+            <span class="card-action">Client App</span>
+            <div class="card-title">Android Player</div>
+            <p>Downloads media &amp; handles offline playback</p>
+          </div>
+        </div>
+
+        <div class="loop-connector">
+          <svg class="connector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+
+        <div class="loop-card">
+          <div class="card-num">04</div>
+          <div class="card-body">
+            <span class="card-action">Hardware</span>
+            <div class="card-title">Physical Screen</div>
+            <p>Displays live ad to target audience</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-time Return Loop Bar -->
+      <div class="loop-return-bar">
+        <div class="return-pulse"></div>
+        <span class="return-label">REAL-TIME PROOF-OF-PLAY FEEDBACK LOOP</span>
+        <p class="return-desc">Telemetry &amp; play logs stream back from Android Player to Platform &rarr; Dashboard reports automatically update for Advertisers &amp; Screen Owners.</p>
+      </div>
+
     </div>
-    <p class="loop-note">PROOF-OF-PLAY DATA FLOWS BACK TO ADVERTISER &amp; SCREEN OWNER</p>
   </div>
 </section>
 
 <div class="cta-banner reveal">
   <h3 id="cta-heading">Ready to get started?</h3>
-  <a href="{% url 'adverse:contact' %}" class="btn btn-primary" id="cta-btn">Get started</a>
+  <a href="{% url 'security:register' %}" class="btn btn-primary" id="cta-btn">Get started</a>
 </div>
 
 {% endblock %}

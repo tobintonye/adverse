@@ -220,6 +220,37 @@ nav.scrolled{
 }
 .reveal.in-view{ opacity:1; transform:none; }
 .reveal-stagger.in-view > *{ transition-delay: calc(var(--i, 0) * 90ms); }
+
+
+/* ---------- SOCIAL LINKS STYLING ---------- */
+.social-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 28px;
+}
+
+.social-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-mid);
+  transition: all 0.2s ease;
+}
+
+.social-row a:hover {
+  color: var(--text-hi);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 @media (prefers-reduced-motion: reduce){
   .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
   html{ scroll-behavior:auto; }
@@ -253,6 +284,58 @@ nav.scrolled{
   font-family:'JetBrains Mono', monospace;
 }
 .footer-meta a:hover{ color: var(--text-mid); }
+.footer-grid{
+  display:grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding: 48px 0 36px;
+}
+.footer-brand p{
+  font-size: 13.5px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  margin: 14px 0 18px;
+  max-width: 260px;
+}
+.footer-col h4{
+  font-family:'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-low);
+  margin-bottom: 16px;
+}
+.footer-col ul{ list-style:none; display:flex; flex-direction:column; gap: 12px; }
+.footer-col a{ font-size: 14px; color: var(--text-mid); transition: color .2s ease; }
+.footer-col a:hover{ color: var(--text-hi); }
+ 
+.footer-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap: 16px;
+  padding: 24px 0;
+  border-top: 1px solid var(--panel-border);
+}
+
+@media (max-width: 900px) {
+  .footer-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px 24px;
+  }
+  .footer-brand {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+  }
+  .footer-brand p {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px){
+  .footer-grid{ grid-template-columns: 1fr; }
+}
 
 @media (max-width: 760px){
   .nav-links{ display:none; }
@@ -261,4 +344,37 @@ nav.scrolled{
 }
 @media (min-width: 761px){
   .mobile-menu{ display:none !important; }
+}
+
+@media (max-width: 600px) {
+  .site-footer {
+    padding: 24px 0 36px;
+  }
+
+  .footer-grid {
+    /* Keeps Platform & Company side by side, puts Legal below */
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 16px;
+    padding: 32px 0 28px;
+  }
+
+  .footer-col h4 {
+    margin-bottom: 12px;
+  }
+
+  .footer-col ul {
+    gap: 10px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-top: 20px;
+  }
+
+  .footer-meta {
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
 }

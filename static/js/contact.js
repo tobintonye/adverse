@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      alert('Prototype only — no data is sent.');
+      alert('Prototype only no data is sent.');
     });
   }
 });

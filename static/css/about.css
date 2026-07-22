@@ -58,7 +58,27 @@
 .t-item h4{ font-family:'Space Grotesk', sans-serif; font-size: 18px; font-weight:600; margin: 6px 0 6px; }
 .t-item p{ font-size: 14px; color: var(--text-mid); max-width: 480px; line-height:1.6; }
 
-@media (max-width: 760px){
-  .duo, .narrative .grid{ grid-template-columns: 1fr; }
-  .page-head{ padding: 150px 0 50px; }
+/* CTA BANNER — Minimal & Seamless */
+.cta-banner {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  text-align: center;
+  padding: 80px 20px 110px;
+}
+.cta-banner h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+  .grid-3 { grid-template-columns: 1fr; gap: 16px; }
+}
+
+@media (max-width: 760px) {
+  .duo, .narrative .grid { grid-template-columns: 1fr; }
+  .page-head { padding: 150px 0 50px; }
 }

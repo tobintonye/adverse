@@ -2,29 +2,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Verification Failed</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification Failed — Advers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0A0A0B',
+          panel: '#131316',
+          accent: '#3E8CFF',
+        },
+        fontFamily: {
+          display: ['Space Grotesk', 'sans-serif'],
+          sans: ['Inter', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
+      },
+    },
+  }
+</script>
 </head>
-<body class="bg-base-100 flex items-center justify-center min-h-screen">
-    <nav class="flex items-center gap-1.5 text-sm mb-4 max-w-sm mx-auto">
-        <span class="font-semibold">Verification Failed</span>
-    </nav>
-    <div class="text-center space-y-4 card card-border bg-base-200 border-base-300 rounded-2xl p-8 shadow-2xl max-w-sm">
-        <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-2">
-        <h2 class="text-xl font-bold text-error">Verification Failed</h2>
-        <p class="text-base-content/50 text-sm">This link is invalid or has expired.</p>
-        <a href="{% url 'security:register' %}" class="btn btn-primary mt-4">
-            Register Again
-        </a>
-    </div>
-    {% include "partials/theme_toggle.html" %}
+<body class="bg-bg text-white font-sans min-h-screen flex items-center justify-center p-6">
+
+  <div class="w-full max-w-sm bg-panel border border-white/10 rounded-2xl p-10 shadow-2xl text-center">
+
+    <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-11 h-11 object-contain mx-auto mb-6 drop-shadow-lg">
+
+    <h2 class="font-display font-bold text-xl tracking-tight text-red-400">Verification failed</h2>
+    <p class="text-white/50 text-sm mt-1.5 mb-8">This link is invalid or has expired.</p>
+
+    <a href="{% url 'security:register' %}"
+       class="block w-full py-2.5 bg-accent hover:bg-blue-400 text-[#06101F] text-sm font-semibold rounded-lg transition-all duration-200 active:scale-[0.98]">
+      Register again
+    </a>
+
+  </div>
+
 </body>
 </html>
