@@ -6,39 +6,39 @@
 
 {% block content %}
 
-<!-- Filters -->
-<div class="card card-border bg-base-200 border-base-300 mb-6">
-    <div class="card-body p-4">
-        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <!-- Search input -->
+<!-- Filters Container -->
+<div class="bg-panel border border-white/[0.08] rounded-xl mb-6 backdrop-blur-sm">
+    <div class="p-4 sm:p-5">
+        <div class="flex flex-col md:flex-row gap-3.5 items-center justify-between">
+            <!-- Search Input -->
             <div class="relative w-full md:flex-1">
-                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-base-content/50">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-white/40">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </span>
                 <input type="text" id="active-search" placeholder="Search by name, state, country, or location..." 
-                       class="input w-full pl-10">
+                       class="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition duration-200">
             </div>
 
-            <!-- Quick selectors -->
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div class="w-full sm:w-40">
-                    <select id="active-screen-type" class="select w-full">
-                        <option value="">All Screen Types</option>
+            <!-- Quick Selectors -->
+            <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto">
+                <div class="w-full sm:w-44">
+                    <select id="active-screen-type" class="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition duration-200 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22rgba(255,255,255,0.4)%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:9px_9px] bg-[right_12px_center] bg-no-repeat pr-8">
+                        <option value="" class="bg-[#0b121e] text-white">All Screen Types</option>
                         {% for val, label in screen_type_choices %}
-                        <option value="{{ val }}">{{ label }}</option>
+                        <option value="{{ val }}" class="bg-[#0b121e] text-white">{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 
-                <div class="w-full sm:w-44">
+                <div class="w-full sm:w-36">
                     <input type="number" id="active-max-price" placeholder="Max Price (₦)"
-                           class="input w-full">
+                           class="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition duration-200">
                 </div>
 
                 <button type="button" id="toggle-advanced-btn" onclick="toggleAdvancedFilters()"
-                        class="btn btn-ghost btn-sm gap-2">
+                        class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition duration-200 flex-shrink-0">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
                     </svg>
@@ -48,27 +48,27 @@
         </div>
 
         <!-- Collapsible Advanced Filters Panel -->
-        <div id="advanced-filters-panel" class="hidden border-t border-base-300 bg-base-300/20 p-5 space-y-4 mt-4">
+        <div id="advanced-filters-panel" class="hidden border-t border-white/[0.08] bg-white/[0.01] p-4 rounded-xl mt-4 space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Country</legend>
-                    <input type="text" id="adv-country" placeholder="e.g. Nigeria" class="input w-full">
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">State</legend>
-                    <input type="text" id="adv-state" placeholder="e.g. Lagos" class="input w-full">
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Latitude</legend>
-                    <input type="number" step="any" id="adv-lat" placeholder="e.g. 6.4281" class="input w-full">
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Longitude</legend>
-                    <input type="number" step="any" id="adv-lng" placeholder="e.g. 3.4219" class="input w-full">
-                </fieldset>
+                <div>
+                    <label class="block text-[10px] font-semibold text-white/90 uppercase tracking-wider mb-1.5">Country</label>
+                    <input type="text" id="adv-country" placeholder="e.g. Nigeria" class="w-full px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-white/90 uppercase tracking-wider mb-1.5">State</label>
+                    <input type="text" id="adv-state" placeholder="e.g. Lagos" class="w-full px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-white/90 uppercase tracking-wider mb-1.5">Latitude</label>
+                    <input type="number" step="any" id="adv-lat" placeholder="e.g. 6.4281" class="w-full px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-white/90 uppercase tracking-wider mb-1.5">Longitude</label>
+                    <input type="number" step="any" id="adv-lng" placeholder="e.g. 3.4219" class="w-full px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:outline-none focus:border-accent">
+                </div>
             </div>
-            <div class="flex justify-end gap-2 pt-2 border-t border-base-300/60">
-                <button type="button" onclick="clearAllFilters()" class="btn btn-ghost btn-sm">Reset Filters</button>
+            <div class="flex justify-end pt-2 border-t border-white/[0.06]">
+                <button type="button" onclick="clearAllFilters()" class="text-xs text-white/90 hover:text-white transition font-medium">Reset Filters</button>
             </div>
         </div>
     </div>
@@ -77,7 +77,7 @@
 {% if billboards %}
 <div id="billboards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for bb in billboards %}
-    <div class="billboard-card card card-border bg-base-200 border-base-300 hover:border-base-content/30 transition hover:-translate-y-0.5 duration-300"
+    <div class="billboard-card group bg-panel border border-white/[0.08] hover:border-white/20 rounded-xl flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5"
          data-name="{{ bb.name|lower }}"
          data-location="{{ bb.location_name|lower }}"
          data-country="{{ bb.country|lower }}"
@@ -86,23 +86,23 @@
          data-price="{{ bb.price_per_slot }}"
          data-lat="{{ bb.latitude|default:'' }}"
          data-lng="{{ bb.longitude|default:'' }}">
-        <div class="card-body p-5">
+        <div class="p-5 flex-1 flex flex-col">
             <!-- Visual Media Preview Header -->
-            <figure class="relative aspect-video rounded-lg overflow-hidden bg-base-100 border border-base-300 mb-4 shadow-inner">
+            <figure class="relative aspect-video rounded-lg overflow-hidden bg-black/40 border border-white/10 mb-4 shadow-inner flex-shrink-0">
                 {% if bb.media_file %}
                     {% with url_str=bb.media_file.url|lower %}
                         {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
                             <video src="{{ bb.media_file.url }}" class="w-full h-full object-cover" preload="metadata" controls></video>
-                            <span class="badge badge-xs badge-ghost absolute top-2 left-2">Video Box</span>
+                            <span class="inline-flex items-center text-[9px] font-mono font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Video Box</span>
                         {% else %}
                             <img src="{{ bb.media_file.url }}" alt="{{ bb.name }}" class="w-full h-full object-cover select-none">
-                            <span class="badge badge-xs badge-ghost absolute top-2 left-2">Image Box</span>
+                            <span class="inline-flex items-center text-[9px] font-mono font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Image Box</span>
                         {% endif %}
                     {% endwith %}
                 {% else %}
-                    <div class="flex flex-col items-center justify-center text-base-content/30 h-full">
+                    <div class="flex flex-col items-center justify-center text-white/20 h-full">
                         <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         <span class="text-[9px] font-bold uppercase tracking-wider">No Preview Available</span>
                     </div>
@@ -111,63 +111,68 @@
 
             <div class="flex items-start justify-between mb-3">
                 <div class="min-w-0 flex-1 pr-2">
-                    <p class="font-bold text-base text-lg truncate group-hover:text-primary transition-colors">{{ bb.name }}</p>
-                    <p class="text-xs text-base-content/50 mt-0.5 truncate">{{ bb.location_name }}</p>
+                    <h2 class="font-bold text-white text-base truncate group-hover:text-accent transition-colors">{{ bb.name }}</h2>
+                    <p class="text-xs text-white/100 mt-0.5 truncate">{{ bb.location_name }}</p>
                     
                     <!-- Country & State tags -->
-                    <div class="flex flex-wrap gap-1 mt-1.5">
+                    <div class="flex flex-wrap gap-1.5 mt-2">
                         {% if bb.state %}
-                            <span class="badge badge-ghost badge-xs">{{ bb.state }}</span>
+                            <span class="inline-block text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.state }}</span>
                         {% endif %}
                         {% if bb.country %}
-                            <span class="badge badge-ghost badge-xs">{{ bb.country }}</span>
+                            <span class="inline-block text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.country }}</span>
                         {% endif %}
                         {% if bb.latitude and bb.longitude %}
-                            <span class="badge badge-ghost badge-xs font-mono">📍 {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}</span>
+                            <span class="inline-block text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">📍 {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}</span>
                         {% endif %}
                     </div>
                 </div>
-                <span class="badge badge-success badge-xs">Available</span>
+                <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Available
+                </span>
             </div>
 
-            <div class="space-y-1 text-xs text-base-content/50 mb-4 pt-1.5 border-t border-base-300">
+            <div class="space-y-1.5 text-xs text-white/50 mt-auto pt-3 border-t border-white/[0.08]">
                 <div class="flex justify-between">
                     <span>Screen type</span>
-                    <span class="font-medium">{{ bb.get_screen_type_display }}</span>
+                    <span class="font-medium text-white/80">{{ bb.get_screen_type_display }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Resolution</span>
-                    <span class="font-medium">{{ bb.resolution }}</span>
+                    <span class="font-medium text-white/80 font-mono">{{ bb.resolution }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Operating hours</span>
-                    <span class="font-medium">{{ bb.operating_hours_start }} — {{ bb.operating_hours_end }}</span>
+                    <span class="font-medium text-white/80 font-mono">{{ bb.operating_hours_start }} — {{ bb.operating_hours_end }}</span>
                 </div>
             </div>
+        </div>
 
-            <div class="flex items-center justify-between pt-3 border-t border-base-300">
-                <div>
-                    <p class="text-[9px] text-base-content/50 uppercase tracking-widest">
-                        Price per {% if bb.charge_unit == 'hourly' %}hour{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
-                    </p>
-                    <p class="text-lg font-black">₦{{ bb.price_per_slot|floatformat:0 }}</p>
-                </div>
-                <a href="{% url 'advertiser:campaign_create' %}?billboard={{ bb.pk }}"
-                   class="btn btn-primary btn-sm">Book</a>
+        <div class="p-5 pt-3 border-t border-white/[0.08] flex items-center justify-between">
+            <div>
+                <p class="text-[9px] text-white/90 uppercase tracking-wider font-semibold">
+                    Price per {% if bb.charge_unit == 'hourly' %}hour{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
+                </p>
+                <p class="text-lg font-bold text-emerald-400 font-mono">₦{{ bb.price_per_slot|floatformat:0 }}</p>
             </div>
+            <a href="{% url 'advertiser:campaign_create' %}?billboard={{ bb.pk }}"
+               class="inline-flex items-center justify-center bg-accent hover:bg-blue-400 text-[#06101F] text-xs font-semibold px-4 py-2 rounded-lg transition duration-200">
+                Book Screen
+            </a>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<div id="no-billboards-alert" class="flex flex-col items-center justify-center py-20 text-center hidden w-full col-span-full">
-    <div class="w-16 h-16 rounded-full bg-base-300 border border-base-300 flex items-center justify-center mb-4">
-        <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="no-billboards-alert" class="flex flex-col items-center justify-center py-16 text-center hidden w-full col-span-full border border-dashed border-white/10 rounded-xl bg-panel">
+    <div class="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
     </div>
-    <p class="text-base-content/70 font-medium">No billboards match your criteria</p>
-    <p class="text-base-content/40 text-sm mt-1">Try resetting or adjusting your active filter parameters.</p>
+    <p class="text-white/80 font-bold text-xs">No billboards match your criteria</p>
+    <p class="text-white/40 text-[11px] mt-1">Try resetting or adjusting your active filter parameters.</p>
 </div>
 
 <script>
@@ -176,10 +181,10 @@
         const btn = document.getElementById('toggle-advanced-btn');
         if (panel.classList.contains('hidden')) {
             panel.classList.remove('hidden');
-            btn.classList.add('bg-base-300', 'text-base-content');
+            btn.classList.add('bg-white/10', 'text-white', 'border-white/20');
         } else {
             panel.classList.add('hidden');
-            btn.classList.remove('bg-base-300', 'text-base-content');
+            btn.classList.remove('bg-white/10', 'text-white', 'border-white/20');
         }
     }
 
@@ -289,14 +294,14 @@
     });
 </script>
 {% else %}
-<div class="flex flex-col items-center justify-center py-20 text-center">
-    <div class="w-16 h-16 rounded-full bg-base-300 border border-base-300 flex items-center justify-center mb-4">
-        <svg class="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="flex flex-col items-center justify-center py-20 text-center bg-panel border border-dashed border-white/10 rounded-xl">
+    <div class="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
     </div>
-    <p class="text-base-content/70 font-medium">No billboards found</p>
-    <p class="text-base-content/40 text-sm mt-1">Try adjusting your filters or location search.</p>
+    <p class="text-white/80 font-bold text-xs">No billboards found</p>
+    <p class="text-white/40 text-[11px] mt-1">Try adjusting your filters or location search.</p>
 </div>
 {% endif %}
 

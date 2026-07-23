@@ -5,103 +5,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Your Profile — Advers</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
 </head>
-<body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-bg text-white flex items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-lg">
         <!-- Page Header -->
         <div class="mb-6">
-            <nav class="flex items-center gap-1.5 text-sm">
-                <span class="font-semibold">Profile Setup</span>
+            <nav class="flex items-center gap-1.5 text-xs text-white/50 mb-1">
+                <span class="font-semibold text-accent">Profile Setup</span>
             </nav>
-            <div class="mt-1">
-                <h1 class="text-xl font-bold tracking-tight">Complete Your Profile</h1>
-                <p class="text-sm text-base-content/50 mt-1">Tell us about your business before you start running campaigns.</p>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Complete Your Profile</h1>
+                <p class="text-xs text-white/50 mt-1">Tell us about your business before you start running campaigns.</p>
             </div>
         </div>
-        <div class="card card-border bg-base-200 border-base-300 shadow-2xl">
-            <div class="card-body p-8">
-                <div class="mb-8 flex items-center gap-4 pb-6 border-b border-base-300">
-                    <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-10 h-10 object-contain flex-shrink-0">
-                    <div>
-                        <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Advers · Advertiser</span>
-                    </div>
-                </div>
 
+        <!-- Form Card -->
+        <div class="bg-panel border border-white/10 rounded-xl p-6 sm:p-8 shadow-2xl">
+            <!-- Card Header / Logo -->
+            <div class="mb-6 flex items-center gap-3.5 pb-6 border-b border-white/10">
+                <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-9 h-9 object-contain shrink-0">
+                <div>
+                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest block">Advers · Advertiser</span>
+                    <p class="text-xs text-white/60 font-medium mt-0.5">Account Setup</p>
+                </div>
+            </div>
+
+            <!-- Messages / Alerts -->
             {% if messages %}
             <div class="mb-6 space-y-2">
                 {% for message in messages %}
-                <div class="alert alert-error text-sm">{{ message }}</div>
+                <div class="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
+                    {{ message }}
+                </div>
                 {% endfor %}
             </div>
             {% endif %}
 
-            <form method="post" class="space-y-5">
+            <form method="post" class="space-y-4">
                 {% csrf_token %}
 
-                <div class="grid grid-cols-2 gap-4">
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">First Name</legend>
+                <!-- First & Last Name -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">First Name <span class="text-red-400">*</span></label>
                         <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" placeholder="Jane" required
-                               class="input w-full">
-                        {% if form.first_name.errors %}<p class="text-error text-xs mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Last Name</legend>
+                               class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
+                        {% if form.first_name.errors %}
+                        <p class="text-red-400 text-[11px] mt-1">{{ form.first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Last Name <span class="text-red-400">*</span></label>
                         <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" placeholder="Doe" required
-                               class="input w-full">
-                        {% if form.last_name.errors %}<p class="text-error text-xs mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
-                    </fieldset>
+                               class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
+                        {% if form.last_name.errors %}
+                        <p class="text-red-400 text-[11px] mt-1">{{ form.last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Business Name</legend>
+                <!-- Business Name -->
+                <div>
+                    <label class="block text-xs font-medium text-white/70 mb-1.5">Business Name <span class="text-red-400">*</span></label>
                     <input type="text" name="business_name" value="{{ form.business_name.value|default:'' }}" placeholder="e.g. Bright Sparks Ltd" required
-                           class="input w-full">
-                    {% if form.business_name.errors %}<p class="text-error text-xs mt-1">{{ form.business_name.errors.0 }}</p>{% endif %}
-                </fieldset>
+                           class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
+                    {% if form.business_name.errors %}
+                    <p class="text-red-400 text-[11px] mt-1">{{ form.business_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Business Category</legend>
-                        <select name="business_category" class="select w-full">
+                <!-- Category & Phone -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Business Category</label>
+                        <select name="business_category" class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition">
                             {% for val, label in form.fields.business_category.choices %}
-                            <option value="{{ val }}" {% if form.business_category.value == val %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ val }}" class="bg-panel text-white" {% if form.business_category.value == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Phone</legend>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Phone</label>
                         <input type="text" name="contact_phone" value="{{ form.contact_phone.value|default:'' }}" placeholder="08012345678"
-                               class="input w-full">
-                    </fieldset>
+                               class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
+                    </div>
                 </div>
 
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Website</legend>
+                <!-- Website -->
+                <div>
+                    <label class="block text-xs font-medium text-white/70 mb-1.5">Website</label>
                     <input type="url" name="website" value="{{ form.website.value|default:'' }}" placeholder="https://yoursite.com"
-                           class="input w-full">
-                </fieldset>
+                           class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
+                </div>
 
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Address</legend>
+                <!-- Address -->
+                <div>
+                    <label class="block text-xs font-medium text-white/70 mb-1.5">Address</label>
                     <textarea name="address" rows="2" placeholder="Business address..."
-                              class="textarea w-full resize-none">{{ form.address.value|default:'' }}</textarea>
-                </fieldset>
+                              class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition resize-none placeholder-white/30">{{ form.address.value|default:'' }}</textarea>
+                </div>
 
-                <button type="submit" class="btn btn-primary w-full">Complete Profile</button>
+                <!-- Submit Action -->
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-accent hover:opacity-90 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition shadow-md">
+                        Complete Profile
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    {% include "partials/theme_toggle.html" %}
 </body>
 </html>

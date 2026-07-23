@@ -16,6 +16,7 @@ from django.db import transaction
 from payments.services import initialize_campaign_payment
 from .tasks import _notify_campaign_submitted
 
+
 def _get_advertiser(request):
     """Single place to resolve the advertiser — raises if profile missing."""
     return request.user.advertiser_profile

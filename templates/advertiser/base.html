@@ -2,333 +2,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Advertiser{% endblock %} — Advers</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        select option { background-color: #18181b; color: #fff; }
-        [data-theme="acid"] select option { background-color: #fff; color: #18181b; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Advertiser{% endblock %}</title>
 
-        #sidebar { width: 14rem; min-width: 0; overflow: hidden; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
-        #main-content { transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1); }
-        #collapse-chevron { transition: transform 0.25s ease; }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
-        html.sidebar-is-collapsed #sidebar { width: 4rem; }
-        html.sidebar-is-collapsed #main-content { margin-left: 4rem; }
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2uodhBFJzAVKM1R7NUhNPFNL7Y7MLQJBGA" crossorigin="anonymous"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0A0A0B',
+          panel: '#131316',
+          accent: '#3E8CFF',
+        },
+        fontFamily: {
+          display: ['Space Grotesk', 'sans-serif'],
+          sans: ['Inter', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
+      },
+    },
+  }
+</script>
 
-        .nav-tooltip {
-            position: absolute; left: calc(100% + 10px); top: 50%;
-            transform: translateY(-50%); padding: 4px 10px;
-            background: #27272a; border: 1px solid #3f3f46;
-            color: #fff; font-size: 12px; border-radius: 6px;
-            white-space: nowrap; pointer-events: none;
-            opacity: 0; transition: opacity 0.15s ease; z-index: 60; display: none;
-        }
-        #sidebar.collapsed .nav-tooltip { display: block; }
-        #sidebar.collapsed .nav-item:hover .nav-tooltip { opacity: 1; }
-        #sidebar.collapsed nav a { justify-content: center; }
-        #sidebar.collapsed .sidebar-signout { justify-content: center; }
-
-        @media (max-width: 767px) {
-            #sidebar { transform: translateX(-100%); transition: width 0.25s ease, transform 0.25s cubic-bezier(0.4,0,0.2,1); width: 14rem !important; }
-            #sidebar.mobile-open { transform: translateX(0); }
-            #main-content { margin-left: 0 !important; }
-            #collapse-btn { display: none !important; }
-            html.sidebar-is-collapsed #main-content { margin-left: 0 !important; }
-        }
-    </style>
-    <script>
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            document.documentElement.classList.add('sidebar-is-collapsed');
-        }
-    </script>
-    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2uodhBFJzAVKM1R7NUhNPFNL7Y7MLQJBGA" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="{% static 'advertiser/base.css' %}">
+{% block extra_css %}{% endblock %}
 </head>
-<body class="min-h-screen overflow-x-hidden">
+<body class="bg-bg text-white font-sans min-h-screen overflow-x-hidden">
 
-    <!-- Mobile backdrop -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden" onclick="closeMobileSidebar()"></div>
+  <!-- Mobile backdrop -->
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden" onclick="closeMobileSidebar()"></div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed top-0 left-0 h-full bg-base-200 border-r border-base-300 flex flex-col z-40 overflow-hidden">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full bg-panel border-r border-white/10 flex flex-col z-40 overflow-hidden">
 
-        <div class="px-5 py-4 border-b border-base-300 flex items-center gap-3 flex-shrink-0">
-            <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-8 h-8 object-contain flex-shrink-0">
-            <div id="sidebar-brand">
-                <span class="text-sm font-bold text-base-content tracking-tight leading-none block whitespace-nowrap">Advers</span>
-                <span class="text-[9px] font-bold text-primary uppercase tracking-widest whitespace-nowrap">Advertiser</span>
-            </div>
-        </div>
-
-        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
-            <div class="nav-item relative">
-                <a href="{% url 'advertiser:dashboard' %}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'dashboard' %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/60{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span class="nav-label whitespace-nowrap">Dashboard</span>
-                </a>
-                <span class="nav-tooltip">Dashboard</span>
-            </div>
-            <div class="nav-item relative">
-                <a href="{% url 'advertiser:browse_billboards' %}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'browse_billboards' %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/60{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span class="nav-label whitespace-nowrap">Billboards</span>
-                </a>
-                <span class="nav-tooltip">Billboards</span>
-            </div>
-            <div class="nav-item relative">
-                <a href="{% url 'advertiser:media_library' %}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'media' in request.resolver_match.url_name %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/60{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="nav-label whitespace-nowrap">My Media</span>
-                </a>
-                <span class="nav-tooltip">My Media</span>
-            </div>
-            <div class="nav-item relative">
-                <a href="{% url 'advertiser:campaign_list' %}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'campaign' in request.resolver_match.url_name %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/60{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-                    <span class="nav-label whitespace-nowrap">Campaigns</span>
-                </a>
-                <span class="nav-tooltip">Campaigns</span>
-            </div>
-            <div class="nav-item relative">
-                <a href="{% url 'advertiser:settings' %}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'settings' %}text-base-content bg-base-300{% else %}text-base-content/60 hover:text-base-content hover:bg-base-300/60{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span class="nav-label whitespace-nowrap">Settings</span>
-                </a>
-                <span class="nav-tooltip">Settings</span>
-            </div>
-        </nav>
-
-        <!-- Footer: sign out -->
-        <div class="px-3 py-4 border-t border-base-300 flex-shrink-0">
-            <form method="post" action="{% url 'security:logout' %}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="sidebar-signout flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-base-content/50 hover:text-error hover:bg-base-300/60 transition">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                    <span class="nav-label whitespace-nowrap">Sign out</span>
-                </button>
-            </form>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <div id="main-content" class="flex flex-col min-h-screen" style="margin-left: 14rem;">
-
-        <header class="navbar sticky top-0 z-30 h-14 bg-base-100/80 backdrop-blur border-b border-base-300 flex items-center px-4 md:px-6 gap-3 min-h-0">
-            <!-- Hamburger (mobile only) -->
-            <button onclick="openMobileSidebar()" class="md:hidden text-base-content/60 hover:text-base-content transition flex-shrink-0 btn btn-ghost btn-sm btn-square">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-            <!-- Collapse toggle (desktop only) -->
-            <button id="collapse-btn" onclick="toggleCollapse()"
-                    class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-300 transition flex-shrink-0"
-                    title="Toggle sidebar">
-                <svg id="collapse-chevron" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            <div class="flex-1 min-w-0">
-                <span class="text-sm font-semibold truncate">Advers Advertiser</span>
-            </div>
-
-            <!-- Theme Toggle -->
-            <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-square flex-shrink-0" title="Toggle theme">
-                <svg id="theme-icon-dark" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                <svg id="theme-icon-light" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                </svg>
-            </button>
-
-            <!-- User avatar dropdown -->
-            <div class="relative flex-shrink-0" id="user-menu-container">
-                <button onclick="toggleUserMenu()"
-                        class="btn btn-ghost btn-sm btn-circle">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                </button>
-                <div id="user-menu" class="hidden absolute right-0 top-full mt-2 w-64 bg-base-200 border border-base-300 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div class="px-4 py-3 border-b border-base-300">
-                        <p class="text-sm font-semibold text-base-content truncate">{{ request.user.get_full_name|default:request.user.email }}</p>
-                        <p class="text-xs text-base-content/50 mt-0.5 truncate">{{ request.user.email }}</p>
-                        <div class="flex items-center gap-2 mt-2 flex-wrap">
-                            <span class="badge badge-primary badge-sm">Advertiser</span>
-                            {% if request.user.advertiser_profile.is_verified %}
-                            <span class="badge badge-success badge-sm gap-1">
-                                <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                Verified
-                            </span>
-                            {% else %}
-                            <span class="badge badge-warning badge-sm gap-1">
-                                <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                                Not Verified
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="px-2 py-2">
-                        <a href="{% url 'advertiser:settings' %}"
-                           class="flex items-center gap-2 px-3 py-2 text-sm text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            Settings
-                        </a>
-                        <form method="post" action="{% url 'security:logout' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-base-content/60 hover:text-error hover:bg-base-300 rounded-lg transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                                Sign out
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <main class="flex-1">
-            <div class="p-4 md:p-6 {% block page_container_class %}{% endblock %}">
-                {% block page_header %}
-                <div class="mb-6">
-                    <nav class="flex items-center gap-1.5 text-sm min-w-0">
-                        {% block breadcrumbs %}{% endblock %}
-                    </nav>
-                    <div class="flex items-center justify-between gap-4 mt-1">
-                        <div>
-                            <h1 class="text-xl font-bold tracking-tight">{% block page_title %}{% endblock %}</h1>
-                            {% block page_description %}
-                            <p class="text-sm text-base-content/50 mt-1"></p>
-                            {% endblock %}
-                        </div>
-                        {% block page_header_actions %}{% endblock %}
-                    </div>
-                </div>
-                {% endblock %}
-                {% if messages %}
-                <div class="mb-6 space-y-2">
-                    {% for message in messages %}
-                    <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} text-sm">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% block content %}{% endblock %}
-            </div>
-        </main>
+    <div class="px-5 py-4 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
+      <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-8 h-8 object-contain flex-shrink-0">
+      <div id="sidebar-brand">
+        <span class="text-sm font-bold tracking-tight leading-none block whitespace-nowrap">Adverse</span>
+        <span class="text-[9px] font-bold text-accent uppercase tracking-widest whitespace-nowrap">Advertiser</span>
+      </div>
     </div>
 
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const backdrop = document.getElementById('sidebar-backdrop');
-        const mainContent = document.getElementById('main-content');
-        const chevron = document.getElementById('collapse-chevron');
-        const brand = document.getElementById('sidebar-brand');
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+      <div class="nav-item relative">
+        <a href="{% url 'advertiser:dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'dashboard' %}text-white bg-white/5{% else %}text-white/50 hover:text-white hover:bg-white/5{% endif %}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="nav-label whitespace-nowrap">Dashboard</span>
+        </a>
+        <span class="nav-tooltip">Dashboard</span>
+      </div>
+      <div class="nav-item relative">
+        <a href="{% url 'advertiser:browse_billboards' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'browse_billboards' %}text-white bg-white/5{% else %}text-white/50 hover:text-white hover:bg-white/5{% endif %}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span class="nav-label whitespace-nowrap">Billboards</span>
+        </a>
+        <span class="nav-tooltip">Billboards</span>
+      </div>
+      <div class="nav-item relative">
+        <a href="{% url 'advertiser:media_library' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'media' in request.resolver_match.url_name %}text-white bg-white/5{% else %}text-white/50 hover:text-white hover:bg-white/5{% endif %}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span class="nav-label whitespace-nowrap">My Media</span>
+        </a>
+        <span class="nav-tooltip">My Media</span>
+      </div>
+      <div class="nav-item relative">
+        <a href="{% url 'advertiser:campaign_list' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'campaign' in request.resolver_match.url_name %}text-white bg-white/5{% else %}text-white/50 hover:text-white hover:bg-white/5{% endif %}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+          <span class="nav-label whitespace-nowrap">Campaigns</span>
+        </a>
+        <span class="nav-tooltip">Campaigns</span>
+      </div>
+      <div class="nav-item relative">
+        <a href="{% url 'advertiser:settings' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'settings' %}text-white bg-white/5{% else %}text-white/50 hover:text-white hover:bg-white/5{% endif %}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="nav-label whitespace-nowrap">Settings</span>
+        </a>
+        <span class="nav-tooltip">Settings</span>
+      </div>
+    </nav>
 
-        let isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    <!-- Footer: sign out -->
+    <div class="px-3 py-4 border-t border-white/10 flex-shrink-0">
+      <form method="post" action="{% url 'security:logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="sidebar-signout flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-white/50 hover:text-red-400 hover:bg-white/5 transition">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <span class="nav-label whitespace-nowrap">Sign out</span>
+        </button>
+      </form>
+    </div>
+  </aside>
 
-        function applyCollapse() {
-            const isMobile = window.innerWidth < 768;
-            const labels = sidebar.querySelectorAll('.nav-label');
-            if (isCollapsed && !isMobile) {
-                sidebar.style.width = '4rem';
-                sidebar.classList.add('collapsed');
-                mainContent.style.marginLeft = '4rem';
-                brand.classList.add('hidden');
-                labels.forEach(el => el.classList.add('hidden'));
-                if (chevron) chevron.style.transform = 'rotate(180deg)';
-            } else {
-                sidebar.style.width = '14rem';
-                sidebar.classList.remove('collapsed');
-                if (!isMobile) mainContent.style.marginLeft = '14rem';
-                brand.classList.remove('hidden');
-                labels.forEach(el => el.classList.remove('hidden'));
-                if (chevron) chevron.style.transform = '';
-            }
-        }
+  <!-- Main Content -->
+  <div id="main-content" class="flex flex-col min-h-screen" style="margin-left: 14rem;">
 
-        function toggleCollapse() {
-            isCollapsed = !isCollapsed;
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
-            applyCollapse();
-        }
+    <header class="sticky top-0 z-30 h-14 bg-bg/80 backdrop-blur border-b border-white/10 flex items-center px-4 md:px-6 gap-3 min-h-0">
+      <!-- Hamburger (mobile only) -->
+      <button onclick="openMobileSidebar()" class="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <!-- Collapse toggle (desktop only) -->
+      <button id="collapse-btn" onclick="toggleCollapse()"
+              class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition flex-shrink-0"
+              title="Toggle sidebar">
+        <svg id="collapse-chevron" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <span class="text-sm font-semibold truncate">Advers Advertiser</span>
+      </div>
 
-        function openMobileSidebar() {
-            sidebar.classList.add('mobile-open');
-            backdrop.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
+      <!-- Theme Toggle 
+      <button onclick="toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition flex-shrink-0" title="Toggle theme">
+        <svg id="theme-icon-dark" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="theme-icon-light" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+-->
+      <!-- User avatar dropdown -->
+      <div class="relative flex-shrink-0" id="user-menu-container">
+        <button onclick="toggleUserMenu()" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </button>
+        <div id="user-menu" class="hidden absolute right-0 top-full mt-2 w-64 bg-panel border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div class="px-4 py-3 border-b border-white/10">
+            <p class="text-sm font-semibold truncate">{{ request.user.get_full_name|default:request.user.email }}</p>
+            <p class="text-xs text-white/50 mt-0.5 truncate">{{ request.user.email }}</p>
+            <div class="flex items-center gap-2 mt-2 flex-wrap">
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">Advertiser</span>
+              {% if request.user.advertiser_profile.is_verified %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Verified
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Not Verified
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="px-2 py-2">
+            <a href="{% url 'advertiser:settings' %}"
+               class="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              Settings
+            </a>
+            <form method="post" action="{% url 'security:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-red-400 hover:bg-white/5 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Sign out
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
 
-        function closeMobileSidebar() {
-            sidebar.classList.remove('mobile-open');
-            backdrop.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
+    <main class="flex-1">
+      <div class="p-4 md:p-6 {% block page_container_class %}{% endblock %}">
+        {% block page_header %}
+        <div class="mb-6">
+          <nav class="flex items-center gap-1.5 text-sm min-w-0">
+            {% block breadcrumbs %}{% endblock %}
+          </nav>
+          <div class="flex items-center justify-between gap-4 mt-1">
+            <div>
+              <h1 class="text-xl font-bold tracking-tight">{% block page_title %}{% endblock %}</h1>
+              {% block page_description %}
+              <p class="text-sm text-white/50 mt-1"></p>
+              {% endblock %}
+            </div>
+            {% block page_header_actions %}{% endblock %}
+          </div>
+        </div>
+        {% endblock %}
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for message in messages %}
+          <div class="p-3 text-sm rounded-lg border
+            {% if message.tags == 'error' %}
+              bg-red-500/10 border-red-500/30 text-red-400
+            {% elif message.tags == 'success' %}
+              bg-emerald-500/10 border-emerald-500/30 text-emerald-400
+            {% else %}
+              bg-accent/10 border-accent/30 text-accent
+            {% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
 
-        function toggleUserMenu() {
-            document.getElementById('user-menu').classList.toggle('hidden');
-        }
-
-        // --- Theme Toggle ---
-        function updateThemeIcons(theme) {
-            const sunIcon = document.getElementById('theme-icon-dark');
-            const moonIcon = document.getElementById('theme-icon-light');
-            if (!sunIcon || !moonIcon) return;
-            if (theme === 'dark') {
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-            } else {
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-            }
-        }
-
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'acid' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-            updateThemeIcons(next);
-        }
-
-        // Set initial icon state
-        (function() {
-            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-            updateThemeIcons(theme);
-        })();
-
-        document.addEventListener('click', (e) => {
-            const container = document.getElementById('user-menu-container');
-            if (container && !container.contains(e.target)) {
-                document.getElementById('user-menu').classList.add('hidden');
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 768) {
-                sidebar.classList.remove('mobile-open');
-                backdrop.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-            applyCollapse();
-        });
-
-        applyCollapse();
-    </script>
+  <script src="{% static 'js/advertiser/base.js' %}"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
