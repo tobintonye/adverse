@@ -1,0 +1,62 @@
+<div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="border-b border-white/10 bg-white/[0.02]">
+                <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Date</th>
+                <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Billboard</th>
+                <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-center">Play Order</th>
+                <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Status</th>
+                <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-right">Played At</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5 text-sm">
+            {% for row in rows %}
+            <tr class="hover:bg-white/[0.02] transition-colors">
+                <td class="py-3 px-4 font-mono text-xs text-white/90">
+                    {{ row.time_slot.date|date:"M j, Y" }}
+                </td>
+                <td class="py-3 px-4">
+                    <p class="font-medium text-white text-xs sm:text-sm">{{ row.time_slot.billboard.name }}</p>
+                    <p class="text-[11px] text-white/40">{{ row.time_slot.billboard.location_name }}</p>
+                </td>
+                <td class="py-3 px-4 text-center">
+                    <span class="inline-flex items-center justify-center px-2 py-0.5 font-mono text-xs text-white/70 bg-white/5 border border-white/10 rounded">
+                        #{{ row.time_slot.play_order }}
+                    </span>
+                </td>
+                <td class="py-3 px-4">
+                    {% if row.state == "confirmed" %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            Confirmed
+                        </span>
+                    {% elif row.state == "missed" %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                            Missed
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                            Upcoming
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="py-3 px-4 text-right font-mono text-xs">
+                    {% if row.log %}
+                        <span class="text-white/90">{{ row.log.started_at|date:"H:i:s" }}</span>
+                    {% else %}
+                        <span class="text-white/30">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="py-8 text-center text-xs text-white/40">
+                    No playback slots scheduled yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

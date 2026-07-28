@@ -8,9 +8,17 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
         if sociallogin.is_existing:
             return
         email = sociallogin.user.email
-        if email:
-            try:
-                existing_user = User.objects.get(email=email)
-                sociallogin.connect(request, existing_user)
-            except User.DoesNotExist:
-                pass
+        if not email:
+            return
+        
+        email_verified = any(
+            e.email.lower() == email.lower() and e.verified
+            for e in sociallogin.email_addresses
+        )
+        if not email_verified:
+            return  # don't auto-link on an unverified email claim
+        try:
+            existing_user = User.objects.get(email__iexact=email)
+            sociallogin.connect(request, existing_user)
+        except User.DoesNotExist:
+            pass

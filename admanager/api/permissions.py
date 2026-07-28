@@ -1,10 +1,14 @@
 from rest_framework.permissions import BasePermission
+from security.models import CustomUser
 
 
-class IsOwnerAdManager(BasePermission):
-    """
-    Only allow owners of the profile to access/edit it.
-    """
+class IsAdManager(BasePermission):
+    message = "This endpoint is only available to verified ad manager accounts."
 
-    def has_object_permission(self, request, view, obj):
-        return obj.user == request.user
+    def has_permission(self, request, view):
+        user = request.user
+        return (
+            user.is_authenticated
+            and user.role == CustomUser.UserRole.AD_MANAGER
+            and hasattr(user, "ad_manager")
+        )

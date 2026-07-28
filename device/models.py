@@ -200,6 +200,7 @@ class PlaybackLog(TimeStampedModel):
     # One row per ad play. Drives billing and analytics.
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="playback_logs")
+    time_slot = models.ForeignKey("scheduling.TimeSlot", on_delete=models.SET_NULL, null=True, blank=True, related_name="playback_logs", help_text="The scheduled slot this play fulfilled, if it matched one.")
     media_id = models.UUIDField(db_index=True)
     started_at = models.DateTimeField()
     duration_seconds = models.PositiveIntegerField()

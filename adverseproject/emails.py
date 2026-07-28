@@ -69,9 +69,9 @@ EMAIL_TEMPLATES = {
     ),
 }
 
-def send_adverse_email(template: str, to: str | list[str], context: dict, subject_prefix: str = "[AdVerse]",) -> bool:
+def send_adverse_email(template: str, to: str | list[str], context: dict, subject_prefix: str = "[AdVers]",) -> bool:
     """
-    Render and send an AdVerse email.
+    Render and send an AdVers email.
  
     Args:
         template: Key from EMAIL_TEMPLATES (e.g. "campaign_approved")

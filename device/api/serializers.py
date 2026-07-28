@@ -128,9 +128,11 @@ class HeartbeatSerializer(serializers.Serializer):
     current_media_id = serializers.UUIDField(required=False)
 
 class PlaybackLogSerializer(serializers.ModelSerializer):
+    time_slot_id = serializers.UUIDField(required=False, allow_null=True)
+    
     class Meta:
         model  = PlaybackLog
-        fields = ("id", "media_id", "started_at", "duration_seconds", "completed", "created_at")
+        fields = ("id", "time_slot_id", "media_id", "started_at", "duration_seconds", "completed", "created_at")
         read_only_fields = ("id", "created_at")
 
 class BulkPlaybackLogSerializer(serializers.Serializer):

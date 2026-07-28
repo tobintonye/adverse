@@ -2,11 +2,12 @@ from django.utils import timezone
 from rest_framework import  permissions, status
 from rest_framework.exceptions import PermissionDenied, NotFound
 from admanager.models import Admanager
+from scheduling.models import TimeSlot
 from ..models import Billboard, PlayerDevice, PlaybackLog
 from .serializers import (
      BillboardSerializer, BillboardWriteSerializer, HeartbeatSerializer,
     PairDeviceSerializer, PlayerDeviceRegistrationSerializer, PlayerDeviceSerializer,
-    DeviceMetricSerializer, BulkPlaybackLogSerializer
+    DeviceMetricSerializer, BulkPlaybackLogSerializer, PlaybackLogSerializer
     )
 from .authentication import DeviceTokenAuthentication
 from rest_framework.views import APIView
@@ -229,9 +230,19 @@ class PlayerPlaybackView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = DeviceTokenAuthentication(data=request.data)
+        serializer = PlaybackLogSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        log = serializer.save(player=request.user)
+        player = request.user
+        data = serializer.validated_data
+
+        time_slot = None
+        time_slot_id = data.pop("time_slot_id", None)
+        if time_slot_id:
+            time_slot = TimeSlot.objects.filter(
+                id=time_slot_id, billboard=player.billboard
+            ).first()
+
+        log = serializer.save(player=player, time_slot=time_slot)
         return Response(
             {
                 "detail": "Playback recorded.",
@@ -255,6 +266,15 @@ class PlayerPlaybackBulkView(APIView):
         created_logs, skipped = [], 0
 
         for entry in logs_data:
+            time_slot = None
+            if player.billboard_id:
+                time_slot = TimeSlot.objects.filter(
+                    billboard=player.billboard,
+                    date=entry["started_at"].date(),
+                    is_active=True,
+                    campaign_slot__campaign__media_id=entry["media_id"],
+                ).first()
+
             log, created = PlaybackLog.objects.get_or_create(
                 player=player,
                 media_id=entry["media_id"],
@@ -262,6 +282,7 @@ class PlayerPlaybackBulkView(APIView):
                 defaults={
                     "duration_seconds": entry["duration_seconds"],
                     "completed": entry.get("completed", False),
+                    "time_slot": time_slot,
                 },
             )
             if created:

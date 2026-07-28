@@ -11,21 +11,13 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-"""
-def _send_email(subject, message, recipient_email):
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [recipient_email])
-    except (BadHeaderError, smtplib.SMTPException, socket.error, ImproperlyConfigured) as e:
-        logger.error("Email send failed to %s: %s", recipient_email, e)
-        raise
-"""
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def task_send_verification_email(self, user_pk, verification_url):
     try:
         user = User.objects.get(pk=user_pk)
     except User.DoesNotExist:
         logger.warning("task_send_verification_email: user %s not found", user_pk)
-        return  # user deleted between enqueue and execution — don't retry
+        return  # user deleted between enqueue and execution don't retry
 
     sent = send_adverse_email(
         template="verify_email",

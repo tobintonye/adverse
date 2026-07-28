@@ -1,5 +1,5 @@
 
-from payments.services import ( create_paystack_subaccount, update_paystack_subaccount_bank_details)
+from payments.services import ( create_paystack_subaccount)
 from django.contrib.auth import get_user_model
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -12,6 +12,7 @@ import json
 from django.db import transaction
 from admanager.decorators import ad_manager_required
 from .models import Admanager
+from security.models import CustomUser
 from advertiser.models import Campaign
 from payments.models import AdManagerEarning, PayoutRecord
 from .forms import AdManagerProfileForm
@@ -22,6 +23,10 @@ from django.db.models import Q
 from scheduling.models import ScheduleGenerationLog
 from decimal import Decimal
 from django.core.paginator import Paginator
+from scheduling.models import TimeSlot
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from payments.models import AdManagerSubaccount
@@ -50,6 +55,9 @@ def _get_campaign_for_manager(ad_manager, pk):
 User = get_user_model()
 @login_required(login_url='security:login')
 def adManagerProfile(request):
+    if request.user.role != CustomUser.UserRole.AD_MANAGER:
+        messages.error(request, "This account is not registered as an ad manager.")
+        return redirect("security:login")
 
     # Create the Admanager profile for the logged-in user.
     if hasattr(request.user, 'ad_manager'):
@@ -144,7 +152,7 @@ def adManagerDashboard(request):
         ad_manager=ad_manager, status=PayoutRecord.Status.PENDING
     ).aggregate(total=Sum("amount"))["total"] or 0
  
-    available_balance = revenue - total_withdrawn
+    available_balance = revenue - total_withdrawn - pending_withdrawal
  
     # Revenue analytics charts (DB-side aggregation, not a Python loop) 
     today = timezone.now().date()
@@ -332,10 +340,13 @@ def campaign_request_detail(request, pk):
                     )
         else:
             messages.error(request, "Invalid action.")
- 
+    # testing
+    schedule_logs = ScheduleGenerationLog.objects.filter(campaign=campaign).order_by("-generated_at")
+
     context = {
         "campaign": campaign,
         "slots": campaign.campaign_slots.select_related("billboard").all(),
+        "schedule_logs": schedule_logs,
     }
     return render(request, "adManager/campaign_request_detail.html", context)
 
@@ -343,7 +354,7 @@ def campaign_request_detail(request, pk):
 @ad_manager_required
 def campaign_schedule_log(request, pk):
     """
-    Shows every schedule generation run for a campaign — useful when
+    Shows every schedule generation run for a campaign useful when
     slots_skipped > 0 and the manager wants to know exactly which
     billboard/date ran out of capacity, not just the total count.
     """
@@ -361,6 +372,52 @@ def campaign_schedule_log(request, pk):
         "logs": logs,
     }
     return render(request, "adManager/campaign_schedule_log.html", context)
+
+
+@login_required(login_url='security:login')
+@ad_manager_required
+def campaign_playback_log(request, pk):
+    """
+    Slot-by-slot reconciliation: every TimeSlot scheduled for this campaign
+    on this ad manager's billboards, matched against whether a PlaybackLog
+    confirms it actually played.
+    """
+
+    ad_manager = request.user.ad_manager
+    campaign = _get_campaign_for_manager(ad_manager, pk)
+
+    time_slots = (TimeSlot.objects.filter(campaign=campaign, billboard__ad_manager=ad_manager).select_related("billboard").prefetch_related("playback_logs").order_by("date", "play_order"))
+
+    today = timezone.now().date()
+    rows = []
+    for ts in time_slots:
+        log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
+        if log:
+            state = "confirmed"
+        elif ts.date > today:
+            state = "upcoming"
+        else:
+            state = "missed"
+        rows.append({"time_slot": ts, "log": log, "state": state})
+
+    total = len(rows)
+    confirmed_count = sum(1 for r in rows if r["state"] == "confirmed")
+    missed_count = sum(1 for r in rows if r["state"] == "missed")
+    upcoming_count = sum(1 for r in rows if r["state"] == "upcoming")
+
+    context = {
+        "campaign": campaign,
+        "rows": rows,
+        "total": total,
+        "confirmed_count": confirmed_count,
+        "missed_count": missed_count,
+        "upcoming_count": upcoming_count,
+        "confirmed_pct": round((confirmed_count / total) * 100, 1) if total else 0,
+    }
+
+    if request.headers.get("HX-Request"):
+        return render(request, "adManager/partials/campaign_playback_log_table.html", context)
+    return render(request, "adManager/campaign_playback_log.html", context)
 
 @login_required(login_url='security:login')
 @ad_manager_required
@@ -548,8 +605,9 @@ def payment_verify_subaccount(request):
         else:
             messages.warning(request, "Paystack has not verified this subaccount yet. Please try again shortly.")
 
-    except Exception as e:
-        messages.error(request, f"Could not check verification status: {e}")
+    except Exception:
+        logger.exception("Paystack subaccount verification failed for ad_manager %s", ad_manager.pk,)
+        messages.error(request, "Could not check verification status right now. Please try again shortly.")
 
     return redirect("admanager:payment_setup")
 
@@ -576,7 +634,9 @@ def request_withdrawal(request):
     except Exception:
         messages.error(request, "Invalid amount.")
         return redirect("admanager:dashboard")
-
+    if amount <= 0:
+        messages.error(request, "Withdrawal amount must be greater than zero.")
+        return redirect("admanager:dashboard")
     try:
         from payments.services import initiate_withdrawal
         payout = initiate_withdrawal(ad_manager=ad_manager, amount=amount,initiated_by=request.user)

@@ -15,7 +15,9 @@ from device.models import Billboard
 from django.db import transaction
 from payments.services import initialize_campaign_payment
 from .tasks import _notify_campaign_submitted
-
+from django.core.paginator import Paginator
+from scheduling.models import TimeSlot
+from security.models import CustomUser
 
 def _get_advertiser(request):
     """Single place to resolve the advertiser — raises if profile missing."""
@@ -47,6 +49,10 @@ def _display_validation_error(request, e):
 
 @login_required(login_url='security:login')
 def advertiser_create_profile(request):
+    if request.user.role != CustomUser.UserRole.ADVERTISER:
+        messages.error(request, "This account is not registered as an advertiser.")
+        return redirect("security:login")
+    
     if hasattr(request.user, 'advertiser_profile'):
         messages.info(request, "Your profile already exists.")
         return redirect("advertiser:dashboard")
@@ -207,14 +213,33 @@ def media_library(request):
         ).values_list("media_id", flat=True)
     )
 
-    media_files = Media.objects.filter(advertiser=advertiser).order_by("-created_at")
-    return render(request, "advertiser/media_library.html", {
-        "media_files": media_files,
-        "media_items": media_items,
+    # Filter media based on tab selection ('all', 'image', or 'video')
+    media_type = request.GET.get("type", "all")
+    media_files_qs = Media.objects.filter(advertiser=advertiser)
+
+    if media_type in ["image", "video"]:
+        media_files_qs = media_files_qs.filter(media_type=media_type)
+
+    media_files_qs = media_files_qs.order_by("-created_at")
+
+    # Pagination setup
+    paginator = Paginator(media_files_qs, 12)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "media_files": page_obj.object_list,
+        "page_obj": page_obj,
         "active_media_ids": active_media_ids,
         "completed_media_ids": completed_media_ids,
+        "current_type": media_type,
         "today": today,
-        })
+    }
+
+    if request.headers.get("HX-Request"):
+        return render(request, "advertiser/partials/media_grid.html", context)
+
+    return render(request, "advertiser/media_library.html", context)
  
 @login_required(login_url="security:login")
 @advertiser_required
@@ -289,12 +314,22 @@ def campaign_list(request):
     selected_status = request.GET.get("status", "").strip()
     if selected_status:
         campaigns = campaigns.filter(status=selected_status)
-    
-    return render(request, "advertiser/campaign_list.html", {
-        "campaigns": campaigns,
+
+    paginator = Paginator(campaigns, 15)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "campaigns": page_obj,
+        "page_obj": page_obj,
         "search_query": search_query,
         "selected_status": selected_status,
-    })
+        }
+    # HTMX pagination/filter request — return just the table partial
+    if request.headers.get("HX-Request"):
+        return render(request, "advertiser/partials/campaign_table.html", context)
+
+    return render(request, "advertiser/campaign_list.html", context)
 
 def _build_billboards_json(available_billboards):
     """
@@ -649,7 +684,7 @@ def campaign_edit(request, pk):
         "initial_slots_per_day": initial_slots_per_day,
         "is_edit": True,
     }
-    return render(request, "advertiser/campaign_create.html", context)
+    return render(request, "advertiser/campaign_edit.html", context)
 
 @login_required(login_url="security:login")
 @advertiser_required
@@ -711,6 +746,57 @@ def campaign_detail(request, pk):
         "slots": slots,
         "payment": payment,
     })
+
+
+@login_required(login_url="security:login")
+@advertiser_required
+def campaign_playback_log(request, pk):
+    """
+    Slot-by-slot reconciliation for the advertiser: every TimeSlot scheduled
+    for this campaign, matched against whether a PlaybackLog confirms it
+    actually played on the ad manager's billboard.
+    """
+    advertiser = _get_advertiser(request)
+    campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
+
+    time_slots = (
+        TimeSlot.objects.filter(campaign=campaign)
+        .select_related("billboard")
+        .prefetch_related("playback_logs")
+        .order_by("date", "play_order")
+    )
+
+    today = timezone.now().date()
+    rows = []
+    for ts in time_slots:
+        log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
+        if log:
+            state = "confirmed"
+        elif ts.date > today:
+            state = "upcoming"
+        else:
+            state = "missed"
+        rows.append({"time_slot": ts, "log": log, "state": state})
+
+    total = len(rows)
+    confirmed_count = sum(1 for r in rows if r["state"] == "confirmed")
+    missed_count = sum(1 for r in rows if r["state"] == "missed")
+    upcoming_count = sum(1 for r in rows if r["state"] == "upcoming")
+
+    context = {
+        "campaign": campaign,
+        "rows": rows,
+        "total": total,
+        "confirmed_count": confirmed_count,
+        "missed_count": missed_count,
+        "upcoming_count": upcoming_count,
+        "confirmed_pct": round((confirmed_count / total) * 100, 1) if total else 0,
+    }
+
+    if request.headers.get("HX-Request"):
+        return render(request, "advertiser/partials/campaign_playback_log_table.html", context)
+
+    return render(request, "advertiser/campaign_playback_log.html", context)
 
 @login_required(login_url="security:login")
 @advertiser_required

@@ -15,7 +15,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError("Password is required")
         
         email = self.normalize_email(email)
-        extra_fields["role"] = self.model.UserRole.AD_MANAGER # force safe default
+        extra_fields["role"] = self.model.UserRole.ADVERTISER # force safe default
 
         validate_password(password)
 

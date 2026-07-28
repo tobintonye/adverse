@@ -1,17 +1,11 @@
 from .models import CustomUser as User
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
 from django.contrib.auth.forms import SetPasswordForm  as DjangoSetPasswordForm
 from django_recaptcha.fields import ReCaptchaField
 from django_recaptcha.widgets import ReCaptchaV2Checkbox 
-
-User = get_user_model()
-
-from .models import CustomUser as User
-from django.contrib.auth import get_user_model
-from django import forms
+from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
 
@@ -28,8 +22,13 @@ class RegisterForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Invalid email or password.")
-        return email
+        return email   
 
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        validate_password(password)
+        return password
+    
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")

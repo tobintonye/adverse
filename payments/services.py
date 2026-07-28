@@ -484,91 +484,90 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
         raise ValidationError("Your bank account is not verified yet.")
 
     amount = money(amount)
-    
-    # Calculate available balance
-    total_earned = AdManagerEarning.objects.filter(
-        ad_manager=ad_manager
-    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    if amount <= 0:
+        raise ValidationError("Withdrawal amount must be greater than zero.")
 
-    total_withdrawn = PayoutRecord.objects.filter(
-        ad_manager=ad_manager,
-        status__in=[PayoutRecord.Status.SUCCESS, PayoutRecord.Status.PENDING]
-    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    with transaction.atomic():
+        # Locks this ad manager's row for the duration of the transaction, a concurrent withdrawal request for the same ad manager blocks
+        # here until this one commits or rolls back, closing the TOCTOU gap.
+        locked_ad_manager = type(ad_manager).objects.select_for_update().get(pk=ad_manager.pk)
+        # Calculate available balance
+        total_earned = AdManagerEarning.objects.filter(ad_manager=locked_ad_manager).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+        total_withdrawn = PayoutRecord.objects.filter(ad_manager=locked_ad_manager, status__in=[PayoutRecord.Status.SUCCESS, PayoutRecord.Status.PENDING]).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+        available = total_earned - total_withdrawn
 
-    available = total_earned - total_withdrawn
+        if amount > available:
+            raise ValidationError(
+                f"Insufficient balance. Available: ₦{available:.2f}, Requested: ₦{amount:.2f}"
+            )
 
-    if amount > available:
-        raise ValidationError(
-            f"Insufficient balance. Available: ₦{available:.2f}, Requested: ₦{amount:.2f}"
+        # DEVELOPMENT MOCK — remove when Paystack account is upgraded to Regular
+        if os.environ.get("MOCK_WITHDRAWALS"):
+            payout = PayoutRecord.objects.create(
+                ad_manager=locked_ad_manager,
+                subaccount=subaccount,
+                bank_name=subaccount.bank_name,
+                account_number_last4=subaccount.account_number_last4,
+                account_name=subaccount.account_name,
+                amount=amount,
+                paystack_transfer_code=f"mock-{uuid.uuid4().hex}",
+                paystack_reference=f"payout-{uuid.uuid4().hex}",
+                status=PayoutRecord.Status.PENDING,
+            )
+            return payout
+            
+        # Fetch full account details from Paystack using subaccount_code
+        # We never store the full account number locally — Paystack holds it
+        paystack_subaccount_data = _paystack_get(
+            f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}"
+        )
+        subaccount_data = paystack_subaccount_data.get("data", {})
+        full_account_number = subaccount_data.get("account_number", "")
+        bank_code = subaccount_data.get("bank", {})
+
+        if not full_account_number:
+            raise ValidationError(
+                "Could not retrieve bank account details from Paystack. "
+                "Please verify your payment setup."
+            )
+
+        # Create a Paystack transfer recipient using the real account number
+        recipient_response = _paystack_post(
+            "https://api.paystack.co/transferrecipient",
+            {
+                "type": "nuban",
+                "name": subaccount.account_name,
+                "account_number": full_account_number,
+                "bank_code": subaccount.bank_code,
+                "currency": "NGN",
+            },
+        )
+        recipient_code = recipient_response["data"]["recipient_code"]
+
+        # Initiate the transfer
+        reference = f"payout-{uuid.uuid4().hex}"
+        transfer_response = _paystack_post(
+            "https://api.paystack.co/transfer",
+            {
+                "source": "balance",
+                "amount": int(amount * 100),
+                "recipient": recipient_code,
+                "reason": f"AdVerse payout for {ad_manager.business_name}",
+                "reference": reference,
+            },
         )
 
-    # DEVELOPMENT MOCK — remove when Paystack account is upgraded to Regular
-    if os.environ.get("MOCK_WITHDRAWALS"):
+        transfer_data = transfer_response.get("data", {})
+
         payout = PayoutRecord.objects.create(
-            ad_manager=ad_manager,
+            ad_manager=locked_ad_manager,
             subaccount=subaccount,
             bank_name=subaccount.bank_name,
             account_number_last4=subaccount.account_number_last4,
             account_name=subaccount.account_name,
             amount=amount,
-            paystack_transfer_code=f"mock-{uuid.uuid4().hex}",
-            paystack_reference=f"payout-{uuid.uuid4().hex}",
+            paystack_transfer_code=transfer_data.get("transfer_code", ""),
+            paystack_reference=reference,
             status=PayoutRecord.Status.PENDING,
         )
         return payout
-        
-    # Fetch full account details from Paystack using subaccount_code
-    # We never store the full account number locally — Paystack holds it
-    paystack_subaccount_data = _paystack_get(
-        f"https://api.paystack.co/subaccount/{subaccount.subaccount_code}"
-    )
-    subaccount_data = paystack_subaccount_data.get("data", {})
-    full_account_number = subaccount_data.get("account_number", "")
-    bank_code = subaccount_data.get("bank", {})
-
-    if not full_account_number:
-        raise ValidationError(
-            "Could not retrieve bank account details from Paystack. "
-            "Please verify your payment setup."
-        )
-
-    # Create a Paystack transfer recipient using the real account number
-    recipient_response = _paystack_post(
-        "https://api.paystack.co/transferrecipient",
-        {
-            "type": "nuban",
-            "name": subaccount.account_name,
-            "account_number": full_account_number,
-            "bank_code": subaccount.bank_code,
-            "currency": "NGN",
-        },
-    )
-    recipient_code = recipient_response["data"]["recipient_code"]
-
-    # Initiate the transfer
-    reference = f"payout-{uuid.uuid4().hex}"
-    transfer_response = _paystack_post(
-        "https://api.paystack.co/transfer",
-        {
-            "source": "balance",
-            "amount": int(amount * 100),
-            "recipient": recipient_code,
-            "reason": f"AdVerse payout for {ad_manager.business_name}",
-            "reference": reference,
-        },
-    )
-
-    transfer_data = transfer_response.get("data", {})
-
-    payout = PayoutRecord.objects.create(
-        ad_manager=ad_manager,
-        subaccount=subaccount,
-        bank_name=subaccount.bank_name,
-        account_number_last4=subaccount.account_number_last4,
-        account_name=subaccount.account_name,
-        amount=amount,
-        paystack_transfer_code=transfer_data.get("transfer_code", ""),
-        paystack_reference=reference,
-        status=PayoutRecord.Status.PENDING,
-    )
-    return payout

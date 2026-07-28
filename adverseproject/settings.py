@@ -87,13 +87,28 @@ TEMPLATES = [
     },
 ]
 
+
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ['GOOGLE_CLIENT_ID'],
+            'secret': os.environ['GOOGLE_CLIENT_SECRET'],
+            'key': ''
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
 #ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 #ACCOUNT_EMAIL_REQUIRED = True
 
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 LOGIN_URL = 'security:login'
 LOGIN_REDIRECT_URL = 'security:post_login'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'security:login'
@@ -162,7 +177,10 @@ REST_FRAMEWORK = {
         "anon": "20/hour",
         "user": "100/hour",
         # Custom scope for sensitive endpoints
-        "auth_sensitive": "5/hour",
+        "auth_register": "10/hour",
+        "auth_login": "10/hour",
+        "auth_password_reset": "5/hour",
+        "auth_resend_verification": "5/hour",
     },
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -209,7 +227,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # PASSWORD_RESET_TIMEOUT = 86400
 # Rate limit
 RATELIMIT_ENABLE = env.bool('RATELIMIT_ENABLE')
-EMAIL_BACKEND = env('EMAIL_BACKEND', default="=django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = env('EMAIL_BACKEND', default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
@@ -288,18 +306,5 @@ AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler' # Uses Redis cache so it's
 PAYSTACK_SECRET_KEY=env('PAYSTACK_SECRET_KEY').strip().strip("'").strip('"')
 PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY').strip()
 
-# Django-Q2 config — ORM broker 
-Q_CLUSTER = {
-    'name': 'adverseproject',
-    'workers': 2,           # number of worker processes
-    'timeout': 60,          # task timeout in seconds
-    'retry': 120,           # retry failed tasks after 120s
-    'max_attempts': 3,      # give up after 3 tries
-    'orm': 'default',       # use your existing DB as broker
-    'ack_failures': True,   # don't requeue tasks that keep failing
-    'save_limit': 250,      # keep last 250 finished tasks for visibility
-    'bulk': 10,
-    'sync': False,          # set True in tests to run tasks synchronously
-}
 # settings.py
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")

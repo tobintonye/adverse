@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from .forms import RegisterForm, LoginForm, PasswordResetForm, SetPasswordForm
+from .tokens import email_verification_token
 from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
@@ -8,17 +9,18 @@ from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.validators import validate_email
-from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_decode
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-
-from core.services.email_service import ( send_verification_email, send_password_reset_email_safe, send_password_changed_email, )
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from core.services.email_service import (send_verification_email, send_password_reset_email_safe, send_password_changed_email,)
 
 User = get_user_model()
+
+INVALID_CREDENTIALS_MSG = "Login failed. Please check your credentials and try again."
 
 def verifyEmail(request, uidb64, token):
     try:
@@ -26,7 +28,7 @@ def verifyEmail(request, uidb64, token):
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
-    if user is not None and default_token_generator.check_token(user, token):
+    if user is not None and email_verification_token.check_token(user, token):
         user.is_active = True
         user.save()
         storage = messages.get_messages(request)
@@ -41,9 +43,8 @@ def verification_pending(request):
     email = request.session.get('pending_verification_email', '')
     return render(request, 'security/verification_pending.html', {'email':email})
 
-#@ratelimit(key='ip', rate='10/h', block=True)
-#@ratelimit(key='post:email', rate='3/h', block=True)
-#@ratelimit(key='post:email', rate='6/d', block=True)
+@ratelimit(key='ip', rate='10/h', block=True)
+@ratelimit(key='post:email', rate='3/h', block=True)
 def resendVerificationLink(request):
     if request.user.is_authenticated and request.user.is_active: 
         messages.info(request, "Your email is already verified.")
@@ -68,19 +69,16 @@ def resendVerificationLink(request):
         messages.success(request, 'If that email is registered and unverified, a new link has been sent.')
         return redirect('security:verificationpending')
     return render(request, 'security/resendVerification.html') 
-  
+
 #@ratelimit(key='ip', rate='10/h', block=True)
 #@ratelimit(key='post:email', rate='3/h', block=True)
-@transaction.atomic
+#@transaction.atomic
 def registerAccount(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = False # until a user is verified 
-
-            #user.first_name = request.POST.get('first_name', '').strip()
-            #user.last_name = request.POST.get('last_name', '').strip()
             user.set_password(form.cleaned_data["password"])
             user.save()
             try: 
@@ -101,8 +99,8 @@ def registerAccount(request):
         form = RegisterForm()
     return render(request, "security/register.html", {"form":form})
 
-#@ratelimit(key='ip', rate='10/m', block=True)
-#@ratelimit(key='post:email', rate='5/m', block=True)
+@ratelimit(key='ip', rate='10/m', block=True)
+@ratelimit(key='post:email', rate='5/m', block=True)
 def loginAccount(request):
     # Clear any stale messages from other pages (e.g. registration)
     if request.method == "GET":
@@ -117,10 +115,10 @@ def loginAccount(request):
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                messages.error(request, "Invalid email or password.")
+                messages.error(request, INVALID_CREDENTIALS_MSG)
                 return render(request, "security/login.html", {"form": form})
             if not user.check_password(password):
-                messages.error(request, "Login failed. Please check your credentials and try again.")
+                messages.error(request, INVALID_CREDENTIALS_MSG)
                 return render(request, "security/login.html", {"form": form})
             if not user.is_active:
                 request.session['pending_verification_email'] = user.email
@@ -133,7 +131,7 @@ def loginAccount(request):
                 request.session.set_expiry(60 * 60 * 24 * 30)
             else:
                 request.session.set_expiry(0)
-            #messages.success(request, f"Welcome back, {user.first_name}")
+                
             if user.role == CustomUser.UserRole.ADVERTISER:
                 if hasattr(user, 'advertiser_profile'):
                     return redirect('advertiser:dashboard')
@@ -142,9 +140,6 @@ def loginAccount(request):
                 return redirect('admin_panel:dashboard')
             else:
                 if hasattr(user, 'ad_manager'):
-                    #ad_manager = user.ad_manager
-                    #ad_manager.revenue = ad_manager.calculate_revenue()
-                   # ad_manager.save(update_fields=['revenue'])
                     return redirect('admanager:dashboard')
                 return redirect('admanager:profile')
     else:
@@ -152,20 +147,19 @@ def loginAccount(request):
     return render(request, "security/login.html", {"form": form})
 
 @login_required
+@require_http_methods(["POST"])
+@never_cache
 def logoutAccount(request):
-    if request.method == "POST" or settings.DEBUG: # dev only
-        #first_name = request.user.first_name  
-        storage = messages.get_messages(request)
-        storage.used = True
-        logout(request)
-        #messages.success(request, f'{first_name} logged out successfully')
-        return redirect("security:login")
-    else:
-        return redirect("adverse:home")
+    storage = messages.get_messages(request)
+    storage.used = True
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    response = redirect("security:login")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME)
+    return response
     
 @login_required(login_url='security:login')
 def selectuser_role(request):
-    # Check if user already has a role selected
     if request.user.role:
         if request.user.role == CustomUser.UserRole.AD_MANAGER:
             messages.info(request, "You have already selected your role as Ad manager.")
@@ -190,6 +184,8 @@ def selectuser_role(request):
     return render(request, 'security/selectrole.html')
 
 # handle password reset request
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
+@ratelimit(key='post:email', rate='3/h', method='POST', block=True)
 def passwordReset(request): 
     if request.method == "POST":
         form = PasswordResetForm(request.POST)
@@ -200,7 +196,6 @@ def passwordReset(request):
                 send_password_reset_email_safe(user, request)
             except User.DoesNotExist: 
                 send_password_reset_email_safe(None, request)
-           # messages.success(request, "If an account with that email exists, a password")
             return redirect("security:passwordresetdone")
     else:
         form = PasswordResetForm()
@@ -252,14 +247,14 @@ def resend_passwordreset_link(request):
             send_password_reset_email_safe(user, request)
         except User.DoesNotExist:
             send_password_reset_email_safe(None, request)
-
-       # messages.success(request, "If an security with that email exists, a password reset link has been sent.")
         return redirect("security:passwordresetdone")
     return render(request, "security/passwordReset.html")
 
 def post_login(request):
     if request.user.is_authenticated:
         role = request.user.role
+        if not role: 
+            return redirect('security:selectrole')
         if role == CustomUser.UserRole.ADVERTISER:
             if hasattr(request.user, 'advertiser_profile'):
                 return redirect('advertiser:dashboard')
@@ -273,15 +268,13 @@ def post_login(request):
     return redirect('adverse:home')
 
 @login_required(login_url='security:login')
-#@ratelimit(key='user', rate='5/h', method='POST', block=True)
+@ratelimit(key='user', rate='5/h', method='POST', block=True)
 def change_password(request):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
-            # Notify the user — cheap, high-value: if this wasn't them,
-            # this is their only signal that something happened.
             send_password_changed_email(user)
             messages.success(request, 'Your password has been changed successfully.')
             role = request.user.role

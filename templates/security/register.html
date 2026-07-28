@@ -1,4 +1,5 @@
 {% load static %}
+{% load socialaccount %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,43 +7,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Register — Advers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          bg: '#0A0A0B',
-          panel: '#131316',
+          bg: '#0D0D0E',
+          panel: '#171717',
           accent: '#3E8CFF',
         },
         fontFamily: {
-          display: ['Space Grotesk', 'sans-serif'],
           sans: ['Inter', 'sans-serif'],
-          mono: ['JetBrains Mono', 'monospace'],
         },
       },
     },
   }
 </script>
 </head>
-<body class="bg-bg text-white font-sans min-h-screen flex items-center justify-center p-6">
+<body class="bg-bg text-white font-sans min-h-svh flex flex-col items-center justify-center p-4">
 
-  <div class="w-full max-w-sm bg-panel border border-white/10 rounded-2xl p-10 shadow-2xl">
+  <!-- Compact 340px container -->
+  <div class="w-full max-w-[340px] py-6 flex flex-col items-center">
 
-    <!-- Logo & Heading -->
+    <!-- Header -->
     <div class="text-center mb-8">
-      <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-11 h-11 object-contain mx-auto mb-4 drop-shadow-lg">
-      <h2 class="font-display font-bold text-xl tracking-tight">Create an account</h2>
-      <p class="text-white/50 text-sm mt-1.5">Join the Advers platform</p>
+      <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-10 h-10 object-contain mx-auto mb-4">
+      <h2 class="font-bold text-2xl tracking-tight">Create an account</h2>
     </div>
 
     <!-- Flash Messages -->
     {% if messages %}
-    <div class="mb-5 space-y-2">
+    <div class="w-full mb-5 space-y-2">
       {% for message in messages %}
-      <div class="p-3 text-sm rounded-lg border
+      <div class="p-3 text-xs sm:text-sm rounded-full border text-center
         {% if message.tags == 'error' %}
           bg-red-500/10 border-red-500/30 text-red-400
         {% else %}
@@ -55,56 +54,53 @@
     {% endif %}
 
     <!-- Register Form -->
-    <form method="post" class="space-y-4">
+    <form method="post" class="w-full space-y-3">
       {% csrf_token %}
 
       <!-- Email -->
       <div>
-        <label class="block font-mono text-[10px] uppercase tracking-wider text-white/60 mb-2">Email</label>
-        <input type="email" name="{{ form.email.name }}" placeholder="you@example.com" required
-               class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
+        <input type="email" name="{{ form.email.name }}" placeholder="Email address" required
+               class="w-full bg-[#0D0D0E] border border-white/20 focus:border-accent rounded-full px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-accent transition appearance-none">
         {% for error in form.email.errors %}
-          <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+          <p class="text-red-400 text-xs mt-1 text-center">{{ error }}</p>
         {% endfor %}
       </div>
 
       <!-- Password -->
       <div>
-        <label class="block font-mono text-[10px] uppercase tracking-wider text-white/60 mb-2">Password</label>
-        <input type="password" name="{{ form.password.name }}" placeholder="••••••••" required
-               class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
+        <input type="password" name="{{ form.password.name }}" placeholder="Password" required
+               class="w-full bg-[#0D0D0E] border border-white/20 focus:border-accent rounded-full px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-accent transition appearance-none">
         {% for error in form.password.errors %}
-          <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+          <p class="text-red-400 text-xs mt-1 text-center">{{ error }}</p>
         {% endfor %}
       </div>
 
       <!-- Confirm Password -->
       <div>
-        <label class="block font-mono text-[10px] uppercase tracking-wider text-white/60 mb-2">Confirm password</label>
-        <input type="password" name="{{ form.password2.name }}" placeholder="••••••••" required
-               class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
+        <input type="password" name="{{ form.password2.name }}" placeholder="Confirm password" required
+               class="w-full bg-[#0D0D0E] border border-white/20 focus:border-accent rounded-full px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-accent transition appearance-none">
         {% for error in form.password2.errors %}
-          <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+          <p class="text-red-400 text-xs mt-1 text-center">{{ error }}</p>
         {% endfor %}
       </div>
 
-      <!-- Submit -->
+      <!-- Blue Primary Submit Button -->
       <button type="submit"
-              class="w-full py-2.5 bg-accent hover:bg-blue-400 text-[#06101F] text-sm font-semibold rounded-lg transition-all duration-200 mt-1 active:scale-[0.98]">
+              class="w-full py-3 bg-accent hover:bg-blue-400 text-[#06101F] text-sm font-semibold rounded-full transition-all duration-200 mt-2 active:scale-[0.98] touch-manipulation cursor-pointer">
         Create account
       </button>
     </form>
 
     <!-- Divider -->
-    <div class="flex items-center gap-3 my-5">
+    <div class="flex items-center gap-3 my-5 w-full">
       <div class="flex-1 h-px bg-white/10"></div>
-      <span class="text-xs text-white/40 font-mono">or</span>
+      <span class="text-xs text-white/40 uppercase tracking-widest font-mono">or</span>
       <div class="flex-1 h-px bg-white/10"></div>
     </div>
 
-    <!-- Google SSO -->
-    <a href="#"
-       class="flex items-center justify-center gap-3 w-full py-2.5 bg-transparent border border-white/10 hover:border-white/30 text-white text-sm font-semibold rounded-lg transition-all duration-200 active:scale-[0.98]">
+    <!-- Google SSO Below Form -->
+    <a href="{% provider_login_url 'google' %}"
+       class="flex items-center justify-center gap-3 w-full py-3 bg-[#171717] hover:bg-[#212121] border border-white/10 hover:border-white/20 text-white text-sm font-medium rounded-full transition-all duration-200 active:scale-[0.98] touch-manipulation">
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -115,9 +111,9 @@
     </a>
 
     <!-- Login Link -->
-    <p class="text-center text-white/50 text-sm mt-6">
+    <p class="text-center text-white/60 text-xs mt-6">
       Already have an account?
-      <a href="{% url 'security:login' %}" class="text-accent font-semibold hover:text-blue-400">Log in</a>
+      <a href="{% url 'security:login' %}" class="text-accent font-semibold hover:text-blue-400 transition-colors">Log in</a>
     </p>
 
   </div>
