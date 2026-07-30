@@ -1,16 +1,20 @@
 {% extends "adManager/base.html" %}
 {% load static %}
-
 {% block title %}Schedule — {{ billboard.name }}{% endblock %}
-
 {% block page_title %}{{ billboard.name }} Schedule{% endblock %}
 {% block page_description %}What's playing on this screen, and when.{% endblock %}
-
 {% block page_container_class %}max-w-5xl mx-auto{% endblock %}
-
 {% block content %}
-<div class="space-y-6">
 
+<a href="{% url 'device:billboard_list' %}"
+   class="inline-flex items-center gap-1.5 mb-4 text-sm font-medium text-white/50 hover:text-white transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Billboards
+</a>
+
+<div class="space-y-6">
     {# Capacity Warning Banner #}
     {% if not has_capacity_set %}
     <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 text-amber-400 text-xs">
@@ -20,31 +24,27 @@
         <p class="font-medium">No capacity has been calculated for this billboard yet, so no slots can be scheduled here. Capacity is set automatically from operating hours.</p>
     </div>
     {% endif %}
-
     {# Date Controls #}
-    <div class="bg-panel border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-xl">
-        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition">
-            <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-panel border border-white/10 rounded-xl p-4 flex items-center justify-between gap-2 shadow-xl">
+        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white/90 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
-            <span>{{ prev_date|date:"M j" }}</span>
+            <span class="hidden sm:inline">{{ prev_date|date:"M j" }}</span>
         </a>
-
-        <div class="text-center">
-            <p class="text-sm font-bold text-white tracking-wide">{{ target_date|date:"l, F j, Y" }}</p>
+        <div class="text-center min-w-0">
+            <p class="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{{ target_date|date:"l, F j, Y" }}</p>
             {% if is_today %}
                 <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-accent/10 border border-accent/30 text-accent">Today</span>
             {% endif %}
         </div>
-
-        <a href="?date={{ next_date|date:'Y-m-d' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition">
-            <span>{{ next_date|date:"M j" }}</span>
-            <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="?date={{ next_date|date:'Y-m-d' }}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition flex-shrink-0">
+            <span class="hidden sm:inline">{{ next_date|date:"M j" }}</span>
+            <svg class="w-3.5 h-3.5 text-white/90 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
         </a>
     </div>
-
     {# Capacity Summary Stats #}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
@@ -52,25 +52,22 @@
             <div class="text-2xl font-bold text-white font-mono">{{ max_slots_per_day }}</div>
             <p class="text-[11px] text-white/40 mt-1">slots / day</p>
         </div>
-
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
             <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Booked</p>
             <div class="text-2xl font-bold text-accent font-mono">{{ booked_count }}</div>
             <p class="text-[11px] text-white/40 mt-1">slots on this date</p>
         </div>
-
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
             <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Free</p>
             <div class="text-2xl font-bold text-emerald-400 font-mono">{{ free_count }}</div>
             <p class="text-[11px] text-white/40 mt-1">slots still open</p>
         </div>
     </div>
-
     {# Playlist / Slots Table #}
     {% if time_slots %}
     <div class="bg-panel border border-white/10 rounded-xl shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
+            <table class="w-full text-sm text-left min-w-[600px]">
                 <thead>
                     <tr class="border-b border-white/10 bg-black/30 select-none">
                         <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest w-16">#</th>
@@ -83,7 +80,7 @@
                 <tbody class="divide-y divide-white/5">
                     {% for slot in time_slots %}
                     <tr class="hover:bg-white/[0.02] transition">
-                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/40">{{ slot.play_order }}</td>
+                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/40 whitespace-nowrap">{{ slot.play_order }}</td>
                         <td class="px-6 py-4 align-middle">
                             {% if slot.campaign.media.file %}
                                 <div class="w-16 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center shrink-0">
@@ -99,9 +96,9 @@
                                 </div>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 align-middle font-semibold text-white">{{ slot.campaign.name }}</td>
-                        <td class="px-6 py-4 align-middle text-xs text-white/60">{{ slot.campaign.advertiser.business_name }}</td>
-                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/90 text-right">{{ slot.duration_seconds }}s</td>
+                        <td class="px-6 py-4 align-middle font-semibold text-white whitespace-nowrap">{{ slot.campaign.name }}</td>
+                        <td class="px-6 py-4 align-middle text-xs text-white/60 whitespace-nowrap">{{ slot.campaign.advertiser.business_name }}</td>
+                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/90 text-right whitespace-nowrap">{{ slot.duration_seconds }}s</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -119,6 +116,5 @@
         <p class="text-xs text-white/40 mt-1 max-w-xs">No campaigns are playing on this billboard for {{ target_date|date:"M j, Y" }}.</p>
     </div>
     {% endif %}
-
 </div>
 {% endblock %}

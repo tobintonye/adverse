@@ -261,3 +261,41 @@ def _alert_staff_flagged_payouts(count: int) -> None:
         )
     except Exception as e:
         logger.error("Failed to send flagged payout alert email: %s", e)
+
+# testing - will remove later
+@shared_task(bind=True, max_retries=3)
+def reconcile_pending_payouts(self):
+    """
+    Polls Paystack directly for any PayoutRecord stuck in PENDING for
+    more than N minutes, in case the transfer.success/failed webhook
+    was missed or delayed.
+    """
+    from .services import _paystack_get
+    from django.core.exceptions import ValidationError
+
+    cutoff = timezone.now() - timedelta(minutes=10)
+    stale_pending = PayoutRecord.objects.filter(
+        status=PayoutRecord.Status.PENDING,
+        created_at__lt=cutoff,
+    ).exclude(paystack_transfer_code="")
+
+    for payout in stale_pending:
+        try:
+            data = _paystack_get(
+                f"https://api.paystack.co/transfer/{payout.paystack_transfer_code}"
+            ).get("data", {})
+            paystack_status = data.get("status")
+
+            if paystack_status == "success":
+                payout.mark_success(
+                    paystack_transfer_code=payout.paystack_transfer_code,
+                    paystack_reference=data.get("reference", payout.paystack_reference),
+                    gateway_response=data,
+                )
+            elif paystack_status in ("failed", "reversed"):
+                payout.mark_failed(gateway_response=data)
+        except ValidationError:
+            logger.warning(
+                "reconcile_pending_payouts: could not check transfer %s",
+                payout.paystack_transfer_code,
+            )

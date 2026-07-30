@@ -1,47 +1,50 @@
 {% extends "adManager/base.html" %}
-
 {% block title %}Device {{ billboard.name }}{% endblock %}
 {% block page_title %}Device Status{% endblock %}
 {% block page_description %}
 <p class="text-sm text-white/50 mt-1">Hardware status and controls for the device paired to this billboard.</p>
 {% endblock %}
-
 {% block page_container_class %}max-w-2xl mx-auto{% endblock %}
-
 {% block content %}
+
+<a href="{% url 'device:billboard_list' %}"
+   class="inline-flex items-center gap-1.5 mb-4 text-sm font-medium text-white/50 hover:text-white transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Billboards
+</a>
 
 <!-- Device Status Card -->
 <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl mb-6">
-    <div class="flex items-start justify-between gap-4 mb-6 pb-4 border-b border-white/10">
-        <div>
-            <h2 class="text-lg font-bold font-display text-white">{{ billboard.name }}</h2>
-            <p class="text-xs text-white/50 mt-0.5">{{ billboard.location_name }}</p>
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-6 pb-4 border-b border-white/10">
+        <div class="min-w-0">
+            <h2 class="text-lg font-bold font-display text-white break-words">{{ billboard.name }}</h2>
+            <p class="text-xs text-white/50 mt-0.5 truncate">{{ billboard.location_name }}</p>
         </div>
-
         <!-- Status Badges -->
         {% if player.status == 'disabled' %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30 flex-shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                 Disabled
             </span>
         {% elif player.is_online %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 Online
             </span>
         {% elif player.status == 'pending' %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 flex-shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                 Pending First Heartbeat
             </span>
         {% else %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-white/10 text-white/70 border border-white/20">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-white/10 text-white/70 border border-white/20 flex-shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-white/40"></span>
                 Offline
             </span>
         {% endif %}
     </div>
-
     <!-- Details Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
         <div>
@@ -52,9 +55,7 @@
             <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Pairing Code</p>
             <p class="font-mono text-sm text-white">{{ player.pairing_code }}</p>
         </div>
-
         <div class="sm:col-span-2 border-t border-white/5 my-1"></div>
-
         <div>
             <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Firmware</p>
             <p class="text-sm font-medium text-white">{{ player.firmware_version|default:"—" }}</p>
@@ -65,7 +66,6 @@
         </div>
     </div>
 </div>
-
 {% if player.status != 'disabled' %}
 <!-- Device Controls Card -->
 <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
@@ -76,10 +76,9 @@
         </svg>
         Device Controls
     </h3>
-
     <div class="divide-y divide-white/10">
         <!-- Rotate token -->
-        <div class="flex items-center justify-between gap-4 py-3.5 first:pt-0">
+        <div class="flex items-start justify-between gap-4 py-3.5 first:pt-0">
             <div>
                 <p class="text-sm font-medium text-white">Rotate auth token</p>
                 <p class="text-xs text-white/50 mt-0.5">Invalidates the current token. The device will need to re-authenticate.</p>
@@ -91,9 +90,8 @@
                 </button>
             </form>
         </div>
-
         <!-- Unpair -->
-        <div class="flex items-center justify-between gap-4 py-3.5">
+        <div class="flex items-start justify-between gap-4 py-3.5">
             <div>
                 <p class="text-sm font-medium text-white">Unpair device</p>
                 <p class="text-xs text-white/50 mt-0.5">Frees this billboard so a new device can be paired. This device stays active and can be paired elsewhere.</p>
@@ -105,9 +103,8 @@
                 </button>
             </form>
         </div>
-
         <!-- Disable -->
-        <div class="flex items-center justify-between gap-4 py-3.5 last:pb-0">
+        <div class="flex items-start justify-between gap-4 py-3.5 last:pb-0">
             <div>
                 <p class="text-sm font-medium text-rose-400">Disable device</p>
                 <p class="text-xs text-white/50 mt-0.5">Permanently deactivates this device. It stays linked to this billboard for record-keeping but can no longer authenticate.</p>
@@ -126,5 +123,4 @@
     <p>This device has been disabled and can no longer authenticate or receive content. It remains linked to this billboard for historical record.</p>
 </div>
 {% endif %}
-
 {% endblock %}

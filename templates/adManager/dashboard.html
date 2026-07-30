@@ -1,22 +1,18 @@
 {% extends "adManager/base.html" %}
 {% load static %}
-
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block page_description %}Monitor your billboard inventory and campaign performance at a glance.{% endblock %}
-
 {% block page_header_actions %}
 <a href="{% url 'device:billboard_create' %}"
-   class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg bg-accent hover:bg-blue-400 text-[#06101F] transition">
+   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg bg-accent hover:bg-blue-400 text-[#06101F] transition">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
     Add Billboard
 </a>
 {% endblock %}
-
 {% block content %}
-
 <!-- Verification Status Header Warning -->
 {% if verification_status == 'pending' %}
     {% if ad_manager.verification_requested %}
@@ -26,8 +22,8 @@
     </div>
     {% else %}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-sm mb-6">
-        <div class="flex items-center gap-3">
-            <svg class="w-4 h-4 flex-shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-start sm:items-center gap-3">
+            <svg class="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
             <p class="font-medium text-amber-200">
@@ -49,11 +45,10 @@
     <p class="font-medium text-red-300">Account verification rejected. Reason: <strong>{{ rejection_reason }}</strong></p>
 </div>
 {% endif %}
-
 {% if not has_bank_account %}
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-sm mb-6">
-    <div class="flex items-center gap-3">
-        <svg class="w-4 h-4 flex-shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex items-start sm:items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
         </svg>
         <p class="font-medium text-amber-200">
@@ -61,52 +56,50 @@
         </p>
     </div>
     <a href="{% url 'admanager:payment_setup' %}"
-       class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-[#1A1200] transition flex-shrink-0 whitespace-nowrap">
+       class="w-full sm:w-auto text-center px-3.5 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-[#1A1200] transition flex-shrink-0 whitespace-nowrap">
         Add Bank Account &rarr;
     </a>
 </div>
 {% endif %}
-
 {% if subaccount_inactive %}
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-lg border bg-red-500/10 border-red-500/30 text-sm mb-6">
-    <div class="flex items-center gap-3">
-        <svg class="w-4 h-4 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex items-start sm:items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0 text-red-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
+            </svg>
         <p class="font-medium text-red-300">
             Your payment account has been <strong>deactivated</strong>.
             You cannot receive payments until you set up a new bank account.
         </p>
     </div>
     <a href="{% url 'admanager:payment_setup' %}"
-       class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-red-500 hover:bg-red-400 text-white transition flex-shrink-0 whitespace-nowrap">
+       class="w-full sm:w-auto text-center px-3.5 py-2 text-sm font-semibold rounded-lg bg-red-500 hover:bg-red-400 text-white transition flex-shrink-0 whitespace-nowrap">
         Fix Payment Account &rarr;
     </a>
 </div>
 {% elif subaccount_unverified %}
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-sm mb-6">
-    <div class="flex items-center gap-3">
-        <svg class="w-4 h-4 flex-shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex items-start sm:items-center gap-3">
+        <svg class="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
+            </svg>
         <p class="font-medium text-amber-200">
             Your bank account is connected but <strong>not yet verified</strong>.
             Payments are paused until verification is complete.
         </p>
     </div>
     <a href="{% url 'admanager:payment_setup' %}"
-       class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-[#1A1200] transition flex-shrink-0 whitespace-nowrap">
+       class="w-full sm:w-auto text-center px-3.5 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-[#1A1200] transition flex-shrink-0 whitespace-nowrap">
         Verify Account &rarr;
     </a>
 </div>
 {% endif %}
-
 <!-- Welcome & Platform Header -->
 <div class="bg-gradient-to-b from-panel to-[#0d0d0f] border border-white/10 rounded-2xl mb-6">
-    <div class="p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="font-display text-xl font-bold tracking-tight flex items-center gap-2">
-                Welcome back, {{ business_name }}
+            <h1 class="font-display text-xl font-bold tracking-tight flex flex-wrap items-center gap-2">
+                <span>Welcome back, {{ business_name }}</span>
                 {% if verification_status == 'verified' %}
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -125,7 +118,6 @@
         </div>
     </div>
 </div>
-
 <!-- Row 1: KPI Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <!-- Active Screens -->
@@ -139,7 +131,6 @@
         <div class="font-display text-3xl font-bold">{{ total_billboards|default:"0" }}</div>
         <div class="text-[10px] text-white/60">Screens listed on the network</div>
     </a>
-
     <!-- Campaigns Served -->
     <a href="{% url 'admanager:campaign_requests' %}" class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 flex flex-col gap-2">
         <div class="text-accent">
@@ -151,7 +142,6 @@
         <div class="font-display text-3xl font-bold">{{ total_campaigns_served|default:"0" }}</div>
         <div class="text-[10px] text-white/60">Historical campaigns broadcasted</div>
     </a>
-
     <!-- Impressions -->
     <div class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 flex flex-col gap-2">
         <div class="text-accent">
@@ -165,7 +155,6 @@
         <div class="text-[10px] text-white/60">Estimated audience screen views</div>
     </div>
 </div>
-
 <!-- Row 1.2: Financial KPIs -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <!-- Available Balance -->
@@ -178,44 +167,13 @@
         <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">Available Balance</div>
         <div class="font-display text-3xl font-bold text-emerald-400">&#8358;{{ available_balance|floatformat:2 }}</div>
         <div class="mt-1">
-            <button onclick="document.getElementById('withdraw_modal').showModal()"
+            <button type="button" onclick="document.getElementById('withdraw_modal').showModal()"
                     class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     {% if available_balance <= 0 %}disabled{% endif %}>
                 Withdraw
             </button>
         </div>
     </div>
-
-    <!-- Withdrawal Modal -->
-    <dialog id="withdraw_modal" class="modal backdrop:bg-black/65 bg-transparent">
-        <div class="bg-panel border border-white/10 rounded-2xl p-6 w-full max-w-sm">
-            <h3 class="font-display font-bold text-lg mb-4">Request Withdrawal</h3>
-            <p class="text-sm text-white/60 mb-4">
-                Available balance: <strong class="text-emerald-400">&#8358;{{ available_balance|floatformat:2 }}</strong>
-            </p>
-            <form method="POST" action="{% url 'admanager:request_withdrawal' %}">
-                {% csrf_token %}
-                <div class="mb-4">
-                    <label class="block font-mono text-[10px] uppercase tracking-wider text-white/75 mb-2">Amount (&#8358;)</label>
-                    <input type="number" name="amount" step="0.01"
-                           min="100" max="{{ available_balance }}"
-                           placeholder="Enter amount"
-                           class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" required />
-                </div>
-                <p class="text-xs text-white/50 mb-4">
-                    Funds will be sent to your registered bank account ending in
-                    <strong class="text-white/70">{{ ad_manager.paystack_subaccount.account_number_last4|default:"N/A" }}</strong>
-                </p>
-                <div class="flex items-center justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('withdraw_modal').close()"
-                            class="px-3.5 py-2 text-sm text-white/60 hover:text-white transition">Cancel</button>
-                    <button type="submit"
-                            class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[#06210F] transition">Confirm Withdrawal</button>
-                </div>
-            </form>
-        </div>
-    </dialog>
-
     <!-- Lifetime Revenue -->
     <div class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 flex flex-col gap-2">
         <div class="text-accent">
@@ -227,21 +185,18 @@
         <div class="font-display text-3xl font-bold text-accent">&#8358;{{ revenue|floatformat:2 }}</div>
         <div class="text-[10px] text-white/60">Total share from approved campaigns</div>
     </div>
-
     <!-- Total Paid Out -->
     <div class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 flex flex-col gap-2">
-    <!-- Icon in Indigo -->
-    <div class="text-cyan-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-    </div>
+        <div class="text-cyan-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
         <div class="text-[10px] font-mono uppercase tracking-widest text-white/80 font-semibold">Total Paid Out</div>
         <div class="font-display text-3xl font-bold text-cyan-400">&#8358;{{ total_withdrawn|floatformat:2 }}</div>
         <div class="text-[11px] text-white/70">Approved offline payments</div>
     </div>
 </div>
-
 <!-- Row 1.5: Revenue Analytics Charts -->
 <div class="bg-panel border border-white/10 rounded-xl p-5 mb-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10 mb-6">
@@ -249,16 +204,15 @@
             <h3 class="text-xs font-mono font-bold tracking-wider uppercase text-white/90">Revenue Analytics</h3>
             <p class="text-[10px] text-white/60 mt-0.5">Monthly and annual revenue from billboard campaign bookings</p>
         </div>
-        <div class="inline-flex items-center bg-black/30 p-1 border border-white/10 rounded-full gap-1">
-            <button id="btn-monthly" onclick="switchChart('monthly')" class="px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 bg-accent text-[#06101F]">
-                Monthly Revenue
+        <div class="inline-flex items-center w-full sm:w-auto justify-between sm:justify-start bg-black/30 p-1 border border-white/10 rounded-full gap-1">
+            <button id="btn-monthly" onclick="switchChart('monthly')" class="flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 bg-accent text-[#06101F]">
+                Monthly
             </button>
-            <button id="btn-annual" onclick="switchChart('annual')" class="px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 text-white/50 hover:text-white">
-                Annual Revenue
+            <button id="btn-annual" onclick="switchChart('annual')" class="flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 text-white/50 hover:text-white">
+                Annual
             </button>
         </div>
     </div>
-
     <div class="relative h-64 md:h-72 w-full">
         <div id="container-monthly" class="w-full h-full">
             <canvas id="monthlyChart"></canvas>
@@ -268,202 +222,78 @@
         </div>
     </div>
 </div>
-
-<!-- Row 2: Clean Actions Control Panel -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Row 2: Actions Control Panel -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
     <!-- Manage Billboards Action Card -->
-    <a href="{% url 'device:billboard_list' %}" class="group bg-panel border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 hover:scale-[1.02]">
-        <div class="p-5 flex flex-row items-center gap-4">
-            <div class="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 group-hover:text-accent transition-all">
+    <a href="{% url 'device:billboard_list' %}" class="group bg-panel border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 hover:scale-[1.01]">
+        <div class="p-5 flex items-center gap-4">
+            <div class="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 group-hover:text-accent transition-all flex-shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
             </div>
             <div>
-                <p class="text-sm font-bold">Manage Billboards</p>
+                <p class="text-sm font-bold text-white">Manage Billboards</p>
                 <p class="text-[11px] text-white/50 mt-0.5">Add, edit, or audit your listed screen specs and prices</p>
             </div>
         </div>
     </a>
-
     <!-- Campaign Requests Action Card -->
-    <a href="{% url 'admanager:campaign_requests' %}" class="group bg-panel border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 hover:scale-[1.02]">
-        <div class="p-5 flex flex-row items-center justify-between gap-4">
+    <a href="{% url 'admanager:campaign_requests' %}" class="group bg-panel border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300 hover:scale-[1.01]">
+        <div class="p-5 flex items-center justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 group-hover:text-accent transition-all">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 group-hover:text-accent transition-all flex-shrink-0">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-bold">Campaign Requests</p>
+                    <p class="text-sm font-bold text-white">Campaign Requests</p>
                     <p class="text-[11px] text-white/50 mt-0.5">Review and approve pending campaign schedules</p>
                 </div>
             </div>
-
             {% if pending_requests_count > 0 %}
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold animate-pulse">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold animate-pulse flex-shrink-0">
                 {{ pending_requests_count }} NEW
             </span>
             {% endif %}
         </div>
     </a>
 </div>
+<!-- Standalone Request Withdrawal Dialog (Placed outside grid hierarchy) -->
+<dialog id="withdraw_modal" class="hidden open:flex fixed inset-0 z-50 items-center justify-center bg-black/75 backdrop-blur-sm p-4 w-full h-full border-0 bg-transparent">
+    <div class="bg-panel border border-white/10 rounded-2xl p-6 w-full max-w-sm mx-auto shadow-2xl">
+        <h3 class="font-display font-bold text-lg mb-4 text-white">Request Withdrawal</h3>
+        <p class="text-sm text-white/60 mb-4">
+            Available balance: <strong class="text-emerald-400">&#8358;{{ available_balance|floatformat:2 }}</strong>
+        </p>
+        <form method="POST" action="{% url 'admanager:request_withdrawal' %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block font-mono text-[10px] uppercase tracking-wider text-white/75 mb-2">Amount (&#8358;)</label>
+                <input type="number" name="amount" step="0.01"
+                       min="100" max="{{ available_balance }}"
+                       placeholder="Enter amount"
+                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" required />
+            </div>
+            <p class="text-xs text-white/50 mb-4">
+                Funds will be sent to your registered bank account ending in
+                <strong class="text-white/70">{{ ad_manager.paystack_subaccount.account_number_last4|default:"N/A" }}</strong>
+            </p>
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="document.getElementById('withdraw_modal').close()"
+                        class="px-3.5 py-2 text-sm text-white/60 hover:text-white transition">Cancel</button>
+                <button type="submit"
+                        class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[#06210F] transition">Confirm Withdrawal</button>
+            </div>
+        </form>
+    </div>
+</dialog>
 
-<!-- Load Chart.js from CDN -->
+<!-- Chart data, passed to the external JS file -->
+{{ chart_data|json_script:"dashboard-chart-data" }}
+
+<!-- Load Chart.js from CDN, then the dashboard logic -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const monthlyLabels = JSON.parse('{{ monthly_labels_json|escapejs }}');
-    const monthlyValues = JSON.parse('{{ monthly_values_json|escapejs }}');
-    const annualLabels = JSON.parse('{{ annual_labels_json|escapejs }}');
-    const annualValues = JSON.parse('{{ annual_values_json|escapejs }}');
-
-    let monthlyChartInstance = null;
-    let annualChartInstance = null;
-
-    const customTooltipOptions = {
-        enabled: true,
-        backgroundColor: '#131316',
-        titleColor: '#F2F2F5',
-        titleFont: { family: 'Inter', weight: 'bold', size: 11 },
-        bodyColor: '#A9A9B2',
-        bodyFont: { family: 'Inter', size: 11 },
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 10,
-        displayColors: false,
-        callbacks: {
-            label: function(context) {
-                let label = context.dataset.label || '';
-                if (label) {
-                    label += ': ';
-                }
-                if (context.parsed.y !== null) {
-                    label += new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(context.parsed.y);
-                }
-                return label;
-            }
-        }
-    };
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctxM = document.getElementById('monthlyChart').getContext('2d');
-        const gradientM = ctxM.createLinearGradient(0, 0, 0, 240);
-        gradientM.addColorStop(0, 'rgba(62, 140, 255, 0.65)');
-        gradientM.addColorStop(1, 'rgba(62, 140, 255, 0.02)');
-        monthlyChartInstance = new Chart(ctxM, {
-            type: 'bar',
-            data: {
-                labels: monthlyLabels,
-                datasets: [{
-                    label: 'Monthly Revenue',
-                    data: monthlyValues,
-                    backgroundColor: gradientM,
-                    borderColor: 'rgba(62, 140, 255, 0.95)',
-                    borderWidth: 1.5,
-                    borderRadius: 6,
-                    hoverBackgroundColor: 'rgba(62, 140, 255, 1)',
-                    hoverBorderColor: '#ffffff',
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: customTooltipOptions
-                },
-                scales: {
-                    y: {
-                        grid: { color: 'rgba(255,255,255,0.06)' },
-                        ticks: {
-                            color: '#A9A9B2',
-                            font: { family: 'Inter', size: 9 },
-                            callback: function(value) {
-                                return '\u20a6' + new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value);
-                            }
-                        },
-                        border: { dash: [4, 4] }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: '#A9A9B2',
-                            font: { family: 'Inter', size: 9 }
-                        }
-                    }
-                }
-            }
-        });
-
-        const ctxA = document.getElementById('annualChart').getContext('2d');
-        const gradientA = ctxA.createLinearGradient(0, 0, 0, 240);
-        gradientA.addColorStop(0, 'rgba(62, 140, 255, 0.65)');
-        gradientA.addColorStop(1, 'rgba(62, 140, 255, 0.02)');
-        annualChartInstance = new Chart(ctxA, {
-            type: 'bar',
-            data: {
-                labels: annualLabels,
-                datasets: [{
-                    label: 'Annual Revenue',
-                    data: annualValues,
-                    backgroundColor: gradientA,
-                    borderColor: 'rgba(62, 140, 255, 0.95)',
-                    borderWidth: 1.5,
-                    borderRadius: 6,
-                    hoverBackgroundColor: 'rgba(62, 140, 255, 1)',
-                    hoverBorderColor: '#ffffff',
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: customTooltipOptions
-                },
-                scales: {
-                    y: {
-                        grid: { color: 'rgba(255,255,255,0.06)' },
-                        ticks: {
-                            color: '#A9A9B2',
-                            font: { family: 'Inter', size: 9 },
-                            callback: function(value) {
-                                return '\u20a6' + new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value);
-                            }
-                        },
-                        border: { dash: [4, 4] }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: '#A9A9B2',
-                            font: { family: 'Inter', size: 9 }
-                        }
-                    }
-                }
-            }
-        });
-    });
-
-    function switchChart(type) {
-        const btnMonthly = document.getElementById('btn-monthly');
-        const btnAnnual = document.getElementById('btn-annual');
-        const containerMonthly = document.getElementById('container-monthly');
-        const containerAnnual = document.getElementById('container-annual');
-        if (type === 'monthly') {
-            btnMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 bg-accent text-[#06101F]';
-            btnAnnual.className = 'px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 text-white/50 hover:text-white';
-            containerMonthly.classList.remove('hidden');
-            containerAnnual.classList.add('hidden');
-            if (monthlyChartInstance) monthlyChartInstance.resize();
-        } else {
-            btnAnnual.className = 'px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 bg-accent text-[#06101F]';
-            btnMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 text-white/50 hover:text-white';
-            containerAnnual.classList.remove('hidden');
-            containerMonthly.classList.add('hidden');
-            if (annualChartInstance) annualChartInstance.resize();
-        }
-    }
-</script>
+<script src="{% static 'js/admanager/dashboard.js' %}"></script>
 {% endblock %}

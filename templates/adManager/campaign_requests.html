@@ -6,16 +6,17 @@
 {% block page_description %}Review and manage campaign scheduling requests from advertisers.{% endblock %}
 
 {% block content %}
+
 <form hx-get="{% url 'admanager:campaign_requests' %}"
       hx-target="#campaign-table-container"
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-trigger="submit, change from:#status-select"
       class="mb-6">
-    <div class="flex flex-wrap items-end gap-3">
-        
+    <div class="grid grid-cols-1 sm:flex sm:flex-wrap sm:items-end gap-3">
+
         {# Search Input #}
-        <div class="flex-1 min-w-[240px] max-w-md space-y-1.5">
+        <div class="sm:flex-1 sm:min-w-[240px] sm:max-w-md space-y-1.5">
             <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
                 Search campaigns
             </label>
@@ -32,7 +33,7 @@
         </div>
 
         {# Status Dropdown #}
-        <div class="w-44 space-y-1.5">
+        <div class="w-full sm:w-44 space-y-1.5">
             <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
                 Status
             </label>
@@ -49,24 +50,27 @@
             </select>
         </div>
 
-        {# Subtle Submit Button #}
-        <button type="submit" class="h-[34px] px-4 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-medium text-xs rounded-xl transition flex items-center gap-1.5 shrink-0">
-            <svg class="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
-            </svg>
-            <span>Search</span>
-        </button>
+        {# Search + Clear buttons row #}
+        <div class="flex items-center gap-3 sm:contents">
+            {# Subtle Submit Button #}
+            <button type="submit" class="flex-1 sm:flex-initial h-[34px] px-4 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-medium text-xs rounded-xl transition flex items-center justify-center gap-1.5 shrink-0">
+                <svg class="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+                </svg>
+                <span>Search</span>
+            </button>
 
-        {# Clear Filter Button #}
-        {% if search_query or selected_status %}
-        <a href="{% url 'admanager:campaign_requests' %}"
-           class="h-[34px] px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-medium text-white/60 hover:text-white flex items-center gap-1.5 transition">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            <span>Clear</span>
-        </a>
-        {% endif %}
+            {# Clear Filter Button #}
+            {% if search_query or selected_status %}
+            <a href="{% url 'admanager:campaign_requests' %}"
+               class="flex-1 sm:flex-initial h-[34px] px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-medium text-white/60 hover:text-white flex items-center justify-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <span>Clear</span>
+            </a>
+            {% endif %}
+        </div>
     </div>
 </form>
 

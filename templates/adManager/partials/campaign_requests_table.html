@@ -8,7 +8,8 @@
     {% endif %}
 
     {% if campaigns %}
-    <div class="bg-panel border border-white/10 rounded-xl shadow-xl overflow-x-auto">
+    <div class="bg-panel border border-white/10 rounded-xl shadow-xl">
+        <div class="overflow-x-auto">
         <table class="w-full text-sm text-left border-collapse min-w-[700px]">
             <thead>
                 <tr class="border-b border-white/10 bg-black/40 select-none">
@@ -135,15 +136,16 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
 
         {# Pagination Controls #}
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-black/20">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-white/10 bg-black/20">
             <p class="text-xs text-white/40 font-mono">
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                 &middot; {{ page_obj.paginator.count }} total
             </p>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
                 {% if page_obj.has_previous %}
                 <button
                     hx-get="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
@@ -165,32 +167,34 @@
                 </button>
                 {% endif %}
 
-                {# Page Numbers #}
-                {% for num in page_obj.paginator.page_range %}
-                    {% if num == page_obj.number %}
-                        <span class="px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white font-semibold font-mono text-xs">{{ num }}</span>
-                    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-                        <button
-                            hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                            hx-target="#campaign-table-container"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
-                            {{ num }}
-                        </button>
-                    {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                        <button
-                            hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
-                            hx-target="#campaign-table-container"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
-                            {{ num }}
-                        </button>
-                    {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-                        <span class="text-white/30 text-xs px-1">&hellip;</span>
-                    {% endif %}
-                {% endfor %}
+                {# Page Numbers: hidden on mobile to keep the bar from wrapping into a mess; Prev/Next still work #}
+                <div class="hidden sm:flex items-center gap-1.5">
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                            <span class="px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white font-semibold font-mono text-xs">{{ num }}</span>
+                        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                            <button
+                                hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                                hx-target="#campaign-table-container"
+                                hx-swap="outerHTML"
+                                hx-push-url="true"
+                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                                {{ num }}
+                            </button>
+                        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                            <button
+                                hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                                hx-target="#campaign-table-container"
+                                hx-swap="outerHTML"
+                                hx-push-url="true"
+                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                                {{ num }}
+                            </button>
+                        {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+                            <span class="text-white/30 text-xs px-1">&hellip;</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
 
                 {% if page_obj.has_next %}
                 <button

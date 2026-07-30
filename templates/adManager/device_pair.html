@@ -1,19 +1,23 @@
 {% extends "adManager/base.html" %}
 {% load static %}
-
 {% block title %}Pair a Device{% endblock %}
 {% block page_title %}Pair a Device{% endblock %}
 {% block page_description %}
 <p class="text-sm text-white/50 mt-1">Connect a physical Android box to one of your billboards.</p>
 {% endblock %}
-
 {% block page_container_class %}max-w-xl mx-auto{% endblock %}
-
 {% block content %}
+
+<a href="{% url 'device:billboard_list' %}"
+   class="inline-flex items-center gap-1.5 mb-4 text-sm font-medium text-white/50 hover:text-white transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Billboards
+</a>
 
 <!-- Pair Device Panel Card -->
 <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
-
     <!-- Instructions Notice -->
     <div class="flex items-start gap-3 mb-6 p-4 bg-white/5 border border-white/10 rounded-xl">
         <svg class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,10 +30,8 @@
             </p>
         </div>
     </div>
-
     <form method="post" class="space-y-5">
         {% csrf_token %}
-
         <!-- Pairing Code Input -->
         <div>
             <label class="block text-xs font-medium text-white/70 mb-1.5">Pairing Code</label>
@@ -38,7 +40,6 @@
                    class="w-full bg-bg border border-white/10 rounded-lg p-3 text-lg font-mono text-center uppercase tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/60 transition"
                    style="letter-spacing: 0.15em;">
         </div>
-
         <!-- Billboard Select -->
         <div>
             <label class="block text-xs font-medium text-white/70 mb-1.5">Assign to Billboard</label>
@@ -63,7 +64,6 @@
             </div>
             {% endif %}
         </div>
-
         <!-- Actions -->
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
             <a href="{% url 'device:billboard_list' %}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-white/50 hover:text-white transition">
@@ -76,7 +76,5 @@
             </button>
         </div>
     </form>
-
 </div>
-
 {% endblock %}

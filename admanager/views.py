@@ -190,6 +190,14 @@ def adManagerDashboard(request):
     subaccount_inactive = subaccount and not subaccount.is_active
     subaccount_unverified = subaccount and subaccount.is_active and not subaccount.is_verified
 
+    # Chart payload -- combined into a single JSON blob for the external JS file
+    chart_data = {
+        "monthlyLabels": monthly_labels,
+        "monthlyValues": monthly_values,
+        "annualLabels": annual_labels,
+        "annualValues": annual_values,
+    }
+
     context = {
         "ad_manager": ad_manager,
         # Profile/status
@@ -225,6 +233,7 @@ def adManagerDashboard(request):
         "monthly_values_json": json.dumps(monthly_values),
         "annual_labels_json": json.dumps(annual_labels),
         "annual_values_json": json.dumps(annual_values),
+        "chart_data": chart_data,
         "subaccount": subaccount,
         "subaccount_inactive": subaccount_inactive,
         "subaccount_unverified": subaccount_unverified,
@@ -371,6 +380,8 @@ def campaign_schedule_log(request, pk):
         "campaign": campaign,
         "logs": logs,
     }
+    if request.headers.get("HX-Request"):
+       return render(request, "adManager/partials/campaign_schedule_log_list.html", context)
     return render(request, "adManager/campaign_schedule_log.html", context)
 
 
@@ -425,7 +436,6 @@ def adManager_setting(request):
     ad_manager = request.user.ad_manager
     active_tab = request.GET.get('tab', 'business')
 
-    # Business Info form
     if request.method == 'POST' and 'save_business' in request.POST:
         form = AdManagerProfileForm(request.POST, instance=ad_manager)
         if form.is_valid():
@@ -448,13 +458,16 @@ def adManager_setting(request):
     # "Bank Details" tab renders without crashing. Swap this out for
     # ad_manager.bank_accounts.all() once BankAccount is built.
     bank_accounts = []
-
     context = {
         "admanager": ad_manager,
         "form": form,
         "bank_accounts": bank_accounts,
         "active_tab": active_tab,
     }
+
+    if request.headers.get("HX-Request"):
+        return render(request, "adManager/partials/settings_tabs.html", context)
+
     return render(request, "adManager/settings.html", context)
 
 @login_required(login_url="security:login")
@@ -621,14 +634,11 @@ def request_withdrawal(request):
     """
     if request.method != "POST":
         return redirect("admanager:dashboard")
-
     ad_manager = request.user.ad_manager
     amount_str = request.POST.get("amount", "").strip()
-
     if not amount_str:
         messages.error(request, "Please enter an amount.")
         return redirect("admanager:dashboard")
-
     try:
         amount = Decimal(amount_str)
     except Exception:
@@ -647,5 +657,33 @@ def request_withdrawal(request):
         )
     except ValidationError as e:
         messages.error(request, str(e))
-
     return redirect("admanager:dashboard")
+
+@login_required(login_url='security:login')
+@ad_manager_required
+def withdrawal_list(request):
+    ad_manager = request.user.ad_manager
+
+    revenue = AdManagerEarning.objects.filter(
+        ad_manager=ad_manager
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    total_withdrawn = PayoutRecord.objects.filter(
+        ad_manager=ad_manager, status=PayoutRecord.Status.SUCCESS
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    pending_withdrawal = PayoutRecord.objects.filter(
+        ad_manager=ad_manager, status=PayoutRecord.Status.PENDING
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    available_balance = revenue - total_withdrawn - pending_withdrawal
+
+    payouts = PayoutRecord.objects.filter(ad_manager=ad_manager).order_by("-created_at")
+
+    context = {
+        "available_balance": available_balance,
+        "pending_withdrawal": pending_withdrawal,
+        "total_withdrawn": total_withdrawn,
+        "payouts": payouts,
+    }
+    return render(request, "adManager/withdrawals.html", context)
