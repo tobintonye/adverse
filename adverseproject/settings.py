@@ -308,3 +308,10 @@ PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY').strip()
 
 # settings.py
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")
+
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
+# Needed so Django trusts ngrok's forwarded HTTPS — otherwise Django thinks
+# the request came in over plain HTTP (ngrok terminates TLS and forwards
+# to your local server as HTTP internally)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

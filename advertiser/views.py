@@ -18,6 +18,9 @@ from .tasks import _notify_campaign_submitted
 from django.core.paginator import Paginator
 from scheduling.models import TimeSlot
 from security.models import CustomUser
+import logging
+
+logger = logging.getLogger(__name__)
 
 def _get_advertiser(request):
     """Single place to resolve the advertiser — raises if profile missing."""
@@ -88,7 +91,7 @@ def advertiser_edit_profile(request):
         else:
             _campaign_error_messages(request, form)
     else: 
-        form = AdvertiserProfileForm(advertiser=advertiser)
+        form = AdvertiserProfileForm(instance=advertiser)
     return render(request, "advertiser/edit_profile.html", {"form": form, "advertiser": advertiser})
 
 # verification
@@ -254,6 +257,7 @@ def upload_media(request):
             try:
                 media.save()
                 messages.success(request, f"'{media.title}' uploaded successfully. It's pending admin review.")
+                return redirect("advertiser:media_library")
             except ValidationError as e:
                 error_dict = ( e.message_dict if hasattr(e, "message_dict") else {"__all__": e.messages})
                 for field, errors in error_dict.items():
@@ -371,7 +375,13 @@ def campaign_create(request):
         form = CampaignForm(advertiser, request.POST)
         if form.is_valid():
             billboard_id = request.POST.get("billboard", "").strip()
-            slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+            try:
+                slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+            except (TypeError, ValueError):
+                slots_per_day = 1
+            if slots_per_day < 1:
+                messages.error(request, "Slots per day must be at least 1.")
+                return redirect(request.path)
 
             if not billboard_id:
                 messages.error(request, "Please select a billboard.")
@@ -625,7 +635,8 @@ def campaign_run_again(request, pk):
         return redirect("advertiser:campaign_detail", pk=new_campaign.pk)
 
     except Exception as e:
-        messages.error(request, f"Could not create campaign: {e}")
+        logger.exception("campaign_run_again failed for campaign %s", pk)
+        messages.error(request, "Could not create the new campaign. Please try again.")
         return redirect("advertiser:campaign_detail", pk=pk)
 
 @login_required(login_url="security:login")
@@ -648,7 +659,13 @@ def campaign_edit(request, pk):
         form = CampaignForm(advertiser, request.POST, instance=campaign)
         if form.is_valid():
             billboard_id = request.POST.get("billboard", "").strip()
-            slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+            try:
+                slots_per_day = int(request.POST.get("slots_per_day", 1) or 1)
+            except (TypeError, ValueError):
+                slots_per_day = 1
+            if slots_per_day < 1:
+                messages.error(request, "Slots per day must be at least 1.")
+                return redirect(request.path)
 
             if not billboard_id:
                 messages.error(request, "Please select a billboard.")
@@ -700,7 +717,7 @@ def campaign_detail(request, pk):
 
     # Auto-verify pending payment when advertiser views the campaign page
     try:
-        payment = campaign.payment
+        payment = getattr(campaign, "payment", None)
         if payment and payment.status == "pending":
             from payments.services import handle_charge_success
             try:
@@ -716,7 +733,10 @@ def campaign_detail(request, pk):
                         "Payment confirmed! Your campaign is now active."
                     )
             except Exception:
-                pass  # still pending, stay quiet
+                 logger.info(
+                        "Payment verification poll for campaign %s (payment %s) did not complete yet.",
+                        campaign.pk, payment.pk, exc_info=True,
+                    )
     except Exception:
         payment = None
 
@@ -728,7 +748,8 @@ def campaign_detail(request, pk):
             try:
                 campaign.submit_for_approval()
                 # _notify_campaign_submitted.delay(str(campaign.id)) # for prod
-                _notify_campaign_submitted(str(campaign.id))
+                # _notify_campaign_submitted(str(campaign.id))
+                transaction.on_commit(lambda: _notify_campaign_submitted.delay(str(campaign.id)))
                 messages.success(request, "Campaign submitted for review.")
             except ValidationError as e:
                 _display_validation_error(request, e)
@@ -815,8 +836,7 @@ def campaign_status_fragment(request, pk):
  
     payment = None
     try:
-        payment = campaign.payment
- 
+        payment = getattr(campaign, "payment", None)
         # Auto-verify pending payment on each poll
         if payment and payment.status == "pending":
             from payments.services import handle_charge_success
@@ -828,7 +848,10 @@ def campaign_status_fragment(request, pk):
                 payment.refresh_from_db()
                 campaign.refresh_from_db()
             except Exception:
-                pass
+                logger.info(
+                        "Payment verification poll for campaign %s (payment %s) did not complete yet.",
+                        campaign.pk, payment.pk, exc_info=True,
+                    )
     except Exception:
         payment = None
  
@@ -871,14 +894,7 @@ def campaign_pay(request, pk):
     Guards:
     - Campaign must belong to this advertiser
     - Campaign must be APPROVED
-    - Campaign must have confirmed dates (start_date set) — this is the
-      guard that closes the original bug: an advertiser could otherwise
-      reach payment for a campaign whose dates had gone stale during
-      approval, or that never had dates confirmed at all. Since dates are
-      now decoupled from approval (chosen only via campaign_select_dates,
-      which runs the full capacity check before setting start_date), this
-      check guarantees payment can never happen without a valid, checked
-      schedule already in place.
+    - Campaign must have confirmed dates (start_date set)
     - No active PENDING or COMPLETED payment already exists
     """
     if request.method != "POST":

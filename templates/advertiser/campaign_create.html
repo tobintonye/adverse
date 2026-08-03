@@ -10,7 +10,7 @@
 {% block page_container_class %}max-w-4xl mx-auto{% endblock %}
 
 {% block content %}
-<div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+<div class="bg-panel border border-white/10 rounded-xl p-4 sm:p-6 shadow-xl">
     <div class="mb-6 pb-6 border-b border-white/10">
         <h2 class="text-lg font-bold text-white">New Campaign</h2>
         <p class="text-xs text-white/50 mt-1">
@@ -33,7 +33,7 @@
         <div>
             <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">Select Billboard</label>
             <select id="billboard-select" name="billboard" required
-                    class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer">
+                    class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22rgba(255,255,255,0.4)%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:9px_9px] bg-[right_12px_center] bg-no-repeat pr-8">
                 <option value="" class="bg-panel text-white">Choose a billboard...</option>
                 {% for bb in form.fields.billboard.queryset %}
                 <option value="{{ bb.pk }}" {% if form.billboard.value|stringformat:"s" == bb.pk|stringformat:"s" %}selected{% endif %} class="bg-panel text-white">
@@ -59,7 +59,7 @@
             </div>
 
             {# Billboard Details #}
-            <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-white/10">
+            <div class="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 border-b border-white/10">
                 <div>
                     <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Billboard</p>
                     <p id="bb-name" class="text-xs font-semibold text-white mt-0.5 truncate">—</p>
@@ -70,22 +70,22 @@
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Screen Type</p>
-                    <p id="bb-screen-type" class="text-xs text-white/70 mt-0.5">—</p>
+                    <p id="bb-screen-type" class="text-xs text-white/70 mt-0.5 truncate">—</p>
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Hours</p>
-                    <p id="bb-hours" class="text-xs text-white/70 mt-0.5">—</p>
+                    <p id="bb-hours" class="text-xs text-white/70 mt-0.5 truncate">—</p>
                 </div>
             </div>
 
             {# Billing Plan #}
             <div class="p-4 bg-white/[0.02]">
-                <div class="rounded-lg bg-accent/10 border border-accent/20 p-3.5 flex items-center justify-between">
+                <div class="rounded-lg bg-accent/10 border border-accent/20 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                     <div>
                         <p class="text-[9px] font-bold text-accent uppercase tracking-widest">Billing Plan</p>
                         <p id="bb-charge-label" class="text-xs font-semibold text-white mt-0.5">—</p>
                     </div>
-                    <div class="text-right">
+                    <div class="text-left sm:text-right">
                         <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Rate</p>
                         <p id="bb-rate" class="text-base font-bold text-accent font-mono">₦—</p>
                     </div>
@@ -106,7 +106,7 @@
             <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
                 Select Media <span class="text-white/40 font-normal lowercase">(admin-approved)</span>
             </label>
-            <select name="media" class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer">
+            <select name="media" class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22rgba(255,255,255,0.4)%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:9px_9px] bg-[right_12px_center] bg-no-repeat pr-8">
                 <option value="" class="bg-panel text-white">Select your approved media...</option>
                 {% for media in form.fields.media.queryset %}
                 <option value="{{ media.pk }}" {% if form.media.value|stringformat:"s" == media.pk|stringformat:"s" %}selected{% endif %} class="bg-panel text-white">
@@ -125,7 +125,7 @@
         </div>
 
         {# Duration + Times #}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">Duration (days)</label>
                 <input type="number" id="duration-days" name="duration_days" value="{{ form.duration_days.value|default:'1' }}" min="1" max="365" required
@@ -139,7 +139,7 @@
                        class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
                 {% if form.daily_start_time.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.daily_start_time.errors.0 }}</p>{% endif %}
             </div>
-            <div>
+            <div class="sm:col-span-2 md:col-span-1">
                 <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">Daily End Time</label>
                 <input type="time" id="daily-end-time" name="daily_end_time" value="{{ form.daily_end_time.value|default:'' }}" required
                        class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
@@ -167,7 +167,7 @@
                 </div>
                 <div class="border-t border-white/10 pt-3 mt-3 flex justify-between items-center">
                     <span class="text-sm font-semibold text-white">Estimated Total</span>
-                    <span class="text-xl font-bold text-accent font-mono">₦<span id="est-total">0.00</span></span>
+                    <span class="text-lg sm:text-xl font-bold text-accent font-mono">₦<span id="est-total">0.00</span></span>
                 </div>
             </div>
         </div>
@@ -184,11 +184,11 @@
         </div>
 
         {# Actions #}
-        <div class="flex items-center gap-4 pt-4 border-t border-white/10">
-            <button type="submit" class="bg-accent hover:opacity-90 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md">
+        <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 pt-4 border-t border-white/10">
+            <button type="submit" class="w-full sm:w-auto bg-accent hover:opacity-90 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md text-center">
                 Save as Draft
             </button>
-            <a href="{% url 'advertiser:campaign_list' %}" class="text-xs text-white/50 hover:text-white transition">
+            <a href="{% url 'advertiser:campaign_list' %}" class="w-full sm:w-auto text-xs text-white/50 hover:text-white transition text-center sm:text-left py-1">
                 Cancel
             </a>
         </div>

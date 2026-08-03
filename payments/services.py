@@ -227,6 +227,21 @@ def initialize_campaign_payment(campaign) -> dict:
         If the Paystack call fails, the local record is deleted so we never have an
         active Paystack checkout without a matching local record.
     """
+
+    existing_payment = getattr(campaign, "payment", None)
+    if existing_payment is not None:
+        if existing_payment.status == CampaignPayment.Status.COMPLETED:
+            raise ValidationError("This campaign has already been paid for.")
+        if existing_payment.status == CampaignPayment.Status.PENDING:
+            raise ValidationError(
+                "A payment is already in progress for this campaign. "
+                "Please complete or wait for it to expire before retrying."
+            )
+        raise ValidationError(
+            "A previous payment attempt for this campaign did not succeed. "
+            "Please contact support to retry."
+        )
+
     first_slot = (
         campaign.campaign_slots
         .select_related("billboard__ad_manager__paystack_subaccount")
@@ -523,7 +538,7 @@ def initiate_withdrawal(ad_manager, amount: Decimal, initiated_by) -> PayoutReco
         )
         subaccount_data = paystack_subaccount_data.get("data", {})
         full_account_number = subaccount_data.get("account_number", "")
-        bank_code = subaccount_data.get("bank", {})
+        # bank_code = subaccount_data.get("bank", {})
 
         if not full_account_number:
             raise ValidationError(

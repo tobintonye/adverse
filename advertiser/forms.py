@@ -44,7 +44,7 @@ class AdvertiserProfileForm(forms.ModelForm):
 class MediaUploadForm(forms.ModelForm):
     class Meta:
         model = Media
-        fields = ['title', 'file', 'media_type', 'duration_seconds', 'thumbnail']
+        fields = ['title', 'file', 'duration_seconds', 'thumbnail']
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': 'e.g. Summer Sale Banner'}),
             'duration_seconds': forms.NumberInput(attrs={'placeholder': 'Required for video, e.g. 15', 'min': '1'}),
@@ -69,7 +69,7 @@ class MediaUploadForm(forms.ModelForm):
             )
         
         # Size enforcement at byte level
-        if detected_mime not in IMAGE_MIME_TYPES and file.size > MAX_IMAGE_BYTES: 
+        if detected_mime in IMAGE_MIME_TYPES and file.size > MAX_IMAGE_BYTES:
             raise ValidationError(
                 f"Image files cannot exceed {MAX_IMAGE_BYTES // (1024 * 1024)} MB. "
                 f"Your file is {file.size / (1024 * 1024):.1f} MB."
@@ -80,8 +80,7 @@ class MediaUploadForm(forms.ModelForm):
                 f"Your file is {file.size / (1024 * 1024):.1f} MB."
             )
 
-        # Stash on the form instance so clean() can read it without re-scanning
-        self._detected_mine = detected_mime
+        self._detected_mime = detected_mime
         return file
     
     def clean(self):
@@ -107,10 +106,7 @@ class MediaUploadForm(forms.ModelForm):
         elif detected_mime in VIDEO_MIME_TYPES:
             cleaned_data["media_type"] = Media.MediaType.VIDEO
             if not duration_seconds:
-                self.add_error(
-                    "duration_seconds",
-                    "Duration is required for video uploads.",
-                )
+                self.add_error("duration_seconds", "Duration is required for video uploads.",)
  
         # Pre-compute file_size_bytes (avoids a second .size call in
         # Media.clean() and keeps the model's full_clean consistent) 
@@ -119,7 +115,6 @@ class MediaUploadForm(forms.ModelForm):
  
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Inject the auto-detected values that aren't in the form's field list
         instance.media_type = self.cleaned_data["media_type"]
         instance.file_size_bytes = self.cleaned_data.get("file_size_bytes", 0)
         if commit:
@@ -157,45 +152,45 @@ class CampaignForm(forms.ModelForm):
             "budget": forms.NumberInput(attrs={"placeholder": "e.g. 150000", "min": "0"}),
         }
     
-        def clean_media(self):
-            media = self.cleaned_data.get("media")
-            if not media:
-                return media
-            if media.status != Media.Status.ADMIN_APPROVED: 
-                raise ValidationError("Only admin-approved media files can be used in a campaign.")
-            if media.advertiser != self.advertiser:
-                raise ValidationError("You do not own this media asset.")
+    def clean_media(self):
+        media = self.cleaned_data.get("media")
+        if not media:
             return media
-        
-        def clean_duration_days(self):
-            duration = self.cleaned_data.get("duration_days")
-            if duration is not None and duration < 1:
-                raise ValidationError("Campaign must run for at least 1 day.")
-            return duration
-        
-        def clean_name(self): 
-            name = self.cleaned_data.get("name", "").strip()
-            locked_statuses = [
-                Campaign.Status.DRAFT,
-                Campaign.Status.PENDING_ADMIN_REVIEW,
-                Campaign.Status.PENDING_MANAGER_REVIEW,
-                Campaign.Status.APPROVED,
-                Campaign.Status.ACTIVE,
-            ]
-            qs = Campaign.objects.filter(advertiser=self.advertiser, name__iexact=name, status__in=locked_statuses)
-            if self.instance and self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise ValidationError(f"You already have an active or draft campaign named '{name}'.")
-            return name
-        
-        def clean(self):
-            cleaned_data = super().clean()
-            daily_start = cleaned_data.get("daily_start_time")
-            daily_end = cleaned_data.get("daily_end_time")
-            if daily_start and daily_end and daily_end <= daily_start:
-                self.add_error("daily_end_time", "Daily end time must be after daily start time.")
-            return cleaned_data
+        if media.status != Media.Status.ADMIN_APPROVED: 
+            raise ValidationError("Only admin-approved media files can be used in a campaign.")
+        if media.advertiser != self.advertiser:
+            raise ValidationError("You do not own this media asset.")
+        return media
+    
+    def clean_duration_days(self):
+        duration = self.cleaned_data.get("duration_days")
+        if duration is not None and duration < 1:
+            raise ValidationError("Campaign must run for at least 1 day.")
+        return duration
+    
+    def clean_name(self): 
+        name = self.cleaned_data.get("name", "").strip()
+        locked_statuses = [
+            Campaign.Status.DRAFT,
+            Campaign.Status.PENDING_ADMIN_REVIEW,
+            Campaign.Status.PENDING_MANAGER_REVIEW,
+            Campaign.Status.APPROVED,
+            Campaign.Status.ACTIVE,
+        ]
+        qs = Campaign.objects.filter(advertiser=self.advertiser, name__iexact=name, status__in=locked_statuses)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError(f"You already have an active or draft campaign named '{name}'.")
+        return name
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        daily_start = cleaned_data.get("daily_start_time")
+        daily_end = cleaned_data.get("daily_end_time")
+        if daily_start and daily_end and daily_end <= daily_start:
+            self.add_error("daily_end_time", "Daily end time must be after daily start time.")
+        return cleaned_data
 
 class CampaignSlotForm(forms.ModelForm):
     """

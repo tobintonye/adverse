@@ -24,8 +24,8 @@ def approve_campaign_by_manager(campaign, manager_user):
 
     # queue notifications (outside transaction is fine,
     # Celery task runs after commit so campaign is visible in DB)
-    _notify_campaign_approved.delay(str(campaign.id))
-
+    # _notify_campaign_approved.delay(str(campaign.id))
+    transaction.on_commit(lambda: _notify_campaign_approved.delay(str(campaign.id)))
     return {
     "campaign_id": str(campaign.id),
     "status": campaign.status,
@@ -42,11 +42,8 @@ def confirm_campaign_dates(campaign, start_date):
     with no dates set, so the advertiser can simply try a different range.
     """
     campaign.confirm_dates(start_date)
-    try:
-        slots_created = generate_schedule(campaign)
-    except ScheduleGenerationError as e:
-        raise
-    
+    slots_created = generate_schedule(campaign)
+
     logger.info(
         "Campaign %s dates confirmed: %s — %s (%d slots created)",
         campaign.id, campaign.start_date, campaign.end_date, slots_created,
@@ -71,7 +68,7 @@ def reject_campaign(campaign, reviewer, reason):
 @transaction.atomic  
 def admin_forward_campaign(campaign, admin_user):
     """
-    Global Tech Admin forwards campaign to ad managsser for review.
+    Global Tech Admin forwards campaign to ad manager for review.
     PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW
     """
     campaign.admin_forward_to_manager(admin_user)

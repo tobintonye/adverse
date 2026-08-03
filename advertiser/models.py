@@ -1,15 +1,14 @@
-from django.db import models
+from django.db import models, transaction
 import uuid
 import hashlib
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from common.models import TimeStampedModel
 from django.utils import timezone
-import mimetypes
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import FileExtensionValidator
 from device.models import Billboard
-from django.db.models import UniqueConstraint
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 User = get_user_model()
 
@@ -27,9 +26,9 @@ class Advertiser(TimeStampedModel):
         OTHER = "other", "Other"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="advertiser_profile")
-    first_name = models.CharField(max_length=50, null=True, blank=False)
-    last_name = models.CharField(max_length=50, null=True, blank=False)
-    business_name = models.CharField(max_length=180)
+    first_name = models.CharField(max_length=50, blank=False)
+    last_name = models.CharField(max_length=50, blank=False)
+    business_name = models.CharField(max_length=180, null=False, blank=False)
     business_category = models.CharField(max_length=32, choices=BusinessCategory.choices, default=BusinessCategory.OTHER)
     contact_phone = models.CharField(max_length=24, blank=True)
     website = models.URLField(blank=True)
@@ -105,8 +104,8 @@ class Media(TimeStampedModel):
     file_hash = models.CharField(max_length=64, blank=True, help_text="SHA-256 of the uploaded file. Used to detect duplicates.") # used to detect is a file already exists
     media_type = models.CharField(max_length=10, choices=MediaType.choices, blank=False, null=False)
     duration_seconds = models.PositiveIntegerField(
-        null=True, blank=True,
-        help_text="Required for video. Duration the ad will play on screen.",
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(15)],
+        help_text="Required for video. Duration the ad will play on screen.", # something to think about because someone can place a 5mins ad that will be too long. the highest should be
     )
     file_size_bytes = models.PositiveBigIntegerField(editable=False, default=0)
     thumbnail = models.ImageField(upload_to=thumbnail_upload_path, null=True, blank=True)
@@ -114,7 +113,7 @@ class Media(TimeStampedModel):
     rejection_reason = models.TextField(blank=True)
 
     # Approval trail
-   # reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media")
+    # reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media")
     #reviewed_at = models.DateTimeField(null=True, blank=True)
 
     admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media_admin")
@@ -163,7 +162,7 @@ class Media(TimeStampedModel):
     def fully_approve(self, manager_user):
         if self.status != self.Status.ADMIN_APPROVED:
              raise ValidationError("Media must be admin-approved before manager approval.")
-        self.status = self.Status.FULLY_APPROVED  # this should be checked because the media isn't forwarded to the admanger -> media is fowarded together with the campaign not media alone. fix needed
+        self.status = self.Status.FULLY_APPROVED 
         self.manager_reviewed_by = manager_user
         self.manager_reviewed_at = timezone.now()
         self.save(update_fields=[
@@ -215,10 +214,10 @@ class Media(TimeStampedModel):
             if not self.duration_seconds: 
                 raise ValidationError({"duration_seconds": "Duration is required for video media."})
 
-        # Calculate file hash and check for duplicates
+        # Calculate file hash and check for duplicates by creating a unique fingerprint (hash) of the file data 6
         if hasattr(self, 'advertiser') and self.advertiser:
             if not self.file_hash:
-                hasher = hashlib.sha256()
+                hasher = hashlib.sha256() # generate a unique 64-character text ID based on the file's contents
                 self.file.seek(0)
                 for chunk in self.file.chunks():
                     hasher.update(chunk)
@@ -272,15 +271,15 @@ class Campaign(TimeStampedModel):
     # Schedule
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    duration_days = models.PositiveSmallIntegerField(default=1, help_text="How many days the campaign runs. Real calendar dates are chosen after approval.",)
+    duration_days = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(90)], help_text="How many days the campaign runs. Real calendar dates are chosen after approval.",)
     daily_start_time = models.TimeField(default="06:00")
     daily_end_time = models.TimeField(default="22:00")
     # Budget & pricing
-    budget = models.DecimalField(max_digits=12, decimal_places=2)
-    estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
-    actual_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    admin_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    admanager_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    budget = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))],)
+    estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0.00'))], help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
+    actual_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))], default=Decimal('0.00'))
+    admin_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0.00'))],)
+    admanager_split_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0.00'))],)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     rejection_reason = models.TextField(blank=True)
     admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_campaigns_admin")
@@ -341,30 +340,33 @@ class Campaign(TimeStampedModel):
 
     # Ad Manager approves, the campain approved (LIVE), media if fully approved.
     def manager_approve(self, manager_user):
-        if self.status != self.Status.PENDING_MANAGER_REVIEW:
-            raise ValidationError("Campaign must be in pending manager review.")
-        self.status = self.Status.APPROVED
-        self.manager_reviewed_by = manager_user
-        self.manager_reviewed_at = timezone.now()
-        self.approved_at = timezone.now() # starts 7 days expiry count
-        self.rejection_reason = ""
-        
-        # Calculate split prices based on current RevenueSetting
-        from admin_panel.models import RevenueSetting
-        setting = RevenueSetting.objects.first()
-        if not setting:
-            setting = RevenueSetting.objects.create(admin_percentage=Decimal('30.00'), admanager_percentage=Decimal('70.00'))
-        
-        self.actual_price = self.estimated_price
-        self.admin_split_price = self.actual_price * (setting.admin_percentage / Decimal('100.00'))
-        self.admanager_split_price = self.actual_price * (setting.admanager_percentage / Decimal('100.00'))
-        
-        self.save(update_fields=[
-            "status", "manager_reviewed_by", "manager_reviewed_at", "approved_at",
-            "rejection_reason", "actual_price", "admin_split_price", "admanager_split_price", "updated_at",
-        ])
-        # Fully approve the media at the same time
-        self.media.fully_approve(manager_user)
+        with transaction.atomic():
+            # Lock the row and re-check status under the lock  but only to validate. All writes still happen on `self
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != self.Status.PENDING_MANAGER_REVIEW:
+                raise ValidationError("Campaign must be in pending manager review.")
+            self.status = self.Status.APPROVED
+            self.manager_reviewed_by = manager_user
+            self.manager_reviewed_at = timezone.now()
+            self.approved_at = timezone.now() # starts 7 days expiry count
+            self.rejection_reason = ""
+            
+            # Calculate split prices based on current RevenueSetting
+            from admin_panel.models import RevenueSetting
+            setting, _ = RevenueSetting.objects.get_or_create(
+                defaults={'admin_percentage': Decimal('30.00'), 'admanager_percentage': Decimal('70.00')}
+            )
+                
+            self.actual_price = self.estimated_price
+            self.admin_split_price = self.actual_price * (setting.admin_percentage / Decimal('100.00'))
+            self.admanager_split_price = self.actual_price * (setting.admanager_percentage / Decimal('100.00'))
+            
+            self.save(update_fields=[
+                "status", "manager_reviewed_by", "manager_reviewed_at", "approved_at",
+                "rejection_reason", "actual_price", "admin_split_price", "admanager_split_price", "updated_at",
+            ])
+            # Fully approve the media at the same time
+            self.media.fully_approve(manager_user)
 
     def reject(self, reviewer, reason=""):
         """
@@ -412,16 +414,18 @@ class Campaign(TimeStampedModel):
         layer (advertiser/services.py), wrapped in a transaction so a capacity
         failure rolls this back cleanly.
         """
-        if self.status != self.Status.APPROVED:
-            raise ValidationError("Campaign must be approved before selecting dates.")
-        if start_date < timezone.now().date():
-            raise ValidationError({"start_date": "Start date cannot be in the past."})
-        
-        from datetime import timedelta
-        self.start_date = start_date
-        self.end_date = start_date + timedelta(days=self.duration_days - 1)
-        self.dates_confirmed_at = timezone.now()
-        self.save(update_fields=["start_date", "end_date", "dates_confirmed_at", "updated_at"])
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != self.Status.APPROVED:
+                raise ValidationError("Campaign must be approved before selecting dates.")
+            if start_date < timezone.now().date():
+                raise ValidationError({"start_date": "Start date cannot be in the past."})
+            
+            from datetime import timedelta
+            self.start_date = start_date
+            self.end_date = start_date + timedelta(days=self.duration_days - 1)
+            self.dates_confirmed_at = timezone.now()
+            self.save(update_fields=["start_date", "end_date", "dates_confirmed_at", "updated_at"])
 
     def expire_approval(self):
         """Called by the daily expiry task for APPROVED campaigns with no
@@ -495,7 +499,7 @@ class CampaignSlot(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     campaign = models.ForeignKey( Campaign, on_delete=models.CASCADE, related_name="campaign_slots")
     billboard = models.ForeignKey(Billboard, on_delete=models.PROTECT, related_name="campaign_slots")
-    slots_per_day = models.PositiveIntegerField(default=1) # store how many ads slot this campaign owns
+    slots_per_day = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(50)]) # store how many ads slot this campaign owns
 
     @property
     def slot_price(self):

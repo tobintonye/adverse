@@ -21,13 +21,39 @@ html.sidebar-is-collapsed #main-content { margin-left: 4rem; }
 
 dialog::backdrop { background: rgba(0,0,0,0.65); }
 
+select option { background-color: #0D0D0F; color: #fff; }
+
+/* simple spinner used in place of DaisyUI's loading-spinner component */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Mobile: sidebar hidden entirely, bottom nav takes over */
 @media (max-width: 767px) {
   #sidebar { display: none; }
-  #main-content { margin-left: 0 !important; padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+
+  html, body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  #main-content {
+    margin-left: 0 !important;
+    height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
   #collapse-btn { display: none !important; }
 }
- 
+
 /* Give the bottom nav breathing room above the home-indicator gesture
    bar on notched phones, instead of sitting flush against it. */
 #bottom-nav { padding-bottom: env(safe-area-inset-bottom); }

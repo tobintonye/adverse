@@ -117,15 +117,15 @@ class MediaUploadSerializer(serializers.ModelSerializer):
         if mime in VIDEO_MIME_TYPES and file.size > MAX_VIDEO_BYTES:
             raise serializers.ValidationError("Video files cannot exceed 500 MB.")
 
-        # Inject the verified type safely into serializer context dictionary
-        self.context["detected_mime"] = mime
+        # Stored on self
+        self._detected_mime = mime
         return file
 
     def validate(self, attrs):
         if "file" not in attrs:
                 return attrs
             
-        mime = self.context.get("detected_mime")
+        mime = getattr(self, "_detected_mime", None)
         duration = attrs.get("duration_seconds")
 
         if mime in VIDEO_MIME_TYPES:
@@ -192,8 +192,9 @@ class CampaignSerializer(serializers.ModelSerializer):
         fields = (
             "id", "name", "media", "media_title", "media_type", "start_date",
             "end_date", "duration_days", "daily_start_time", "daily_end_time",
-            "budget", "estimated_price", "status", "rejection_reason",
+            "budget", "estimated_price", "actual_price", "status", "rejection_reason",
             "admin_reviewed_by_name", "manager_reviewed_by_name", "is_active", "campaign_slots",
+            "approved_at", "dates_confirmed_at",
             "created_at", "updated_at",
         )
 
@@ -204,7 +205,7 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         fields = (
-            "name", "media", "start_date", "end_date",
+             "name", "media", "duration_days",
             "daily_start_time", "daily_end_time", "budget", "slots",
         )
     
@@ -217,49 +218,50 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
         return media
     
     def validate(self, attrs):
-        startDate = attrs.get("start_date")
-        endDate = attrs.get("end_date")
-        if startDate and endDate and endDate < startDate:
-             raise serializers.ValidationError({"end_date": "End date cannot be before start date."})
         daily_start = attrs.get("daily_start_time")
         daily_end = attrs.get("daily_end_time")
         if daily_start and daily_end and daily_end <= daily_start:
-            raise serializers.ValidationError( {"daily_end_time": "Daily end time must be scheduled after start time."})
+            raise serializers.ValidationError(
+                {"daily_end_time": "Daily end time must be scheduled after start time."}
+            )
         return attrs
-    
-    def create(self, validated_data):
-        slots_data = validated_data.pop("slots", [])
-        advertiser = self.context["advertiser"]
 
-        # Block duplicate draft campaigns before they're even saved
-        name = validated_data.get("name", "").strip()
-        if Campaign.objects.filter(
-            advertiser=advertiser, 
-            name__iexact=name,
-            status__in=[
+    def _check_duplicate_name(self, advertiser, name, exclude_pk=None):
+        locked_statuses = [
             Campaign.Status.DRAFT,
             Campaign.Status.PENDING_ADMIN_REVIEW,
             Campaign.Status.PENDING_MANAGER_REVIEW,
             Campaign.Status.APPROVED,
             Campaign.Status.ACTIVE,
         ]
-        ).exists():
+        qs = Campaign.objects.filter(advertiser=advertiser, name__iexact=name, status__in=locked_statuses)
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+        if qs.exists():
             raise serializers.ValidationError(
-            {"name": f"You already have an active or draft campaign named '{name}'."}
-        )
+                {"name": f"You already have an active or draft campaign named '{name}'."}
+            )
+        
+    def create(self, validated_data):
+        slots_data = validated_data.pop("slots", [])
+        advertiser = self.context["advertiser"]
+        name = validated_data.get("name", "").strip()
 
-        with transaction.atomic():
-            campaign = Campaign.objects.create(advertiser=advertiser, **validated_data)
+        self._check_duplicate_name(advertiser, name)
 
-            for slot in slots_data:
-                CampaignSlot.objects.create(
-                    campaign=campaign,
-                    billboard=slot["billboard"],
-                    slots_per_day=slot.get("slots_per_day", 1), 
-                )
-            # Use the single automated sync helper from your model logic
-            campaign.sync_estimated_price()
-            return campaign
+        try:
+            with transaction.atomic():
+                campaign = Campaign.objects.create(advertiser=advertiser, **validated_data)
+                for slot in slots_data:
+                    CampaignSlot.objects.create(
+                        campaign=campaign,
+                        billboard=slot["billboard"],
+                        slots_per_day=slot.get("slots_per_day", 1),
+                    )
+                campaign.sync_estimated_price()
+                return campaign
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
         
     def update(self, instance, validated_data):
         # SECURITY SECURE BOUND: Lock modifications if campaign isn't editable
@@ -267,23 +269,29 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Cannot modify this campaign because it is currently in '{instance.get_status_display()}' status.")
 
         slots_data = validated_data.pop("slots", None)
+        new_name = validated_data.get("name")
+        if new_name and new_name.strip() != instance.name:
+            self._check_duplicate_name(instance.advertiser, new_name.strip(), exclude_pk=instance.pk)
 
-        with transaction.atomic():
-            for attr, value, in validated_data.items():
-                setattr(instance, attr, value)
-            instance.save()
+        slots_data = validated_data.pop("slots", None)
+        try:
+            with transaction.atomic():
+                for attr, value in validated_data.items():
+                    setattr(instance, attr, value)
+                instance.save()
 
-            if slots_data is not None:
-                # Safely delete old records inside transaction
-                instance.campaign_slots.all().delete()
-                for slot in slots_data:
-                    CampaignSlot.objects.create(
-                        campaign=instance, 
-                        billboard=slot["billboard"],
-                        slots_per_day=slot.get("slots_per_day", 1),
-                    )
-            instance.sync_estimated_price()
-            return instance
+                if slots_data is not None:
+                    instance.campaign_slots.all().delete()
+                    for slot in slots_data:
+                        CampaignSlot.objects.create(
+                            campaign=instance,
+                            billboard=slot["billboard"],
+                            slots_per_day=slot.get("slots_per_day", 1),
+                        )
+                instance.sync_estimated_price()
+                return instance
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
         
 class SlotEstimateItemSerializer(serializers.Serializer):
     """One billboard entry inside a price-estimate request."""

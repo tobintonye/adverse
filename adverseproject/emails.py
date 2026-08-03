@@ -44,15 +44,15 @@ EMAIL_TEMPLATES = {
     ),
     # auth emails
     "verify_email": (
-        "Verify your AdVerse account",
+        "Verify your Advers account",
         "emails/verify_email.html",
     ),
     "password_reset": (
-        "Reset your AdVerse password",
+        "Reset your Advers password",
         "emails/password_reset.html",
     ),
     "password_changed": (
-        "Your AdVerse password was changed",
+        "Your Advers password was changed",
         "emails/password_changed.html",
     ),
     "staff_reconciliation": (
@@ -93,7 +93,7 @@ def send_adverse_email(template: str, to: str | list[str], context: dict, subjec
 
     # Always inject year for footer copyright
     context.setdefault("year", date.today().year)
-    context.setdefault("site_name", "AdVerse")
+    context.setdefault("site_name", "AdVers")
     try:
         html_content = render_to_string(html_template, context)
         # Plain text fallback — strip tags crudely but reliably
