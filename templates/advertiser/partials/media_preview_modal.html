@@ -1,0 +1,55 @@
+<!-- Preview Area -->
+<div class="flex-1 bg-bg flex items-center justify-center p-6 min-h-[300px] md:min-h-[420px]">
+    {% if media.media_type == 'image' %}
+        <img src="{{ media.file.url }}" alt="{{ media.title }}"
+             class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-xl select-none">
+    {% else %}
+        <video src="{{ media.file.url }}" controls
+               class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-xl"></video>
+    {% endif %}
+</div>
+
+<!-- Details Sidebar Panel -->
+<div class="w-full md:w-80 bg-panel p-6 border-t md:border-t-0 md:border-l border-white/10 flex flex-col justify-between">
+    <div class="space-y-4">
+        <div>
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
+                {{ media.get_media_type_display }}
+            </span>
+            <h3 class="text-base font-bold text-white mt-2 leading-snug break-words">{{ media.title }}</h3>
+        </div>
+
+        <div class="border-t border-white/10 pt-4 space-y-3 text-xs">
+            <div class="flex justify-between items-center">
+                <span class="text-white/50">File Size</span>
+                <span class="font-mono text-white font-medium">{{ media.file_size_mb }} MB</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-white/50">Asset Type</span>
+                <span class="text-white font-medium">{{ media.get_media_type_display }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-white/50">Approval State</span>
+                {% if media.status == 'pending' %}
+                    <span class="text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md">PENDING REVIEW</span>
+                {% elif media.status == 'admin_approved' %}
+                    <span class="text-[10px] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md">ADMIN APPROVED</span>
+                {% elif media.status == 'fully_approved' %}
+                    <span class="text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md">LIVE</span>
+                {% else %}
+                    <span class="text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-md">{{ media.get_status_display|upper }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="pt-6 border-t border-white/10 mt-6">
+        <a href="{{ media.file.url }}" download
+           class="inline-flex items-center justify-center w-full gap-2 bg-white/10 hover:bg-white/15 text-white border border-white/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download File
+        </a>
+    </div>
+</div>

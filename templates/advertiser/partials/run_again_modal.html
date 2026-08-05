@@ -52,7 +52,7 @@
         <div class="flex justify-end gap-2">
             <button type="button"
                     class="px-3 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-semibold rounded-lg transition border border-white/10"
-                    onclick="closeRunAgainModal()">
+                    onclick="document.getElementById('run-again-modal').close()">
                 Cancel
             </button>
             <form method="post" action="{% url 'advertiser:campaign_run_again' campaign.pk %}">

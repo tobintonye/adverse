@@ -12,6 +12,7 @@ urlpatterns = [
     path("media/", views.media_library, name="media_library"),
     path("media/upload/", views.upload_media, name="upload_media"),
     path("media/<uuid:pk>/delete/", views.media_delete, name="media_delete"),
+    path("media/<uuid:pk>/preview/", views.media_preview, name="media_preview"),
     # Billboards (browse only — advertisers don't own billboards)
     path("billboards/", views.browse_billboards, name="browse_billboards"),
     # Campaigns

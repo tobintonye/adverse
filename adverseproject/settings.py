@@ -181,6 +181,8 @@ REST_FRAMEWORK = {
         "auth_login": "10/hour",
         "auth_password_reset": "5/hour",
         "auth_resend_verification": "5/hour",
+        "device_pairing": "10/hour",           # web + API pairing form submission
+        "device_pairing_status": "30/hour",    # self-register + status polling
     },
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

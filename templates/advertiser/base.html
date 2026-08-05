@@ -5,9 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>{% block title %}Advertiser{% endblock %}</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script>
@@ -28,23 +27,20 @@
     },
   }
 </script>
-
-<link rel="stylesheet" href="{% static 'css/advertiser/layout.css' %}">
-<script src="{% static 'js/advertiser/sidebar-init.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/advertiser/base.css' %}">
+<script src="{% static 'advertiser/sidebar-init.js' %}"></script>
 {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-bg text-white min-h-screen">
-
 <!-- Sidebar (desktop only) -->
 <aside id="sidebar" class="fixed top-0 left-0 h-full bg-panel border-r border-white/10 flex flex-col z-40 overflow-hidden">
   <div class="px-5 py-4 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
-    <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-8 h-8 object-contain flex-shrink-0">
+    <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-8 h-8 object-contain flex-shrink-0">
     <div id="sidebar-brand">
-      <span class="font-display text-sm font-bold tracking-tight leading-none block whitespace-nowrap">Advers</span>
+      <span class="font-display text-sm font-bold tracking-tight leading-none block whitespace-nowrap">Adverse</span>
       <span class="text-[9px] font-mono font-bold text-accent uppercase tracking-widest whitespace-nowrap">Advertiser</span>
     </div>
   </div>
-
   <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
     <div class="nav-item relative">
       <a href="{% url 'advertiser:dashboard' %}"
@@ -54,7 +50,6 @@
       </a>
       <span class="nav-tooltip">Dashboard</span>
     </div>
-
     <div class="nav-item relative">
       <a href="{% url 'advertiser:browse_billboards' %}"
          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'browse_billboards' %}text-white bg-accent/10 border border-accent/20{% else %}text-white/55 hover:text-white hover:bg-white/5 border border-transparent{% endif %}">
@@ -63,7 +58,6 @@
       </a>
       <span class="nav-tooltip">Billboards</span>
     </div>
-
     <div class="nav-item relative">
       <a href="{% url 'advertiser:media_library' %}"
          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'media' in request.resolver_match.url_name %}text-white bg-accent/10 border border-accent/20{% else %}text-white/55 hover:text-white hover:bg-white/5 border border-transparent{% endif %}">
@@ -72,7 +66,6 @@
       </a>
       <span class="nav-tooltip">My Media</span>
     </div>
-
     <div class="nav-item relative">
       <a href="{% url 'advertiser:campaign_list' %}"
          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if 'campaign' in request.resolver_match.url_name %}text-white bg-accent/10 border border-accent/20{% else %}text-white/55 hover:text-white hover:bg-white/5 border border-transparent{% endif %}">
@@ -81,7 +74,6 @@
       </a>
       <span class="nav-tooltip">Campaigns</span>
     </div>
-
     <div class="nav-item relative">
       <a href="{% url 'advertiser:settings' %}"
          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {% if request.resolver_match.url_name == 'settings' %}text-white bg-accent/10 border border-accent/20{% else %}text-white/55 hover:text-white hover:bg-white/5 border border-transparent{% endif %}">
@@ -91,7 +83,6 @@
       <span class="nav-tooltip">Settings</span>
     </div>
   </nav>
-
   <!-- Footer: sign out -->
   <div class="px-3 py-4 border-t border-white/10 flex-shrink-0">
     <form method="post" action="{% url 'security:logout' %}">
@@ -106,7 +97,6 @@
     </form>
   </div>
 </aside>
-
 <!-- Main Content -->
 <div id="main-content" class="flex flex-col min-h-screen transition-all duration-300 ml-0 md:ml-56 overflow-x-hidden">
   <header class="sticky top-0 z-30 h-14 bg-bg/80 backdrop-blur border-b border-white/10 flex items-center px-4 md:px-6 gap-3">
@@ -118,11 +108,9 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
       </svg>
     </button>
-
     <div class="flex-1 min-w-0">
       <span class="font-display text-sm font-semibold truncate">Advers Advertiser</span>
     </div>
-
     <!-- User avatar dropdown -->
     <div class="relative flex-shrink-0" id="user-menu-container">
       <button onclick="toggleUserMenu()"
@@ -134,7 +122,7 @@
           <p class="text-sm font-semibold truncate">{{ request.user.get_full_name|default:request.user.email }}</p>
           <p class="text-xs text-white/50 mt-0.5 truncate">{{ request.user.email }}</p>
           <div class="flex items-center gap-2 mt-2 flex-wrap">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-accent/30 text-accent text-[10px] font-mono uppercase tracking-wide">Advertiser</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">Advertiser</span>
             {% if request.user.advertiser_profile.is_verified %}
             <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
               <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -165,7 +153,6 @@
       </div>
     </div>
   </header>
-
   <main class="flex-1">
     <div class="p-4 md:p-6 {% block page_container_class %}{% endblock %}">
       {% block page_header %}
@@ -174,17 +161,16 @@
           {% block breadcrumbs %}{% endblock %}
         </nav>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-1">
-        <div>
-          <h1 class="font-display text-xl font-bold tracking-tight">{% block page_title %}{% endblock %}</h1>
-          {% block page_description %}
-          <p class="text-sm text-white/50 mt-1"></p>
-          {% endblock %}
+          <div>
+            <h1 class="font-display text-xl font-bold tracking-tight">{% block page_title %}{% endblock %}</h1>
+            {% block page_description %}
+            <p class="text-sm text-white/50 mt-1"></p>
+            {% endblock %}
+          </div>
+          {% block page_header_actions %}{% endblock %}
         </div>
-        {% block page_header_actions %}{% endblock %}
-      </div>
       </div>
       {% endblock %}
-
       {% if messages %}
       <div class="mb-6 space-y-2">
         {% for message in messages %}
@@ -201,12 +187,10 @@
         {% endfor %}
       </div>
       {% endif %}
-
       {% block content %}{% endblock %}
     </div>
   </main>
 </div>
-
 <!-- Mobile Bottom Nav -->
 <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-panel border-t border-white/10 flex items-stretch h-16">
   <a href="{% url 'advertiser:dashboard' %}"
@@ -235,7 +219,6 @@
     More
   </button>
 </nav>
-
 <!-- Mobile "More" bottom sheet -->
 <div id="more-sheet-backdrop" onclick="toggleMoreSheet()" class="hidden md:hidden fixed inset-0 bg-black/70 z-40"></div>
 <div id="more-sheet" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-panel border-t border-white/10 rounded-t-2xl p-4 pb-6">
@@ -252,8 +235,7 @@
     </button>
   </form>
 </div>
-
-<script src="{% static 'js/advertiser/layout.js' %}"></script>
+<script src="{% static 'js/advertiser/base.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

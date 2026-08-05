@@ -499,6 +499,7 @@ class CampaignSlot(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     campaign = models.ForeignKey( Campaign, on_delete=models.CASCADE, related_name="campaign_slots")
     billboard = models.ForeignKey(Billboard, on_delete=models.PROTECT, related_name="campaign_slots")
+    # number of times our ads get displayed
     slots_per_day = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(50)]) # store how many ads slot this campaign owns
 
     @property

@@ -294,16 +294,78 @@ def media_delete(request, pk):
     messages.success(request, f"'{title}' deleted.")
     return redirect("advertiser:media_library")
 
+@login_required(login_url="security:login")
+@advertiser_required
+def media_preview(request, pk):
+    """
+    GET /advertiser/media/<pk>/preview/
+
+    HTMX-only endpoint. Renders the modal's inner content (preview pane +
+    details sidebar) for a single media item. Replaces the old JS function
+    that built this markup client-side from data passed through onclick().
+    """
+    advertiser = _get_advertiser(request)
+    media = get_object_or_404(Media, pk=pk, advertiser=advertiser)
+    return render(request, "advertiser/partials/media_preview_modal.html", {"media": media})
+
 # browse billboards
 @login_required(login_url="security:login")
 @advertiser_required
 def browse_billboards(request):
     billboards = (Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).select_related("ad_manager").order_by("name"))
+    search_query = request.GET.get("q", "").strip()
+    screen_type = request.GET.get("screen_type", "").strip()
+    max_price = request.GET.get("max_price", "").strip()
+    country = request.GET.get("country", "").strip()
+    state = request.GET.get("state", "").strip()
+    lat = request.GET.get("lat", "").strip()
+    lng = request.GET.get("lng", "").strip()
+ 
+    if search_query:
+        billboards = billboards.filter(
+            Q(name__icontains=search_query)
+            | Q(location_name__icontains=search_query)
+            | Q(state__icontains=search_query)
+            | Q(country__icontains=search_query)
+        )
+    if screen_type:
+        billboards = billboards.filter(screen_type=screen_type)
+    if max_price:
+        try:
+            billboards = billboards.filter(price_per_slot__lte=float(max_price))
+        except ValueError:
+            pass
+    if country:
+        billboards = billboards.filter(country__icontains=country)
+    if state:
+        billboards = billboards.filter(state__icontains=state)
+    if lat and lng:
+        try:
+            lat_f, lng_f = float(lat), float(lng)
+            billboards = billboards.filter(
+                latitude__gte=lat_f - 0.1, latitude__lte=lat_f + 0.1,
+                longitude__gte=lng_f - 0.1, longitude__lte=lng_f + 0.1,
+            )
+        except ValueError:
+            pass
+ 
     screen_type_choices = Billboard.ScreenType.choices
-    return render(request, "advertiser/browse_billboards.html", {
+    context = {
         "billboards": billboards,
         "screen_type_choices": screen_type_choices,
-    })
+        "search_query": search_query,
+        "selected_screen_type": screen_type,
+        "max_price": max_price,
+        "country": country,
+        "state": state,
+        "lat": lat,
+        "lng": lng,
+    }
+ 
+    if request.headers.get("HX-Request"):
+        return render(request, "advertiser/partials/browse_billboards_content.html", context)
+ 
+    return render(request, "advertiser/browse_billboards.html", context)
 
 # campaigns 
 @login_required(login_url="security:login")

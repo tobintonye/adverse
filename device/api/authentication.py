@@ -1,8 +1,6 @@
-# authentication devices registered on the app
+import hmac
 from rest_framework import authentication, exceptions
-
 from ..models import PlayerDevice
-
 
 class DeviceTokenAuthentication(authentication.BaseAuthentication):
     keyword = "DeviceToken"
@@ -19,8 +17,14 @@ class DeviceTokenAuthentication(authentication.BaseAuthentication):
             player = PlayerDevice.objects.select_related("billboard").get(auth_token=token)
         except PlayerDevice.DoesNotExist as exc:
             raise exceptions.AuthenticationFailed("Invalid device token.") from exc
+        
         if player.status == PlayerDevice.Status.DISABLED:
             raise exceptions.AuthenticationFailed("Device is disabled.")
+        # Constant-time re-check even after the DB lookup succeeds — matches
+        if not hmac.compare_digest(player.auth_token, token):
+            raise exceptions.AuthenticationFailed("Invalid device token.")
+        if player.status == PlayerDevice.Status.DISABLED:
+            raise exceptions.AuthenticationFailed("Device is disabled.")
+
         return (player, token)
-    
         # return (AnonymousUser(), device) to be used in prod

@@ -1,154 +1,37 @@
 {% extends "advertiser/base.html" %}
-
+{% load static %}
 {% block title %}My Media — Advers{% endblock %}
-
 {% block page_title %}My Media{% endblock %}
-
 {% block page_description %}
 <p class="text-sm text-white/50 mt-1">Manage your uploaded creative assets and media library.</p>
 {% endblock %}
-
 {% block page_header_actions %}
 <a href="{% url 'advertiser:upload_media' %}"
-   class="inline-flex items-center gap-2 bg-accent hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-md">
+   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-accent hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 sm:py-2 rounded-lg transition shadow-md">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
     Upload
 </a>
 {% endblock %}
-
 {% block content %}
-
 <!-- Dynamic HTMX Target Wrapper -->
 <div id="media-library-container">
     {% include "advertiser/partials/media_grid.html" %}
 </div>
-
-<!-- Preview Modal Container -->
-<dialog id="preview-modal" class="bg-transparent backdrop:bg-black/70 backdrop:backdrop-blur-sm p-4 w-full max-w-4xl rounded-2xl border-0 overflow-hidden" onclick="closePreviewModalOnBackdrop(event)">
-    <div class="bg-panel border border-white/10 rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl relative" onclick="event.stopPropagation()">
-        
+<dialog id="preview-modal"
+        class="bg-transparent backdrop:bg-black/70 backdrop:backdrop-blur-sm p-4 w-full max-w-4xl rounded-2xl border-0 overflow-hidden max-h-[90dvh]"
+        onclick="if (event.target === event.currentTarget) this.close()">
+    <div class="bg-panel border border-white/10 rounded-2xl overflow-y-auto max-h-[90dvh] flex flex-col md:flex-row shadow-2xl relative"
+         onclick="event.stopPropagation()">
         <!-- Close Button -->
-        <button onclick="closePreviewModal()" class="absolute top-4 right-4 z-20 text-white/50 hover:text-white bg-bg/80 border border-white/10 hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
-
-        <!-- Preview Area -->
-        <div class="flex-1 bg-bg flex items-center justify-center p-6 min-h-[300px] md:min-h-[420px]">
-            <div id="modal-image-container" class="hidden w-full h-full flex items-center justify-center">
-                <img id="modal-image" src="" class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-xl select-none">
-            </div>
-            <div id="modal-video-container" class="hidden w-full h-full flex items-center justify-center">
-                <video id="modal-video" src="" controls class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-xl"></video>
-            </div>
-        </div>
-
-        <!-- Details Sidebar Panel -->
-        <div class="w-full md:w-80 bg-panel p-6 border-t md:border-t-0 md:border-l border-white/10 flex flex-col justify-between">
-            <div class="space-y-4">
-                <div>
-                    <span id="modal-badge-type" class="text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded"></span>
-                    <h3 id="modal-title" class="text-base font-bold text-white mt-2 leading-snug break-words"></h3>
-                </div>
-                
-                <div class="border-t border-white/10 pt-4 space-y-3 text-xs">
-                    <div class="flex justify-between items-center">
-                        <span class="text-white/50">File Size</span>
-                        <span id="modal-size" class="font-mono text-white font-medium"></span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-white/50">Asset Type</span>
-                        <span id="modal-format" class="text-white font-medium"></span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-white/50">Approval State</span>
-                        <span id="modal-status" class="text-[10px] font-semibold px-2 py-0.5 rounded-md"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-6 border-t border-white/10 mt-6">
-                <a id="modal-download-link" href="" download class="inline-flex items-center justify-center w-full gap-2 bg-white/10 hover:bg-white/15 text-white border border-white/10 text-xs font-semibold px-4 py-2.5 rounded-lg transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                    Download File
-                </a>
-            </div>
-        </div>
+        <button onclick="document.getElementById('preview-modal').close()"
+                class="absolute top-4 right-4 z-20 text-white/50 hover:text-white bg-bg/80 border border-white/10 hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
+        <!-- htmx swaps the preview pane + details sidebar in here -->
+        <div id="preview-modal-content" class="contents"></div>
     </div>
 </dialog>
-
-<!-- JavaScript Controls for Modal -->
-<script>
-    function openPreviewModal(url, type, title, size, format, statusKey) {
-        const modal = document.getElementById('preview-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalSize = document.getElementById('modal-size');
-        const modalFormat = document.getElementById('modal-format');
-        const modalStatus = document.getElementById('modal-status');
-        const modalBadgeType = document.getElementById('modal-badge-type');
-        const modalDownload = document.getElementById('modal-download-link');
-
-        const imageContainer = document.getElementById('modal-image-container');
-        const videoContainer = document.getElementById('modal-video-container');
-        const modalImage = document.getElementById('modal-image');
-        const modalVideo = document.getElementById('modal-video');
-
-        modalTitle.textContent = title;
-        modalSize.textContent = size;
-        modalFormat.textContent = format;
-        modalBadgeType.textContent = type;
-        modalDownload.href = url;
-
-        imageContainer.classList.add('hidden');
-        videoContainer.classList.add('hidden');
-        modalImage.src = "";
-        modalVideo.src = "";
-
-        if (statusKey === 'pending') {
-            modalStatus.className = "text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md";
-            modalStatus.textContent = "PENDING REVIEW";
-        } else if (statusKey === 'admin_approved') {
-            modalStatus.className = "text-[10px] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md";
-            modalStatus.textContent = "ADMIN APPROVED";
-        } else if (statusKey === 'fully_approved') {
-            modalStatus.className = "text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md";
-            modalStatus.textContent = "LIVE";
-        } else {
-            modalStatus.className = "text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-md";
-            modalStatus.textContent = "REJECTED";
-        }
-
-        if (type === 'image') {
-            imageContainer.classList.remove('hidden');
-            modalImage.src = url;
-        } else {
-            videoContainer.classList.remove('hidden');
-            modalVideo.src = url;
-            modalVideo.load();
-        }
-
-        modal.showModal();
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closePreviewModal() {
-        const modal = document.getElementById('preview-modal');
-        const modalVideo = document.getElementById('modal-video');
-        
-        if (modalVideo) {
-            modalVideo.pause();
-        }
-
-        modal.close();
-        document.body.style.overflow = '';
-    }
-
-    function closePreviewModalOnBackdrop(event) {
-        if (event.target === event.currentTarget) {
-            closePreviewModal();
-        }
-    }
-</script>
-
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/advertiser/media-library.js' %}"></script>
 {% endblock %}

@@ -140,7 +140,7 @@ class PlayerDevice(TimeStampedModel):
         return f"{letters}-{digits}"
 
     # Assign this player to a billboard and reset to pending until first heartbeat
-    def pair_to_billboard(self, billboard: billboard ): # type: ignore
+    def pair_to_billboard(self, billboard: "Billboard" ): # type: ignore or billboard
         self.billboard = billboard
         self.status = self.Status.PENDING
         self.save(update_fields=["billboard", "status", "updated_at"])
@@ -223,7 +223,6 @@ class PlaybackLog(TimeStampedModel):
 
 class DeviceMetric(TimeStampedModel):
     """Point-in-time hardware health snapshot."""
-
     id  = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="metrics")
     cpu_usage_pct = models.FloatField(null=True, blank=True)
