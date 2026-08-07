@@ -16,7 +16,7 @@ from .serializers import ( AdManagerEarningSerializer, AdManagerSubaccountSerial
                             InitiateCampaignPaymentSerializer, PayoutRecordSerializer, SubaccountAuditLogSerializer, 
                             SubaccountSetupSerializer, UpdateBankDetailsSerializer
                         )
-from ..services import ( create_paystack_subaccount, handle_charge_success, handle_transfer_failed, handle_transfer_success, 
+from ..services import ( create_paystack_subaccount, handle_charge_success, 
                         initiate_campaign_refund, initialize_campaign_payment, update_paystack_subaccount_bank_details, verify_paystack_signature)
  
 logger = logging.getLogger(__name__)
@@ -311,12 +311,6 @@ class PaystackWebhookView(APIView):
             if event == "charge.success":
                 # Pass the full payload — handler extracts data internally
                 handle_charge_success(payload)
- 
-            elif event == "transfer.success":
-                handle_transfer_success(payload)
- 
-            elif event == "transfer.failed":
-                handle_transfer_failed(payload)
  
             elif event == "charge.dispute.create":
                 # Log for manual review — no automated action

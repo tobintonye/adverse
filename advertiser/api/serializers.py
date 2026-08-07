@@ -242,6 +242,15 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
                 {"name": f"You already have an active or draft campaign named '{name}'."}
             )
         
+    def validate_slots(self, slots):
+        for slot in slots:
+            billboard = slot.get("billboard")
+            if billboard and not Billboard.bookable().filter(pk=billboard.pk).exists():
+                raise serializers.ValidationError(
+                    f"'{billboard.name}' is not currently available for booking."
+                )
+        return slots
+
     def create(self, validated_data):
         slots_data = validated_data.pop("slots", [])
         advertiser = self.context["advertiser"]

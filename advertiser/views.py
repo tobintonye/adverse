@@ -18,6 +18,7 @@ from .tasks import _notify_campaign_submitted
 from django.core.paginator import Paginator
 from scheduling.models import TimeSlot
 from security.models import CustomUser
+from decimal import Decimal, InvalidOperation
 import logging
 
 logger = logging.getLogger(__name__)
@@ -312,7 +313,7 @@ def media_preview(request, pk):
 @login_required(login_url="security:login")
 @advertiser_required
 def browse_billboards(request):
-    billboards = (Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).select_related("ad_manager").order_by("name"))
+    billboards = Billboard.bookable().select_related("ad_manager").order_by("name")
     search_query = request.GET.get("q", "").strip()
     screen_type = request.GET.get("screen_type", "").strip()
     max_price = request.GET.get("max_price", "").strip()
@@ -332,8 +333,8 @@ def browse_billboards(request):
         billboards = billboards.filter(screen_type=screen_type)
     if max_price:
         try:
-            billboards = billboards.filter(price_per_slot__lte=float(max_price))
-        except ValueError:
+            billboards = billboards.filter(price_per_slot__lte=Decimal(max_price))
+        except (InvalidOperation, ValueError):
             pass
     if country:
         billboards = billboards.filter(country__icontains=country)
@@ -429,7 +430,7 @@ def _build_billboards_json(available_billboards):
 @advertiser_required
 def campaign_create(request):
     advertiser = _get_advertiser(request)
-    available_billboards = Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).order_by("name")
+    available_billboards = Billboard.bookable().order_by("name")
     # ?billboard=<pk> from the "Book" button on browse_billboards
     preselected_billboard = request.GET.get("billboard", "")
 
@@ -448,7 +449,7 @@ def campaign_create(request):
             if not billboard_id:
                 messages.error(request, "Please select a billboard.")
             else:
-                billboard = get_object_or_404(Billboard, pk=billboard_id, availability=Billboard.Availability.AVAILABLE)
+                billboard = get_object_or_404(Billboard, pk=billboard_id, id__in=Billboard.bookable().values("id"))
                 try:
                     with transaction.atomic():
                         campaign = form.save(commit=False)
@@ -613,10 +614,11 @@ def campaign_run_again(request, pk):
     billboard = original_slot.billboard
 
     # Check billboard is still available
-    if billboard.availability != billboard.Availability.AVAILABLE:
+    if not Billboard.bookable().filter(pk=billboard.pk).exists():
         messages.error(
             request,
-            f"'{billboard.name}' is no longer available. "
+            f"'{billboard.name}' is no longer available for booking "
+            "(it may be unpaired or disabled). "
             "Please create a new campaign and select a different billboard."
         )
         return redirect("advertiser:campaign_detail", pk=pk)
@@ -696,7 +698,7 @@ def campaign_run_again(request, pk):
 
         return redirect("advertiser:campaign_detail", pk=new_campaign.pk)
 
-    except Exception as e:
+    except Exception:
         logger.exception("campaign_run_again failed for campaign %s", pk)
         messages.error(request, "Could not create the new campaign. Please try again.")
         return redirect("advertiser:campaign_detail", pk=pk)
@@ -709,10 +711,9 @@ def campaign_edit(request, pk):
 
     if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.REJECTED]:
         messages.error(request, "This campaign can't be edited in its current status.")
-
         return redirect("advertiser:campaign_detail", pk=campaign.pk)
     
-    available_billboards = Billboard.objects.filter(availability=Billboard.Availability.AVAILABLE).order_by("name")
+    available_billboards = Billboard.bookable().order_by("name")
 
     # Existing slot — one billboard per campaign in current UI
     existing_slot = campaign.campaign_slots.select_related("billboard").first()
@@ -732,7 +733,7 @@ def campaign_edit(request, pk):
             if not billboard_id:
                 messages.error(request, "Please select a billboard.")
             else:
-                billboard = get_object_or_404(Billboard, pk=billboard_id, availability=Billboard.Availability.AVAILABLE)
+                billboard = get_object_or_404(Billboard, pk=billboard_id, id__in=Billboard.bookable().values("id"))
                 try:
                     with transaction.atomic():
                         updated = form.save()

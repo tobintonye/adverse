@@ -1,0 +1,89 @@
+V{% extends "adManager/base.html" %}
+{% load static %}
+
+{% block title %}Earnings History{% endblock %}
+{% block page_title %}Earnings History{% endblock %}
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Every campaign payment credited to you. Paystack pays each amount directly to your bank account — nothing to withdraw here.</p>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Navigation -->
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <a href="{% url 'admanager:dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="text-emerald-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Total Earned</p>
+        </div>
+        <p class="font-display text-3xl font-bold text-emerald-400">&#8358;{{ total_earned|floatformat:2 }}</p>
+        <p class="text-xs text-white/40 mt-1">
+            Paystack settles your 70% share directly to your registered bank account as soon as each advertiser payment clears.
+        </p>
+    </div>
+
+    <!-- Earnings Table -->
+    <div class="bg-panel border border-white/10 rounded-xl overflow-hidden shadow-xl">
+        <div class="p-4 sm:p-5 border-b border-white/10">
+            <h3 class="text-xs font-mono font-bold tracking-wider uppercase text-white/90">Payment History</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-white/10 bg-white/[0.02]">
+                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Date</th>
+                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Campaign</th>
+                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-right">Amount Earned</th>
+                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-right">Platform Fee</th>
+                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Reference</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-sm">
+                    {% for earning in earnings %}
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="py-3 px-4 font-mono text-xs text-white/90 whitespace-nowrap">
+                            {{ earning.earned_at|date:"M j, Y" }}
+                        </td>
+                        <td class="py-3 px-4">
+                            <p class="font-medium text-white text-xs sm:text-sm truncate max-w-[220px]">
+                                {{ earning.payment.campaign.name|default:"—" }}
+                            </p>
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-xs text-emerald-400 font-semibold">
+                            &#8358;{{ earning.amount|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-xs text-white/50">
+                            &#8358;{{ earning.platform_fee|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-4 font-mono text-[11px] text-white/40 truncate max-w-[160px]">
+                            {{ earning.paystack_reference|default:"—" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-10 text-center text-xs text-white/40">
+                            No earnings yet. Once an advertiser pays for a campaign on one of your billboards, it'll show up here.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

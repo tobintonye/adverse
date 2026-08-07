@@ -131,6 +131,15 @@ class CampaignForm(forms.ModelForm):
     chosen after approval via the campaign_select_dates view. This prevents
     dates going stale while the campaign sits in review.
     """
+    daily_start_time = forms.TimeField(
+        input_formats=["%H:%M", "%H:%M:%S"],
+        widget=forms.TimeInput(attrs={"type": "time"}),
+    )
+    daily_end_time = forms.TimeField(
+        input_formats=["%H:%M", "%H:%M:%S"],
+        widget=forms.TimeInput(attrs={"type": "time"}),
+    )
+    
     def __init__(self, advertiser, *args, **kwargs):
         self.advertiser = advertiser
         super().__init__(*args, **kwargs)
@@ -147,8 +156,7 @@ class CampaignForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "e.g. Eid Sale 2026"}),
             "duration_days": forms.NumberInput(attrs={"min": 1, "max": 365, "placeholder": "e.g. 7"}),
-            "daily_start_time": forms.TimeInput(attrs={"type": "time"}),
-            "daily_end_time": forms.TimeInput(attrs={"type": "time"}),
+           
             "budget": forms.NumberInput(attrs={"placeholder": "e.g. 150000", "min": "0"}),
         }
     

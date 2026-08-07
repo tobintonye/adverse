@@ -15,7 +15,6 @@ urlpatterns = [
     path("payment/setup/", views.payment_setup, name="payment_setup"),
     path("payment/update-bank/", views.payment_update_bank, name="payment_update_bank"),
     path("payment/verify/", views.payment_verify_subaccount, name="payment_verify_subaccount"),
-    path("withdraw/", views.request_withdrawal, name="request_withdrawal"),
-    path("withdrawals/", views.withdrawal_list, name="withdrawal_list"),
+    path("earnings_history/", views.earnings_history, name="earnings_history"),
 ]
 

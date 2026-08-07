@@ -118,11 +118,12 @@
                           class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition resize-none placeholder-white/30">{{ form.address.value|default:'' }}</textarea>
             </div>
 
-            <div class="pt-4 border-t border-white/10 flex justify-end">
-                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-accent hover:opacity-90 text-white text-xs font-semibold rounded-lg transition shadow-md">
-                    Save Changes
-                </button>
-            </div>
+            <!-- Save Changes button (Business Profile form) -->
+        <div class="pt-4 border-t border-white/10 flex justify-end">
+        <button type="submit" class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 bg-accent/10 hover:bg-accent/20 border border-accent/40 text-white text-xs font-semibold rounded-lg transition">
+            Save Changes
+        </button>
+    </div>
         </form>
     </div>
 
@@ -133,7 +134,7 @@
             <p class="text-xs text-white/50 mt-0.5">Manage your password and security credentials</p>
         </div>
         <a href="{% url 'security:change_password' %}"
-           class="inline-flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold rounded-lg transition border border-white/10 w-full sm:w-auto">
+        class="inline-flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold rounded-lg transition border border-white/10 w-full sm:w-auto">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
             </svg>

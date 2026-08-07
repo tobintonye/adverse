@@ -53,7 +53,7 @@
             <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-4 pb-2 border-b border-white/5">Campaign overview</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4 text-xs">
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Status</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Status</p>
                     {% if campaign.status == 'active' %}
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
                             <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>Active
@@ -85,24 +85,24 @@
                     {% endif %}
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Start date</p>
-                    <p class="font-medium text-white">{% if campaign.start_date %}{{ campaign.start_date|date:"M d, Y" }}{% else %}<span class="text-white/30">Not selected</span>{% endif %}</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Start date</p>
+                    <p class="font-medium text-white">{% if campaign.start_date %}{{ campaign.start_date|date:"M d, Y" }}{% else %}<span class="text-white/60">Not selected</span>{% endif %}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">End date</p>
-                    <p class="font-medium text-white">{% if campaign.end_date %}{{ campaign.end_date|date:"M d, Y" }}{% else %}<span class="text-white/30">Not selected</span>{% endif %}</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">End date</p>
+                    <p class="font-medium text-white">{% if campaign.end_date %}{{ campaign.end_date|date:"M d, Y" }}{% else %}<span class="text-white/60">Not selected</span>{% endif %}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Duration</p>
-                    <p class="font-medium text-white">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Duration</p>
+                    <p class="font-medium text-white/70">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Daily hours</p>
-                    <p class="font-medium font-mono text-white/90">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Daily hours</p>
+                    <p class="font-medium font-mono text-white/80">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Budget</p>
-                    <p class="font-medium text-white font-mono">₦{{ campaign.budget|floatformat:2 }}</p>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Budget</p>
+                    <p class="font-medium text-white/80 font-mono">₦{{ campaign.budget|floatformat:2 }}</p>
                 </div>
                 <div>
                     <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Total price</p>
@@ -221,11 +221,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                         </svg>
                     </div>
-                    <p class="text-xs text-white/60 font-medium">No payment yet</p>
+                    <p class="text-xs text-white/100 font-medium">No payment yet</p>
                     {% if campaign.status == 'approved' %}
-                    <p class="text-[10px] text-white/40 mt-1">Pay above to activate this campaign.</p>
+                    <p class="text-[10px] text-white/100 mt-1">Pay above to activate this campaign.</p>
                     {% else %}
-                    <p class="text-[10px] text-white/40 mt-1">Payment required once campaign is approved.</p>
+                    <p class="text-[10px] text-white/80 mt-1">Payment required once campaign is approved.</p>
                     {% endif %}
                 </div>
             {% endif %}
@@ -253,7 +253,7 @@
         {% if campaign.status == 'draft' or campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
         <div class="bg-panel border border-red-500/20 p-4 sm:p-5 shadow-lg rounded-xl">
             <h3 class="text-xs font-bold uppercase tracking-wider text-red-400 mb-2">Danger zone</h3>
-            <p class="text-xs text-white/50 mb-4">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
+            <p class="text-xs text-white/70 mb-4">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
             <form method="post">
                 {% csrf_token %}
                 <button type="submit" name="action" value="cancel"

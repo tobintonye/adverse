@@ -55,8 +55,22 @@ class Billboard(TimeStampedModel):
     # True if an active PlayerDevice is assigned to this billboard.
     @property
     def is_paired(self):
-        return hasattr(self, "player_device") and self.player_device is not None
-    
+        return hasattr(self, "player_device") and self.player_device is not None # 
+
+    @classmethod
+    def bookable(cls):
+        """
+        Billboards an advertiser can actually book: marked AVAILABLE by the
+        ad manager AND have an actively paired PlayerDevice. A billboard with
+        no hardware attached (or a disabled/unpaired one) can be created and
+        priced, but shouldn't be discoverable or bookable until real hardware
+        is confirmed paired to it.
+        """
+        return cls.objects.filter(
+            availability=cls.Availability.AVAILABLE,
+            player_device__isnull=False,
+        ).exclude(player_device__status=PlayerDevice.Status.DISABLED)
+
     @property
     def resolution(self):
         return f"{self.screen_width_px}x{self.screen_height_px}"

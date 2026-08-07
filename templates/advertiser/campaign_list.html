@@ -5,12 +5,12 @@
 {% block page_title %}My Campaigns{% endblock %}
 
 {% block page_description %}
-<p class="text-sm text-white/50 mt-1">View and manage all your advertising campaigns.</p>
+<p class="text-sm text-white/70 mt-1">View and manage all your advertising campaigns.</p>
 {% endblock %}
 
 {% block page_header_actions %}
 <a href="{% url 'advertiser:campaign_create' %}"
-   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-accent hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-md">
+   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-600 text-white text-xs font-semibold px-5 py-2 rounded-lg transition shadow-md">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
@@ -30,7 +30,7 @@
     <div class="grid grid-cols-1 sm:flex sm:flex-wrap sm:items-end gap-3">
         {# Search Input #}
         <div class="sm:flex-1 sm:min-w-[220px] sm:max-w-md">
-            <label class="block text-xs font-medium text-white/50 mb-1.5">Search campaigns</label>
+            <label class="block text-xs font-medium text-white/100 mb-1.5">Search campaigns</label>
             <div class="relative">
                 <input type="text" name="search" value="{{ search_query }}"
                        placeholder="Search by name or media…"
@@ -45,7 +45,7 @@
 
         {# Status Selector #}
         <div class="w-full sm:w-44">
-            <label class="block text-xs font-medium text-white/50 mb-1.5">Status</label>
+            <label class="block text-xs font-medium text-white/100 mb-1.5">Status</label>
             <select name="status" class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition cursor-pointer">
                 <option value="" class="bg-panel text-white">All statuses</option>
                 <option value="draft"                  {% if selected_status == 'draft' %}selected{% endif %} class="bg-panel text-white">Draft</option>

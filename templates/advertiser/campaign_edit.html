@@ -57,6 +57,13 @@
                 {% endfor %}
             </select>
             {% if form.billboard.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.billboard.errors.0 }}</p>{% endif %}
+            {# ↓ NEW — add right here #}
+            {% if not form.fields.billboard.queryset %}
+            <p class="text-amber-400 text-xs mt-2">
+                No billboards are currently available for booking. This can happen if billboards
+                exist but don't yet have an active device paired to them — check back soon.
+            </p>
+            {% endif %}
         </div>
 
         {# Billboard Info Card #}

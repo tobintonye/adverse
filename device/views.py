@@ -9,6 +9,7 @@ from admanager.decorators import ad_manager_required
 from device.models import Billboard, PlayerDevice
 from .forms import BillboardForm
 from scheduling.models import TimeSlot, BillboardCapacity
+from admanager.models import Admanager
 
 @login_required(login_url='security:login')
 @ad_manager_required
@@ -59,7 +60,11 @@ def billboard_list(request):
 def billboard_create(request):
     ad_manager = request.user.ad_manager
 
-    if ad_manager.verification_status == ad_manager.VerificationStatus.SUSPENDED:
+    if ad_manager.verification_status != Admanager.VerificationStatus.VERIFIED:
+        messages.error(request, "Your account must be verified before you can list billboards. Please complete verification from your dashboard")
+        return redirect("admanager:dashboard")
+
+    if ad_manager.verification_status == Admanager.VerificationStatus.SUSPENDED:
         messages.error(request, "Suspended accounts cannot add billboards.")
         return redirect("device:billboard_list")
 
@@ -199,10 +204,6 @@ def device_pair(request):
     if request.method == "POST":
         pairing_code = request.POST.get("pairing_code", "").strip().upper()
         billboard_id = request.POST.get("billboard_id", "").strip()
-
-        # DEBUG — remove once confirmed working
-        # print(f"[device_pair] raw POST data: {dict(request.POST)}")
-        # print(f"[device_pair] parsed pairing_code={pairing_code!r} billboard_id={billboard_id!r}")
 
         if not pairing_code:
             messages.error(request, "Please enter the pairing code shown on the device.")

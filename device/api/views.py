@@ -53,6 +53,9 @@ class BillboardListCreateView(APIView):
     def post(self, request):
         if request.user.role != CustomUser.UserRole.AD_MANAGER:  # was raw string "ad_manager"
             raise PermissionDenied("Only ad managers can register billboards.")
+        ad_manager = get_ad_manager(request.user)
+        if ad_manager.verification_status != Admanager.VerificationStatus.VERIFIED:
+            raise PermissionDenied("Your account must be verified before you can register billboards.")
         serializer = BillboardWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ad_manager = get_ad_manager(request.user)

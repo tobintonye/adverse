@@ -52,7 +52,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
         </svg>
         <p class="font-medium text-amber-200">
-            No bank account on file. Add your <strong>bank details</strong> so we can process withdrawal disbursements to you.
+            No bank account on file. Add your <strong>bank details</strong> so Paystack can pay you directly for every campaign.
         </p>
     </div>
     <a href="{% url 'admanager:payment_setup' %}"
@@ -164,37 +164,33 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">Available Balance</div>
-        <div class="font-display text-3xl font-bold text-emerald-400">&#8358;{{ available_balance|floatformat:2 }}</div>
-        <div class="mt-1">
-            <button type="button" onclick="document.getElementById('withdraw_modal').showModal()"
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                    {% if available_balance <= 0 %}disabled{% endif %}>
-                Withdraw
-            </button>
-        </div>
+        <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">Total Earned</div>
+        <div class="font-display text-3xl font-bold text-emerald-400">&#8358;{{ revenue|floatformat:2 }}</div>
+        <div class="text-[10px] text-white/60">Paid directly to your bank account by Paystack</div>
     </div>
-    <!-- Lifetime Revenue -->
+    <!-- This Month's Earnings -->
     <div class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 flex flex-col gap-2">
         <div class="text-accent">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
         </div>
-        <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">Lifetime Revenue</div>
-        <div class="font-display text-3xl font-bold text-accent">&#8358;{{ revenue|floatformat:2 }}</div>
-        <div class="text-[10px] text-white/60">Total share from approved campaigns</div>
+        <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">This Month's Earnings</div>
+        <div class="font-display text-3xl font-bold text-accent">&#8358;{{ this_month_earnings|floatformat:2 }}</div>
+        <div class="text-[10px] text-white/60">{% now "F Y" %} campaign payments</div>
     </div>
-    <!-- Total Paid Out -->
+    <!-- Delivery Rate -->
     <div class="p-5 bg-panel border border-white/10 rounded-xl transition-all duration-300 flex flex-col gap-2">
-        <div class="text-cyan-400">
+        <div class="{% if delivery_rate == None %}text-white/40{% elif delivery_rate >= 90 %}text-emerald-400{% elif delivery_rate >= 70 %}text-amber-400{% else %}text-red-400{% endif %}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        <div class="text-[10px] font-mono uppercase tracking-widest text-white/80 font-semibold">Total Paid Out</div>
-        <div class="font-display text-3xl font-bold text-cyan-400">&#8358;{{ total_withdrawn|floatformat:2 }}</div>
-        <div class="text-[11px] text-white/70">Approved offline payments</div>
+        <div class="text-[10px] font-mono uppercase tracking-widest text-white/90">Delivery Rate</div>
+        <div class="font-display text-3xl font-bold {% if delivery_rate == None %}text-white/40{% elif delivery_rate >= 90 %}text-emerald-400{% elif delivery_rate >= 70 %}text-amber-400{% else %}text-red-400{% endif %}">
+            {% if delivery_rate == None %}—{% else %}{{ delivery_rate }}%{% endif %}
+        </div>
+        <div class="text-[10px] text-white/60">Confirmed plays vs. scheduled slots</div>
     </div>
 </div>
 <!-- Row 1.5: Revenue Analytics Charts -->
@@ -260,35 +256,7 @@
         </div>
     </a>
 </div>
-<!-- Standalone Request Withdrawal Dialog (Placed outside grid hierarchy) -->
-<dialog id="withdraw_modal" class="hidden open:flex fixed inset-0 z-50 items-center justify-center bg-black/75 backdrop-blur-sm p-4 w-full h-full border-0 bg-transparent">
-    <div class="bg-panel border border-white/10 rounded-2xl p-6 w-full max-w-sm mx-auto shadow-2xl">
-        <h3 class="font-display font-bold text-lg mb-4 text-white">Request Withdrawal</h3>
-        <p class="text-sm text-white/60 mb-4">
-            Available balance: <strong class="text-emerald-400">&#8358;{{ available_balance|floatformat:2 }}</strong>
-        </p>
-        <form method="POST" action="{% url 'admanager:request_withdrawal' %}">
-            {% csrf_token %}
-            <div class="mb-4">
-                <label class="block font-mono text-[10px] uppercase tracking-wider text-white/75 mb-2">Amount (&#8358;)</label>
-                <input type="number" name="amount" step="0.01"
-                       min="100" max="{{ available_balance }}"
-                       placeholder="Enter amount"
-                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" required />
-            </div>
-            <p class="text-xs text-white/50 mb-4">
-                Funds will be sent to your registered bank account ending in
-                <strong class="text-white/70">{{ ad_manager.paystack_subaccount.account_number_last4|default:"N/A" }}</strong>
-            </p>
-            <div class="flex items-center justify-end gap-3">
-                <button type="button" onclick="document.getElementById('withdraw_modal').close()"
-                        class="px-3.5 py-2 text-sm text-white/60 hover:text-white transition">Cancel</button>
-                <button type="submit"
-                        class="px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[#06210F] transition">Confirm Withdrawal</button>
-            </div>
-        </form>
-    </div>
-</dialog>
+
 
 <!-- Chart data, passed to the external JS file -->
 {{ chart_data|json_script:"dashboard-chart-data" }}

@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from common.models import TimeStampedModel
 from django.utils import timezone
+import datetime 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import FileExtensionValidator
 from device.models import Billboard
@@ -231,7 +232,7 @@ class Media(TimeStampedModel):
             if duplicate.exists():
                 raise ValidationError({"file": "You have already uploaded this file. Check your media library."})
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.full_clean(validate_unique=False)
         super().save(*args, **kwargs)
 
     @property
@@ -272,8 +273,8 @@ class Campaign(TimeStampedModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     duration_days = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(90)], help_text="How many days the campaign runs. Real calendar dates are chosen after approval.",)
-    daily_start_time = models.TimeField(default="06:00")
-    daily_end_time = models.TimeField(default="22:00")
+    daily_start_time = models.TimeField(default=datetime.time(6, 0))
+    daily_end_time = models.TimeField(default=datetime.time(22, 0))
     # Budget & pricing
     budget = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))],)
     estimated_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0.00'))], help_text="Calculated from billboard price_per_slot × slot count × campaign days.")
@@ -477,8 +478,9 @@ class Campaign(TimeStampedModel):
             """
         # Operations timeframe bounds
         if self.daily_start_time and self.daily_end_time:
-            if self.daily_end_time <= self.daily_start_time:
-                raise ValidationError({"daily_end_time": "Daily end time must be after start time."})
+            if isinstance(self.daily_start_time, datetime.time) and isinstance(self.daily_end_time, datetime.time):
+                if self.daily_end_time <= self.daily_start_time:
+                    raise ValidationError({"daily_end_time": "Daily end time must be after start time."})
 
     def save(self, *args, **kwargs):
         if not kwargs.get("update_fields"):

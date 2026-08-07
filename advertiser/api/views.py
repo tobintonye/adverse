@@ -98,9 +98,7 @@ class BillboardBrowseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        qs = Billboard.objects.filter(
-            availability = Billboard.Availability.AVAILABLE
-        ).order_by("price_per_slot")
+        qs = Billboard.bookable().order_by("price_per_slot")
 
         screen_type = request.query_params.get("screen_type")
         location = request.query_params.get("location")
@@ -122,9 +120,7 @@ class BillboardBrowseDetailView(APIView):
  
     def get(self, request, pk):
         try:
-            billboard = Billboard.objects.get(
-                pk=pk, availability=Billboard.Availability.AVAILABLE
-            )
+            billboard = Billboard.bookable().get(pk=pk)
         except Billboard.DoesNotExist:
             raise NotFound("Billboard not found or not available.")
         return Response(BillboardPublicSerializer(billboard).data)
@@ -348,9 +344,7 @@ class CampaignPriceEstimateView(APIView):
             except (ValueError, TypeError):
                 slots_per_day = 1
             try:
-                billboard = Billboard.objects.get(
-                    pk=billboard_id, availability=Billboard.Availability.AVAILABLE
-                )
+                billboard = Billboard.bookable().get(pk=billboard_id)
             except (Billboard.DoesNotExist, DjangoValidationError):
                 continue
 

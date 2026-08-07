@@ -1,14 +1,35 @@
 * { font-family: 'Inter', sans-serif; }
+
+:root, html.dark {
+  --color-bg: 10 10 11;         /* #0A0A0B */
+  --color-panel: 19 19 22;      /* #131316 */
+  --color-accent: 62 140 255;   /* #3E8CFF */
+  --color-text-main: 255 255 255;
+  --color-text-sub: 255 255 255 / 0.55;
+  --color-border: 255 255 255 / 0.1;
+}
+
+html.light {
+  --color-bg: 248 249 250;      /* #F8F9FA */
+  --color-panel: 255 255 255;   /* #FFFFFF */
+  --color-accent: 37 99 235;    /* #2563EB - crisp high-contrast blue */
+  --color-text-main: 17 24 39;  /* #111827 - dark text */
+  --color-text-sub: 107 114 128;/* #6B7280 */
+  --color-border: 229 231 235; /* #E5E7EB */
+}
+
 #sidebar { width: 14rem; min-width: 0; overflow: hidden; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
 #main-content { transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1); }
 #collapse-chevron { transition: transform 0.25s ease; }
 html.sidebar-is-collapsed #sidebar { width: 4rem; }
 html.sidebar-is-collapsed #main-content { margin-left: 4rem; }
+
 .nav-tooltip {
   position: absolute; left: calc(100% + 10px); top: 50%;
   transform: translateY(-50%); padding: 4px 10px;
-  background: #131316; border: 1px solid rgba(255,255,255,0.1);
-  color: #fff; font-size: 12px; border-radius: 6px;
+  background: rgb(var(--color-panel)); 
+  border: 1px solid rgb(var(--color-border));
+  color: rgb(var(--color-text-main)); font-size: 12px; border-radius: 6px;
   white-space: nowrap; pointer-events: none;
   opacity: 0; transition: opacity 0.15s ease; z-index: 60; display: none;
 }
@@ -18,19 +39,19 @@ html.sidebar-is-collapsed #main-content { margin-left: 4rem; }
 #sidebar.collapsed .sidebar-signout { justify-content: center; }
 dialog::backdrop { background: rgba(0,0,0,0.65); }
 
-/* Mobile: sidebar hidden entirely, bottom nav takes over */
+/* Mobile styling */
 @media (max-width: 767px) {
   #sidebar { display: none; }
 
   html, body {
-    height: 100vh;   /* fallback for WebViews without dvh support (e.g. some in-app browsers) */
+    height: 100vh;
     height: 100dvh;
     overflow: hidden;
   }
 
   #main-content {
     margin-left: 0 !important;
-    height: 100vh;   /* fallback for WebViews without dvh support */
+    height: 100vh;
     height: 100dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -38,9 +59,14 @@ dialog::backdrop { background: rgba(0,0,0,0.65); }
   }
 
   #collapse-btn { display: none !important; }
+
+    #main-content > header {
+    height: auto;
+    min-height: 3.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
 }
 
-/* Give the bottom nav breathing room above the home-indicator gesture
-   bar on notched phones, instead of sitting flush against it. */
 #bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
 #more-sheet { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }

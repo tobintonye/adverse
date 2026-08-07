@@ -7,15 +7,18 @@
 {% block page_container_class %}max-w-4xl mx-auto{% endblock %}
 {% block content %}
 <style>
-    /* Safety net: prevent any form control from ever exceeding its
-       container width, regardless of native browser rendering
-       (iOS time/date pickers, long <select> option text, etc). */
     #campaign-form input,
     #campaign-form select,
     #campaign-form textarea,
     #campaign-form button {
         max-width: 100%;
         box-sizing: border-box;
+    }
+
+    #campaign-form input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 1;
+        filter: invert(1);
     }
 </style>
 <div class="bg-panel border border-white/10 rounded-xl p-4 sm:p-6 shadow-xl overflow-x-hidden">
@@ -47,6 +50,13 @@
                 {% endfor %}
             </select>
             {% if form.billboard.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.billboard.errors.0 }}</p>{% endif %}
+            {# ↓ NEW — insert here, right after the existing error block #}
+            {% if not form.fields.billboard.queryset %}
+            <p class="text-amber-400 text-xs mt-2">
+                No billboards are currently available for booking. This can happen if billboards
+                exist but don't yet have an active device paired to them — check back soon.
+            </p>
+            {% endif %}
         </div>
         {# Billboard Info Card (shown when a billboard is selected) #}
         <div id="bb-info-card" class="hidden bg-bg/50 border border-white/10 rounded-xl overflow-hidden shadow-inner min-w-0">
@@ -181,9 +191,10 @@
         </div>
         {# Actions #}
         <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 pt-4 border-t border-white/10">
-            <button type="submit" class="w-full sm:w-auto bg-accent hover:opacity-90 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md text-center">
-                Save as Draft
-            </button>
+            <button type="submit" class="w-full sm:w-auto bg-accent/10 hover:bg-accent/20 border border-accent/40 text-accent text-xs font-semibold px-5 py-2.5 rounded-lg transition text-center flex items-center justify-center gap-1.5">
+
+            Save as Draft
+        </button>
             <a href="{% url 'advertiser:campaign_list' %}" class="w-full sm:w-auto text-xs text-white/50 hover:text-white transition text-center sm:text-left py-1">
                 Cancel
             </a>
