@@ -1,0 +1,36 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Campaign approved — pick your dates{% endblock %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Great news! Your campaign has been reviewed and approved by the billboard operator.
+    Pick your dates to activate it and complete payment.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Duration</td>
+        <td class="td-value">{{ duration_days }} day{{ duration_days|pluralize }}</td>
+    </tr>
+</table>
+
+<p class="text">
+    You have <strong>{{ expiry_days }} days</strong> to select your start date before
+    this approval expires and you'll need to resubmit for review.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ select_dates_url }}" class="btn">Select Dates</a>
+</div>
+
+<hr class="divider">
+<p class="note">Approval expires {{ expiry_days }} days from today if no dates are selected.</p>
+{% endblock %}

@@ -2,300 +2,293 @@
 
 {% block title %}{{ campaign.name }}{% endblock %}
 {% block page_title %}{{ campaign.name }}{% endblock %}
-{% block page_description %}Campaign details and payment status.{% endblock %}
-
-{% block breadcrumbs %}
-<a href="{% url 'advertiser:campaign_list' %}" class="text-base-content/50 hover:text-base-content transition text-xs">Campaigns</a>
-<span class="text-base-content/30 text-xs">/</span>
-<span class="text-base-content text-xs truncate max-w-[180px]">{{ campaign.name }}</span>
+{% block page_description %}
+<p class="text-xs sm:text-sm text-white/50 mt-1">Campaign details and payment status.</p>
 {% endblock %}
 
 {% block page_header_actions %}
-{% if campaign.status == 'draft' or campaign.status == 'rejected' %}
-<a href="{% url 'advertiser:campaign_edit' campaign.pk %}" class="btn btn-ghost btn-sm gap-2">
-    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-    </svg>
-    Edit
-</a>
-{% endif %}
+<div class="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
+    <a href="{% url 'advertiser:campaign_list' %}" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium transition border border-white/10 rounded-lg">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back
+    </a>
+    {% if campaign.status == 'draft' or campaign.status == 'rejected' %}
+    <a href="{% url 'advertiser:campaign_edit' campaign.pk %}" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium transition border border-white/10 rounded-lg">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+    </a>
+    {% endif %}
+    {% if campaign.start_date %}
+    <button type="button"
+            onclick="document.getElementById('playbackModal').showModal()"
+            hx-get="{% url 'advertiser:campaign_playback_log' campaign.pk %}"
+            hx-target="#playbackModalBody"
+            hx-swap="innerHTML"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium transition border border-white/10 rounded-lg">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Playback Log
+    </button>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block content %}
-{% if campaign.status == 'approved' and not campaign.payment or campaign.status == 'approved' and campaign.payment.status == 'failed' %}
-<div class="rounded-2xl border border-success/30 bg-success/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex items-start gap-4">
-        <div class="w-10 h-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <div>
-            <p class="text-sm font-bold text-success">Campaign approved — payment required to go live</p>
-            <p class="text-xs text-base-content/60 mt-1">
-                Your campaign has been reviewed and approved by the ad manager.
-                Complete payment of <strong class="text-base-content">₦{{ campaign.total_price|floatformat:2 }}</strong> to activate your schedule.
-            </p>
-            {% if campaign.payment and campaign.payment.status == 'failed' %}
-            <p class="text-xs text-error mt-1.5 font-medium">Previous payment attempt failed — please try again.</p>
-            {% endif %}
-        </div>
-    </div>
-    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-success btn-sm gap-2 whitespace-nowrap">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-            </svg>
-            Pay ₦{{ campaign.total_price|floatformat:2 }}
-        </button>
-    </form>
-</div>
-{% endif %}
 
-{% if campaign.payment and campaign.payment.status == 'pending' %}
-<div class="alert alert-warning mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span>Payment is in progress — complete the checkout in the Paystack window. This page will update once payment is confirmed.</span>
-</div>
-{% endif %}
+{% include "advertiser/partials/campaign_status_banner.html" %}
 
-{% if campaign.payment and campaign.payment.status == 'completed' %}
-<div class="alert alert-success mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span>Payment received — your campaign is scheduled and will go live on <strong>{{ campaign.start_date|date:"M d, Y" }}</strong>.</span>
-</div>
-{% endif %}
-
-{% if campaign.status == 'draft' %}
-<div class="alert alert-info mb-6 text-sm flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <p>This campaign is a draft. Submit it for review when you're ready.</p>
-    </div>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" name="action" value="submit" class="btn btn-primary btn-sm whitespace-nowrap">
-            Submit for Review
-        </button>
-    </form>
-</div>
-{% endif %}
-
-{% if campaign.status == 'rejected' %}
-<div class="alert alert-error mb-6 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <div>
-        <p class="font-medium">Campaign rejected.</p>
-        {% if campaign.rejection_reason %}<p class="text-xs mt-0.5 opacity-80">Reason: {{ campaign.rejection_reason }}</p>{% endif %}
-        <p class="text-xs mt-1 opacity-70">Edit the campaign and resubmit, or contact support.</p>
-    </div>
-</div>
-{% endif %}
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
     <!-- Left: Campaign info (2/3 width) -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="lg:col-span-2 space-y-5">
 
         <!-- Campaign Overview Card -->
-        <div class="card bg-base-200 border border-base-300">
-            <div class="card-body p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider mb-4">Campaign overview</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm">
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Status</p>
-                        {% if campaign.status == 'active' %}
-                            <span class="badge badge-success badge-sm gap-1"><span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>Active</span>
-                        {% elif campaign.status == 'approved' %}
-                            <span class="badge badge-info badge-sm">Approved</span>
-                        {% elif campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
-                            <span class="badge badge-warning badge-sm gap-1"><span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>Under review</span>
-                        {% elif campaign.status == 'completed' %}
-                            <span class="badge badge-ghost badge-sm">Completed</span>
-                        {% elif campaign.status == 'draft' %}
-                            <span class="badge badge-ghost badge-sm">Draft</span>
-                        {% elif campaign.status == 'rejected' %}
-                            <span class="badge badge-error badge-sm">Rejected</span>
-                        {% else %}
-                            <span class="badge badge-ghost badge-sm">{{ campaign.get_status_display }}</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Start date</p>
-                        <p class="font-medium">{{ campaign.start_date|date:"M d, Y" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">End date</p>
-                        <p class="font-medium">{{ campaign.end_date|date:"M d, Y" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Daily hours</p>
-                        <p class="font-medium font-mono text-sm">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Budget</p>
-                        <p class="font-medium">₦{{ campaign.budget|floatformat:2 }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-base-content/50 uppercase tracking-wider mb-1">Total price</p>
-                        <p class="font-bold text-base-content">₦{{ campaign.total_price|floatformat:2 }}</p>
-                    </div>
+        <div class="bg-panel border border-white/10 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-4 pb-2 border-b border-white/5">Campaign overview</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4 text-xs">
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Status</p>
+                    {% if campaign.status == 'active' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+                            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>Active
+                        </span>
+                    {% elif campaign.status == 'approved' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">
+                            Approved
+                        </span>
+                    {% elif campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full">
+                            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>Under review
+                        </span>
+                    {% elif campaign.status == 'completed' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 border border-white/10 rounded-full">
+                            Completed
+                        </span>
+                    {% elif campaign.status == 'draft' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 border border-white/10 rounded-full">
+                            Draft
+                        </span>
+                    {% elif campaign.status == 'approval_expired' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full">
+                            Approval Expired
+                        </span>
+                    {% elif campaign.status == 'rejected' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 rounded-full">
+                            Rejected
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 border border-white/10 rounded-full">
+                            {{ campaign.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Start date</p>
+                    <p class="font-medium text-white">{% if campaign.start_date %}{{ campaign.start_date|date:"M d, Y" }}{% else %}<span class="text-white/60">Not selected</span>{% endif %}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">End date</p>
+                    <p class="font-medium text-white">{% if campaign.end_date %}{{ campaign.end_date|date:"M d, Y" }}{% else %}<span class="text-white/60">Not selected</span>{% endif %}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Duration</p>
+                    <p class="font-medium text-white/70">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Daily hours</p>
+                    <p class="font-medium font-mono text-white/80">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Budget</p>
+                    <p class="font-medium text-white/80 font-mono">₦{{ campaign.budget|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white uppercase tracking-wider mb-1">Total price</p>
+                    <p class="font-bold text-accent font-mono text-sm">₦{{ campaign.actual_price|floatformat:2 }}</p>
                 </div>
             </div>
         </div>
 
         <!-- Media Card -->
-        <div class="card bg-base-200 border border-base-300">
-            <div class="card-body p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider mb-4">Media asset</h3>
-                {% if campaign.media %}
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-base-300 border border-base-300 flex items-center justify-center flex-shrink-0">
-                        {% if campaign.media.media_type == 'image' %}
-                        <svg class="w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        {% else %}
-                        <svg class="w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+        <div class="bg-panel border border-white/10 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-4 pb-2 border-b border-white/5">Media asset</h3>
+            {% if campaign.media %}
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-bg border border-white/10 flex items-center justify-center shrink-0 rounded-lg">
+                    {% if campaign.media.media_type == 'image' %}
+                    <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-xs text-white truncate">{{ campaign.media.title }}</p>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 uppercase rounded">{{ campaign.media.get_media_type_display }}</span>
+                        {% if campaign.media.duration_seconds %}
+                        <span class="text-[10px] text-white/40 font-mono">{{ campaign.media.duration_seconds }}s</span>
                         {% endif %}
-                    </div>
-                    <div>
-                        <p class="font-semibold text-sm">{{ campaign.media.title }}</p>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="badge badge-ghost badge-xs">{{ campaign.media.get_media_type_display }}</span>
-                            {% if campaign.media.duration_seconds %}
-                            <span class="text-[10px] text-base-content/50">{{ campaign.media.duration_seconds }}s</span>
-                            {% endif %}
-                            <span class="badge badge-success badge-xs">{{ campaign.media.get_status_display }}</span>
-                        </div>
+                        <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">{{ campaign.media.get_status_display }}</span>
                     </div>
                 </div>
-                {% else %}
-                <p class="text-sm text-base-content/50">No media asset linked.</p>
-                {% endif %}
             </div>
+            {% else %}
+            <p class="text-xs text-white/40">No media asset linked.</p>
+            {% endif %}
         </div>
 
         <!-- Billboards / Slots Card -->
-        <div class="card bg-base-200 border border-base-300">
-            <div class="card-body p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider mb-4">Billboard slots</h3>
-                {% if slots %}
-                <div class="space-y-3">
-                    {% for slot in slots %}
-                    <div class="flex items-center justify-between p-3 bg-base-300/40 rounded-xl border border-base-300/60">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold">{{ slot.billboard.name }}</p>
-                                <p class="text-[10px] text-base-content/50 mt-0.5">{{ slot.billboard.location_name }}</p>
-                            </div>
+        <div class="bg-panel border border-white/10 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-4 pb-2 border-b border-white/5">Billboard slots</h3>
+            {% if slots %}
+            <div class="space-y-3">
+                {% for slot in slots %}
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-bg/50 border border-white/10 rounded-lg">
+                    <div class="flex items-start sm:items-center gap-3">
+                        <div class="w-8 h-8 bg-bg border border-white/10 flex items-center justify-center shrink-0 rounded-md mt-0.5 sm:mt-0">
+                            <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold">{{ slot.slots_per_day }} slot{{ slot.slots_per_day|pluralize }}/day</p>
-                            <p class="text-[10px] text-base-content/50 mt-0.5">{{ slot.billboard.get_screen_type_display }}</p>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-white">{{ slot.billboard.name }}</p>
+                            <p class="text-[10px] text-white/40 mt-0.5 break-words">{{ slot.billboard.location_name }}</p>
                         </div>
                     </div>
-                    {% endfor %}
+                    <div class="text-left sm:text-right pl-11 sm:pl-0 shrink-0 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                        <p class="text-xs font-bold text-white">{{ slot.slots_per_day }} slot{{ slot.slots_per_day|pluralize }}/day</p>
+                        <p class="text-[10px] text-white/40 mt-0.5">{{ slot.billboard.get_screen_type_display }}</p>
+                    </div>
                 </div>
-                {% else %}
-                <p class="text-sm text-base-content/50">No billboard slots assigned.</p>
-                {% endif %}
+                {% endfor %}
             </div>
+            {% else %}
+            <p class="text-xs text-white/40">No billboard slots assigned.</p>
+            {% endif %}
         </div>
 
     </div>
 
-    <!-- Right: Status sidebar (1/3 width) -->
-    <div class="space-y-6">
+    <!-- Right: Sidebar (1/3 width) -->
+    <div class="space-y-5">
 
         <!-- Payment Status Card -->
-        <div class="card bg-base-200 border border-base-300">
-            <div class="card-body p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider mb-4">Payment</h3>
-                {% if campaign.payment %}
-                    {% with p=campaign.payment %}
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="text-base-content/60">Status</span>
-                            {% if p.status == 'completed' %}
-                                <span class="badge badge-success badge-sm">Paid</span>
-                            {% elif p.status == 'pending' %}
-                                <span class="badge badge-warning badge-sm gap-1"><span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>Pending</span>
-                            {% elif p.status == 'failed' %}
-                                <span class="badge badge-error badge-sm">Failed</span>
-                            {% elif p.status == 'refunded' %}
-                                <span class="badge badge-info badge-sm">Refunded</span>
-                            {% endif %}
-                        </div>
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="text-base-content/60">Total</span>
-                            <span class="font-bold">₦{{ p.total_amount|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="text-base-content/60">Reference</span>
-                            <span class="font-mono text-xs text-base-content/70">{{ p.reference|truncatechars:18 }}</span>
-                        </div>
-                        {% if p.completed_at %}
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="text-base-content/60">Paid on</span>
-                            <span class="text-xs">{{ p.completed_at|date:"M d, Y H:i" }}</span>
-                        </div>
+        <div class="bg-panel border border-white/10 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-4 pb-2 border-b border-white/5">Payment</h3>
+            {% if payment %}
+                {% with p=payment %}
+                <div class="space-y-3 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-white/90">Status</span>
+                        {% if p.status == 'completed' %}
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">Paid</span>
+                        {% elif p.status == 'pending' %}
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full">
+                                <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>Pending
+                            </span>
+                        {% elif p.status == 'failed' %}
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 rounded-full">Failed</span>
+                        {% elif p.status == 'refunded' %}
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">Refunded</span>
                         {% endif %}
                     </div>
-                    {% endwith %}
-                {% else %}
-                    <div class="text-center py-4">
-                        <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center mx-auto mb-2">
-                            <svg class="w-5 h-5 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                        </div>
-                        <p class="text-xs text-base-content/50">No payment yet</p>
-                        {% if campaign.status == 'approved' %}
-                        <p class="text-[10px] text-base-content/40 mt-1">Pay above to activate this campaign.</p>
-                        {% else %}
-                        <p class="text-[10px] text-base-content/40 mt-1">Payment required once campaign is approved.</p>
-                        {% endif %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-white/90">Total</span>
+                        <span class="font-bold text-white font-mono">₦{{ p.total_amount|floatformat:2 }}</span>
                     </div>
-                {% endif %}
-            </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-white/90">Reference</span>
+                        <span class="font-mono text-[11px] text-white/70">{{ p.reference|truncatechars:18 }}</span>
+                    </div>
+                    {% if p.completed_at %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-white/90">Paid on</span>
+                        <span class="text-white/70 text-[11px]">{{ p.completed_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endwith %}
+            {% else %}
+                <div class="text-center py-4">
+                    <div class="w-10 h-10 bg-bg border border-white/10 flex items-center justify-center mx-auto mb-2 rounded-lg">
+                        <svg class="w-5 h-5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                    </div>
+                    <p class="text-xs text-white/100 font-medium">No payment yet</p>
+                    {% if campaign.status == 'approved' %}
+                    <p class="text-[10px] text-white/100 mt-1">Pay above to activate this campaign.</p>
+                    {% else %}
+                    <p class="text-[10px] text-white/80 mt-1">Payment required once campaign is approved.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
 
-        <!-- Danger Zone: Cancel -->
-        {% if campaign.status in 'draft,pending_admin_review,pending_manager_review' %}
-        <div class="card bg-base-200 border border-error/20">
-            <div class="card-body p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-error/70 mb-3">Danger zone</h3>
-                <p class="text-xs text-base-content/50 mb-3">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
-                <form method="post">
-                    {% csrf_token %}
-                    <button type="submit" name="action" value="cancel"
-                            class="btn btn-error btn-outline btn-sm w-full"
-                            onclick="return confirm('Cancel this campaign? This cannot be undone.')">
-                        Cancel campaign
-                    </button>
-                </form>
-            </div>
+        <!-- Run Again Card -->
+        {% if campaign.status == 'completed' %}
+        <div class="bg-panel border border-white/10 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-2">Run again</h3>
+            <p class="text-xs text-white/50 mb-4">
+                Re-run this campaign with the same billboard, media, and time settings.
+                You'll pick new dates before submitting.
+            </p>
+            <button onclick="document.getElementById('run-again-modal').showModal()"
+                    class="w-full bg-accent hover:opacity-90 text-white text-xs font-semibold py-2.5 px-4 transition shadow-md flex items-center justify-center gap-2 rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Run this campaign again
+            </button>
         </div>
         {% endif %}
 
+        <!-- Danger Zone: Cancel -->
+        {% if campaign.status == 'draft' or campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
+        <div class="bg-panel border border-red-500/20 p-4 sm:p-5 shadow-lg rounded-xl">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-red-400 mb-2">Danger zone</h3>
+            <p class="text-xs text-white/50 mb-4">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="action" value="cancel"
+                        class="w-full border border-red-500/40 hover:bg-red-500/10 text-red-400 text-xs font-semibold py-2.5 px-4 transition rounded-lg"
+                        onclick="return confirm('Cancel this campaign? This cannot be undone.')">
+                    Cancel campaign
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+{% include "advertiser/partials/run_again_modal.html" %}
+
+<!-- Playback Log Modal -->
+<dialog id="playbackModal" class="hidden open:flex fixed inset-0 z-50 items-center justify-center bg-black/75 backdrop-blur-sm p-4 w-full h-full border-0 bg-transparent">
+    <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-3xl mx-auto shadow-2xl max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+            <h3 class="font-display font-bold text-lg text-white">Playback Confirmation</h3>
+            <button type="button" onclick="document.getElementById('playbackModal').close()"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="playbackModalBody" class="p-5 overflow-y-auto">
+            <div class="flex items-center justify-center py-16 text-white/40 text-sm">Loading playback log…</div>
+        </div>
+    </div>
+</dialog>
 
 {% endblock %}

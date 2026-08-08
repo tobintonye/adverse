@@ -10,6 +10,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from ..models import Advertiser, Media, Campaign
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from security.models import CustomUser
 from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer, BillboardPublicSerializer,
                            MediaSerializer, MediaUploadSerializer, MediaReviewSerializer, CampaignSlotSerializer,
                            CampaignSerializer, CampaignWriteSerializer, CampaignPriceEstimateSerializer, 
@@ -39,15 +40,13 @@ def require_verified(advertiser):
     
 def get_owned_media(advertiser, pk):
     try:
-        return Media.objects.get(pk=pk, advertiser=advertiser)  
+        return Media.objects.get(pk=pk, advertiser=advertiser)
     except Media.DoesNotExist:
-        return NotFound("Media not found.")
+        raise NotFound("Media not found.")  
 
 def get_owned_campaign(advertiser, pk):
-    try: 
-        return Campaign.objects.prefetch_related(
-            "campaign_slots__billboard"
-        ).get(pk=pk, advertiser=advertiser)
+    try:
+        return Campaign.objects.prefetch_related("campaign_slots__billboard").get(pk=pk, advertiser=advertiser)
     except Campaign.DoesNotExist:
         raise NotFound("Campaign not found.")
     
@@ -61,11 +60,17 @@ class AdvertiserProfileView(APIView):
         return Response(AdvertiserProfileSerializer(advertiser).data)
         
     def post(self, request): 
+        if request.user.role != CustomUser.UserRole.ADVERTISER:
+            return Response(
+                {"detail": "This account is not registered as an advertiser."},
+                    status=status.HTTP_403_FORBIDDEN,
+            )
         if Advertiser.objects.filter(user=request.user).exists():
             return Response(
                 {"detail": "Profile already exists."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
         serializer = AdvertiserProfileWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         advertiser = serializer.save(user=request.user)
@@ -93,9 +98,7 @@ class BillboardBrowseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        qs = Billboard.objects.filter(
-            availability = Billboard.Availability.AVAILABLE
-        ).order_by("price_per_slot")
+        qs = Billboard.bookable().order_by("price_per_slot")
 
         screen_type = request.query_params.get("screen_type")
         location = request.query_params.get("location")
@@ -110,7 +113,6 @@ class BillboardBrowseView(APIView):
                 qs = qs.filter(price_per_slot__lte=Decimal(max_price))
             except Exception:
                 pass
- 
         return Response(BillboardPublicSerializer(qs, many=True).data)
     
 class BillboardBrowseDetailView(APIView):
@@ -118,9 +120,7 @@ class BillboardBrowseDetailView(APIView):
  
     def get(self, request, pk):
         try:
-            billboard = Billboard.objects.get(
-                pk=pk, availability=Billboard.Availability.AVAILABLE
-            )
+            billboard = Billboard.bookable().get(pk=pk)
         except Billboard.DoesNotExist:
             raise NotFound("Billboard not found or not available.")
         return Response(BillboardPublicSerializer(billboard).data)
@@ -158,9 +158,7 @@ class MediaDetailView(APIView):
         advertiser = get_advertiser(request.user)
         media = get_owned_media(advertiser, pk)
 
-        if media.campaigns.filter(
-            status__in=[Campaign.Status.ACTIVE, Campaign.Status.APPROVED]
-        ).exists():
+        if media.campaigns.filter(status__in=[Campaign.Status.ACTIVE, Campaign.Status.APPROVED]).exists():
             return Response({"detail": "Cannot delete media used in an active or approved campaign."}, status=status.HTTP_400_BAD_REQUEST)
         media.file.delete(save=False)
         media.delete()
@@ -187,11 +185,14 @@ class MediaReviewView(APIView):
         action = serializer.validated_data["action"]
         reason = serializer.validated_data.get("rejection_reason", "")
 
-        if action == "approve":
-            media.approve(admin_user=request.user)
-        else:
-            media.reject(reviewer=request.user, reason=reason)
- 
+        try:
+            if action == "approve":
+                media.approve(admin_user=request.user)
+            else:
+                media.reject(reviewer=request.user, reason=reason)
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
+
         return Response(MediaSerializer(media).data)
 
 class CampaignListCreateView(APIView):
@@ -208,10 +209,7 @@ class CampaignListCreateView(APIView):
     
     def post(self, request):
         advertiser = get_advertiser(request.user)
-        serializer = CampaignWriteSerializer(
-            data=request.data,
-            context={"advertiser": advertiser},
-        )
+        serializer = CampaignWriteSerializer(data=request.data, context={"advertiser": advertiser},)
         serializer.is_valid(raise_exception=True)
         campaign = serializer.save()
         return Response(CampaignSerializer(campaign).data, status=status.HTTP_201_CREATED)
@@ -239,7 +237,6 @@ class CampaignDetailView(APIView):
     def delete(self, request, pk): 
         advertiser = get_advertiser(request.user)
         campaign = get_owned_campaign(advertiser, pk)
-
         deletable = [Campaign.Status.DRAFT, Campaign.Status.REJECTED, Campaign.Status.CANCELLED]
         if campaign.status not in deletable:
             return Response({ "detail": "Only draft, rejected, or cancelled campaigns can be deleted."})
@@ -257,12 +254,10 @@ class CampaignSubmitView(APIView):
         advertiser = get_advertiser(request.user)
         require_verified(advertiser)
         campaign = get_owned_campaign(advertiser, pk)
-
-        try: 
+        try:
             campaign.submit_for_approval()
-        except DjangoValidationError  as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
         return Response({
             "detail": "Campaign submitted for approval successfully.",
             "campaign_id": str(campaign.id),
@@ -275,99 +270,60 @@ class CampaignCancelView(APIView):
     def post(self, request, pk):
         advertiser = get_advertiser(request.user)
         campaign = get_owned_campaign(advertiser, pk)
-
-        try: 
+        try:
             campaign.cancel()
-        except  ValidationError as e:
-            return Response({"detail": e.message if hasattr(e, 'message') else str(e)}, status=400)
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
         return Response({"detail": "Campaign cancelled successfully.", "status": campaign.status})
     
-class CampaignReviewView(APIView):
+class CampaignAdminForwardView(APIView):
     """
-    Global Tech Admin:action="approve"
-               Moves PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW
-               (calls campaign.admin_forward_to_manager)
- 
-    Ad Manager: action="approve"
-               Moves PENDING_MANAGER_REVIEW → APPROVED
-               Media status → FULLY_APPROVED
-               (calls campaign.manager_approve)
- 
-    Either role may also action="reject" from their respective pending state.
+    POST /advertiser/campaigns/<uuid:pk>/admin-review/
+
+    Admin-only: PENDING_ADMIN_REVIEW → PENDING_MANAGER_REVIEW (or reject).
+
+    Ad-manager approval/rejection is NOT handled here it lives at
+    admanager's own AdManagerCampaignReviewView.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-       
-        # has_manager_role = getattr(request.user, "role", None) == "ad_manager" or "admin"
-          #if not request.user.is_staff or request.user.is_superuser and not has_manager_role:
-         #   raise PermissionDenied("Only admins or ad managers can review campaigns.")
-        
-        user = request.user 
-
-        is_admin = user.is_staff or user.is_superuser
-
-        is_ad_manager = getattr(user, "role", None) in ("ad_manager",) or hasattr(user, "ad_manager")
-
-        if not (is_admin or is_ad_manager):
-            raise PermissionDenied("Only admins or ad managers can review campaigns.")
+        user = request.user
+        if not (user.is_staff or user.is_superuser):
+            raise PermissionDenied("Only admins can perform this review.")
 
         try:
-            campaign = Campaign.objects.prefetch_related("campaign_slots__billboard__ad_manager").get(pk=pk)
+            campaign = Campaign.objects.get(pk=pk)
         except Campaign.DoesNotExist:
             raise NotFound("Campaign not found.")
-        
-        # Ad manager restriction verification loop
-        if is_ad_manager and not is_admin:
-            owns_billboard = campaign.campaign_slots.filter(
-                billboard__ad_manager__user=user
-            ).exists()
-            if not owns_billboard:
-                raise PermissionDenied("You can only review campaigns that target your billboards.") 
-            
-        # status guard
-        reviewable = [
-            Campaign.Status.PENDING_ADMIN_REVIEW,
-            Campaign.Status.PENDING_MANAGER_REVIEW,
-        ]
 
-        if campaign.status not in reviewable:
-            return Response({"detail": "Only campaigns pending approval can be reviewed."}, status=status.HTTP_400_BAD_REQUEST)
+        if campaign.status != Campaign.Status.PENDING_ADMIN_REVIEW:
+            return Response(
+                {"detail": "Only campaigns pending admin review can be forwarded here."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = CampaignReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         action = serializer.validated_data["action"]
         reason = serializer.validated_data.get("rejection_reason", "")
+
         try:
             with transaction.atomic():
                 if action == "reject":
                     reject_campaign(campaign, reviewer=user, reason=reason)
-                    return Response(CampaignSerializer(campaign).data)
-                
-                if campaign.status == Campaign.Status.PENDING_ADMIN_REVIEW:
-                    # Admin forwards to manager — no payment, no schedule yet
-                    admin_forward_campaign(campaign, admin_user=user)
                 else:
-                    # Ad manager gives final approval — payment + schedule fires here
-                    result = approve_campaign_by_manager(campaign, manager_user=user)
-                    return Response({
-                        **CampaignSerializer(campaign).data,
-                        "slots_created": result["slots_created"],
-                        "slots_skipped": result["slots_skipped"],
-                        "payment_total": result["payment_total"],
-                    })
+                    admin_forward_campaign(campaign, admin_user=user)
         except DjangoValidationError as e:
-            errors = e.message_dict if hasattr(e, "message_dict") else e.messages
-            raise DRFValidationError(errors)
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
+
         return Response(CampaignSerializer(campaign).data)
 
 class CampaignPriceEstimateView(APIView):
-    # returns lives price breakdown without saving anything 
-
+    # Returns a live price breakdown without saving anything.
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request): 
+    def post(self, request):
         serializer = CampaignPriceEstimateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -388,8 +344,8 @@ class CampaignPriceEstimateView(APIView):
             except (ValueError, TypeError):
                 slots_per_day = 1
             try:
-                billboard = Billboard.objects.get(pk=billboard_id)
-            except (Billboard.DoesNotExist, ValidationError):
+                billboard = Billboard.bookable().get(pk=billboard_id)
+            except (Billboard.DoesNotExist, DjangoValidationError):
                 continue
 
             if billboard.charge_unit == Billboard.ChargeUnit.DAILY:
@@ -403,9 +359,9 @@ class CampaignPriceEstimateView(APIView):
                     line_total = billboard.price_per_slot * diff_hours * duration_days
                 else:
                     line_total = billboard.price_per_slot * duration_days
-            else: # SLOT
+            else:  # SLOT
                 line_total = billboard.price_per_slot * slots_per_day * duration_days
-                
+
             total += line_total
             breakdown.append({
                 "billboard_id": str(billboard.id),
@@ -417,7 +373,7 @@ class CampaignPriceEstimateView(APIView):
                 "duration_days": duration_days,
                 "line_total": line_total,
             })
- 
+
         return Response({
             "duration_days": duration_days,
             "estimated_total": total,

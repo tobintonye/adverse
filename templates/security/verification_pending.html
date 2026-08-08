@@ -1,78 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification Required</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Your Email</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0A0A0B',
+          panel: '#131316',
+          accent: '#3E8CFF',
+        },
+        fontFamily: {
+          display: ['Space Grotesk', 'sans-serif'],
+          sans: ['Inter', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
+      },
+    },
+  }
+</script>
 </head>
-<body class="bg-black flex items-center justify-center min-h-screen p-4 text-zinc-300">
+<body class="bg-bg text-white font-sans min-h-screen flex items-center justify-center p-6">
 
-    <!-- Compact Container -->
-    <div class="w-full max-w-sm bg-black p-8 rounded-2xl border border-zinc-800 shadow-2xl text-center">
-        
-        <!-- Animated Icon Section -->
-        <div class="flex justify-center mb-6">
-            <div class="relative">
-                <!-- Outer Pulse Ring -->
-                <div class="absolute inset-0 rounded-full bg-red-600/20 animate-ping"></div>
-                <!-- Inner Icon Circle -->
-                <div class="relative bg-zinc-900 border border-red-600/50 p-4 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500">
-                        <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Header -->
-        <div class="mb-6">
-            <h2 class="text-xl font-bold text-white tracking-tight">Verify your email</h2>
-            <p class="text-zinc-500 text-sm mt-1">Almost there!</p>
-        </div>
+  <div class="w-full max-w-sm bg-panel border border-white/10 rounded-2xl p-8 shadow-2xl text-center">
 
-        <!-- Content Section -->
-        <div class="space-y-3 text-sm leading-relaxed">
-            <p>We've sent a verification link to:<br>
-                <span class="text-white font-mono font-bold bg-zinc-900 px-2 py-1 rounded border border-zinc-800 inline-block mt-1">{{ email }}</span>
-            </p>
-            <p class="text-zinc-500">Check your inbox and click the link to activate your account.</p>
+    <!-- Animated Icon -->
+    <div class="flex justify-center mb-6">
+      <div class="relative">
+        <div class="absolute inset-0 rounded-full bg-accent/20 animate-ping"></div>
+        <div class="relative bg-white/5 border border-accent/50 p-4 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent">
+            <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
         </div>
-
-        <!-- Help Section (Tighter) -->
-        <div class="mt-8 pt-6 border-t border-zinc-800 text-left">
-            <h6 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Didn't receive it?</h6>
-            <ul class="space-y-2 text-[12px]">
-                <li class="flex items-start gap-2">
-                    <span class="text-red-500">•</span>
-                    <span>Check your <span class="text-zinc-100 font-medium">spam folder</span></span>
-                </li>
-                <li class="flex items-start gap-2">
-                    <span class="text-red-500">•</span>
-                    <span>Verify your email address is correct</span>
-                </li>
-                <li class="flex items-start gap-2">
-                    <span class="text-red-500">•</span>
-                    <span>Still nothing? <a href="{% url 'security:resendVerification' %}" class="text-red-500 hover:text-red-400 font-bold underline decoration-red-500/30 underline-offset-4 transition">Resend link</a></span>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Actions -->
-        <div class="mt-8 flex flex-col gap-3">
-            <a href="{% url 'security:login'%}" class="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-lg border border-zinc-700 transition active:scale-95">
-                Back to Login
-            </a>
-        </div>
-
-        <!-- Support -->
-        <div class="mt-6">
-            <p class="text-[11px] text-zinc-600">
-                Need help? 
-                <a href="mailto:support@adverse.com" class="text-zinc-400 hover:text-red-500 transition">support@adverse.com</a>
-            </p>
-        </div>
+      </div>
     </div>
+
+    <div class="mb-6">
+      <h2 class="font-display font-bold text-xl tracking-tight">Verify your email</h2>
+      <p class="text-white/50 text-sm mt-1">Almost there!</p>
+    </div>
+
+    <div class="space-y-3 text-sm leading-relaxed">
+      <p>We've sent a verification link to:<br>
+        <span class="text-white font-mono font-bold bg-black/40 px-2 py-1 rounded border border-white/10 inline-block mt-1">{{ email }}</span>
+      </p>
+      <p class="text-white/50">Check your inbox and click the link to activate your account.</p>
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-white/10 text-left">
+      <h6 class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Didn't receive it?</h6>
+      <ul class="space-y-2 text-[12px]">
+        <li class="flex items-start gap-2">
+          <span class="text-accent">•</span>
+          <span>Check your <span class="text-white font-medium">spam folder</span></span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-accent">•</span>
+          <span>Verify your email address is correct</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-accent">•</span>
+          <span>Still nothing?
+            <a href="{% url 'security:resendVerification' %}"
+               class="text-accent hover:text-blue-400 font-bold underline decoration-accent/30 underline-offset-4 transition">Resend link</a>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-8 flex flex-col gap-3">
+      <a href="{% url 'security:login' %}"
+         class="w-full py-2.5 bg-black/40 hover:bg-black/60 text-white text-sm font-bold rounded-lg border border-white/10 transition active:scale-95">
+        Back to login
+      </a>
+    </div>
+
+    <div class="mt-6">
+      <p class="text-[11px] text-white/40">
+        Need help?
+        <a href="mailto:hello@adverse.io" class="text-white/60 hover:text-accent transition">hello@adverse.io</a>
+      </p>
+    </div>
+
+  </div>
 
 </body>
 </html>

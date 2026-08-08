@@ -1,0 +1,210 @@
+{% with campaign_status=campaign.status payment_status=payment.status|default:"none" %}
+
+{# APPROVED but no dates picked yet #}
+{% if campaign_status == "approved" and not campaign.start_date %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-white">Campaign approved — pick your dates</p>
+            <p class="text-xs text-white/60 mt-1">
+                Your campaign runs for <strong class="text-white">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</strong>.
+                Select a start date to activate scheduling and continue to payment.
+            </p>
+        </div>
+    </div>
+    <a href="{% url 'advertiser:campaign_select_dates' campaign.pk %}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs rounded-lg transition shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        Select Dates
+    </a>
+</div>
+
+{# APPROVAL EXPIRED #}
+{% elif campaign_status == "approval_expired" %}
+<div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 mb-6">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-amber-200">Approval expired</p>
+            <p class="text-xs text-amber-100 mt-1">
+                This campaign was approved but no dates were selected within 7 days.
+                Please edit and resubmit for review.
+            </p>
+        </div>
+    </div>
+</div>
+
+{# PENDING PAYMENT #}
+{% elif payment_status == "pending" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mb-6 text-xs text-amber-300 flex items-center gap-3"
+     hx-get="{% url 'advertiser:campaign_status_fragment' campaign.pk %}"
+     hx-trigger="every 8s"
+     hx-target="#campaign-status-banner"
+     hx-swap="outerHTML">
+    <div class="w-4 h-4 rounded-full border-2 border-amber-400 border-t-transparent animate-spin shrink-0"></div>
+    <span>
+        Payment is being processed — verifying with Paystack.
+        <span class="text-amber-300/50 text-[11px] ml-1">This updates automatically.</span>
+    </span>
+</div>
+
+{# APPROVED with dates confirmed but no payment yet #}
+{% elif campaign_status == "approved" and campaign.start_date and payment_status == "none" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-white">Dates confirmed — payment required to go live</p>
+            <p class="text-xs text-white/60 mt-1">
+                Scheduled for <strong class="text-white">{{ campaign.start_date|date:"M d" }} – {{ campaign.end_date|date:"M d, Y" }}</strong>.
+                Complete payment of <strong class="text-white font-mono">₦{{ campaign.actual_price|floatformat:2 }}</strong> to activate.
+            </p>
+        </div>
+    </div>
+    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg transition shrink-0 shadow-lg shadow-emerald-500/10">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            Pay ₦{{ campaign.actual_price|floatformat:2 }}
+        </button>
+    </form>
+</div>
+
+{# PAYMENT COMPLETED #}
+{% elif payment_status == "completed" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 mb-6 text-xs text-white flex items-center gap-3">
+    <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>
+        Payment received — your campaign is scheduled and will go live on
+        {% if campaign.start_date %}<strong class="text-white">{{ campaign.start_date|date:"M d, Y" }}</strong>{% else %}the confirmed date{% endif %}.
+    </span>
+</div>
+
+{# ACTIVE #}
+{% elif campaign_status == "active" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 mb-6 text-xs text-white flex items-center gap-3">
+    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+    <span>
+        Your campaign is <strong class="text-white">live now</strong>
+        {% if campaign.end_date %} — running until <strong class="text-white">{{ campaign.end_date|date:"M d, Y" }}</strong>{% endif %}.
+    </span>
+</div>
+
+{# PAYMENT FAILED #}
+{% elif payment_status == "failed" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-red-500/20 bg-red-500/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-400">Payment failed</p>
+            <p class="text-xs text-white/70 mt-1">
+                Your previous payment attempt did not go through. Try again to activate this campaign.
+            </p>
+        </div>
+    </div>
+    <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white font-semibold text-xs rounded-lg transition shrink-0">
+            Retry payment
+        </button>
+    </form>
+</div>
+
+{# REFUNDED #}
+{% elif payment_status == "refunded" %}
+<div id="campaign-status-banner" class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 mb-6 text-xs text-white flex items-center gap-3">
+    <svg class="w-4 h-4 shrink-0 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>This campaign has been refunded. Contact support if you have questions.</span>
+</div>
+
+{# UNDER REVIEW #}
+{% elif campaign_status == "pending_admin_review" or campaign_status == "pending_manager_review" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mb-6 text-xs text-amber-300 flex items-center gap-3"
+     hx-get="{% url 'advertiser:campaign_status_fragment' campaign.pk %}"
+     hx-trigger="every 15s"
+     hx-target="#campaign-status-banner"
+     hx-swap="outerHTML">
+    <div class="w-4 h-4 rounded-full border-2 border-amber-400 border-t-transparent animate-spin shrink-0"></div>
+    <span>
+        Your campaign is under review ({{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }} requested).
+        <span class="text-amber-300/50 text-[11px] ml-1">You'll be notified when it's approved.</span>
+    </span>
+</div>
+
+{# COMPLETED #}
+{% elif campaign_status == "completed" %}
+<div id="campaign-status-banner" class="rounded-xl border border-white/10 bg-panel p-4 mb-6 text-xs text-white/60 flex items-center gap-3">
+    <svg class="w-4 h-4 shrink-0 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span>
+        This campaign completed{% if campaign.end_date %} on {{ campaign.end_date|date:"M d, Y" }}{% endif %}.
+    </span>
+</div>
+
+{# REJECTED #}
+{% elif campaign_status == "rejected" %}
+<div id="campaign-status-banner" class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 mb-6 text-xs text-red-300 flex items-start gap-3">
+    <svg class="w-4 h-4 shrink-0 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+        <p class="font-semibold text-red-400">Campaign rejected</p>
+        {% if campaign.rejection_reason %}
+        <p class="mt-0.5 opacity-80">Reason: {{ campaign.rejection_reason }}</p>
+        {% endif %}
+        <p class="mt-1 opacity-60">Edit the campaign and resubmit.</p>
+    </div>
+</div>
+
+{# DRAFT #}
+{% elif campaign_status == "draft" %}
+<div id="campaign-status-banner"
+     class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 mb-6 text-xs text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <svg class="w-4 h-4 shrink-0 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>This campaign is a draft ({{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}). Submit it for review when you're ready.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="submit" class="inline-flex items-center gap-2 px-3 py-1.5 bg-accent hover:opacity-90 text-white font-semibold text-xs rounded-lg transition shrink-0">
+            Submit for review
+        </button>
+    </form>
+</div>
+
+{% endif %}
+{% endwith %}

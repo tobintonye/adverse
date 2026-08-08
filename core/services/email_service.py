@@ -5,22 +5,19 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.urls import reverse
-from django_q.tasks import async_task
+from security.tokens import email_verification_token
 
+from core.tasks import (task_send_password_changed_email, task_send_password_reset_email, task_send_verification_email,)
 logger = logging.getLogger(__name__)
 
 
 def send_verification_email(user, request):
-    token = default_token_generator.make_token(user)
+    token = email_verification_token.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     verification_url = request.build_absolute_uri(
         reverse("security:verifyemail", kwargs={"uidb64": uid, "token": token})
     )
-    async_task(
-        "core.tasks.task_send_verification_email",
-        user.pk,
-        verification_url,
-    )
+    task_send_verification_email.delay(user.pk, verification_url)
     logger.info("Verification email queued for user %s", user.pk)
 
 
@@ -30,11 +27,7 @@ def send_password_reset_email(user, request):
     reset_url = request.build_absolute_uri(
         reverse("security:newpasswordReset", kwargs={"uidb64": uid, "token": token})
     )
-    async_task(
-        "core.tasks.task_send_password_reset_email",
-        user.pk,
-        reset_url,
-    )
+    task_send_password_reset_email.delay(user.pk, reset_url)
     logger.info("Password reset email queued for user %s", user.pk)
 
 
@@ -46,8 +39,5 @@ def send_password_reset_email_safe(user, request):
     send_password_reset_email(user, request)
 
 def send_password_changed_email(user): 
-    async_task(
-        "ore.tasks.task_send_password_changed_email",
-        user.pk
-    )
+    task_send_password_changed_email.delay(user.pk)
     logger.info("Password-changed notification queued for user %s", user.pk)

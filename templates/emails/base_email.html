@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block subject %}AdVers{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f2f2f2; color: #111111; }
+        .outer { max-width: 600px; margin: 0 auto; padding: 40px 16px; }
+        .logo-wrap { text-align: center; margin-bottom: 24px; }
+        .logo-text { font-size: 20px; font-weight: 800; letter-spacing: 0.14em; color: #111111; text-transform: uppercase; }
+        .card { background: #ffffff; border-radius: 4px; padding: 40px 48px; }
+        .greeting { font-size: 15px; color: #111111; margin-bottom: 16px; font-weight: 500; }
+        .title { font-size: 20px; font-weight: 700; color: #111111; margin-bottom: 14px; line-height: 1.35; }
+        .text { font-size: 14px; color: #555555; line-height: 1.8; margin-bottom: 20px; }
+        /* Info table */
+        .info-block { width: 100%; border-collapse: collapse; margin: 24px 0; }
+        .info-block td { padding: 10px 0; font-size: 14px; border-bottom: 1px solid #eeeeee; vertical-align: top; }
+        .info-block tr:last-child td { border-bottom: none; }
+        .info-block .td-label { width: 40%; font-size: 12px; font-weight: 600; color: #999999; padding-right: 12px; padding-top: 12px; }
+        .info-block .td-value { color: #111111; font-weight: 500; }
+        .info-block .td-value.mono { font-family: monospace; font-size: 12px; color: #555555; }
+        .info-block .td-value.amount { font-size: 17px; font-weight: 700; color: #111111; }
+        /* Button — centered */
+        .btn-wrap { text-align: center; margin: 28px 0; }
+        .btn { display: inline-block; background: #111111; color: #ffffff !important; text-decoration: none; padding: 14px 36px; font-size: 14px; font-weight: 600; border-radius: 4px; }
+        .btn-error { background: #cc0000; }
+        .btn-warning { background: #d97706; }
+        /* Badges */
+        .badge { display: inline-block; padding: 3px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; border-radius: 99px; }
+        .badge-success { background: #dcfce7; color: #15803d; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1d4ed8; }
+        /* Divider */
+        .divider { border: none; border-top: 1px solid #eeeeee; margin: 24px 0; }
+        .note { font-size: 12px; color: #aaaaaa; line-height: 1.6; text-align: center; }
+        /* Footer */
+        .footer { text-align: center; margin-top: 24px; padding: 0 16px; }
+        .footer p { font-size: 12px; color: #aaaaaa; line-height: 1.8; }
+        .footer a { color: #888888; text-decoration: none; }
+        .footer-links { margin-top: 8px; }
+        .footer-links a { color: #aaaaaa; text-decoration: none; font-size: 12px; margin: 0 6px; }
+        .footer-links span { color: #cccccc; }
+    </style>
+</head>
+<body>
+<div class="outer">
+    <!-- Logo -->
+    <div class="logo-wrap">
+        <span class="logo-text">AdVers</span>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+        {% block body %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <hr class="divider">
+        <p>
+            This email was sent by AdVers.<br>
+            Questions? <a href="mailto:support@adverse.io">Contact support</a>
+        </p>
+        <div class="footer-links">
+            <a href="#">Dashboard</a>
+            <span>&bull;</span>
+            <a href="#">Privacy</a>
+            <span>&bull;</span>
+            <a href="#">Unsubscribe</a>
+        </div>
+        <p style="margin-top: 12px;">&copy; {{ year }} AdVers. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

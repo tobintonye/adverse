@@ -1,0 +1,18 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Verify your AdVers account{% endblock %}
+{% block body %}
+<p class="greeting">Hey {{ first_name }},</p>
+<p class="text">
+    Thanks for creating an account with AdVers! Click the button below to verify
+    your email address and get started.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ verification_url }}" class="btn">Verify Email</a>
+</div>
+
+<hr class="divider">
+<p class="note">
+    If you didn't create an AdVers account, you can safely ignore this email.
+</p>
+{% endblock %}

@@ -1,7 +1,7 @@
 from .serializers import ( AdManagerProfileSerializer, AdManagerCampaignRequestSerializer, AdManagerProfileWriteSerializer,
-                            AdManagerBankAccountSerializer, AdManagerVerificationSerializer, AdManagerDashboardSerializer, 
-                            AdManagerMediaDetailSerializer, AdManagerCampaignReviewSerializer
-                        )
+    AdManagerVerificationSerializer, AdManagerDashboardSerializer,
+    AdManagerCampaignReviewSerializer,
+)
 from rest_framework.response import Response
 from rest_framework import status, permissions, generics
 from advertiser.models import Campaign
@@ -10,13 +10,14 @@ from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied, NotFound
 from ..models import Admanager
+from security.models import CustomUser
 from django.db import transaction
-from django.db.models import Sum, Count, Q, Value, DecimalField, F
-from django.db.models.functions import Coalesce
-from rest_framework.exceptions import ValidationError as DRFValidationError
+from decimal import Decimal
+from payments.models import AdManagerEarning, PayoutRecord
 from advertiser.services import approve_campaign_by_manager, reject_campaign
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.core.exceptions import ValidationError as DjangoValidationError
-# from .permissions import IsOwnerAdManager
+from .permissions import IsAdManager
 
 def get_ad_manager(user):
     try:
@@ -41,10 +42,12 @@ class AdManagerCreateView(generics.CreateAPIView):
     serializer_class =  AdManagerProfileWriteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
     def create(self, request, *args, **kwargs):
+        if request.user.role != CustomUser.UserRole.AD_MANAGER:
+            return Response(
+                {"error": "This account is not registered as an ad manager."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Prevent duplicate profile creation
         if hasattr(request.user, "ad_manager"):
             return Response(
@@ -57,14 +60,13 @@ class AdManagerCreateView(generics.CreateAPIView):
 
         with transaction.atomic():
              ad_manager = serializer.save(user=request.user)
-
         return Response(
             AdManagerProfileSerializer(ad_manager, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
 
 class AdManagerProfileView(generics.RetrieveUpdateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
 
     def get_object(self):
         return self.request.user.ad_manager
@@ -82,72 +84,116 @@ class AdManagerProfileView(generics.RetrieveUpdateAPIView):
                 {"detail": "Suspended ad manager accounts cannot update their profile."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-
         partial = kwargs.pop("partial", False)
         serializer = self.get_serializer(ad_manager, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-
         with transaction.atomic():
             serializer.save()
-
         return Response(
             AdManagerProfileSerializer(ad_manager, context={"request": request}).data,
             status=status.HTTP_200_OK,
         )
 
 class AdManagerDashboardView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
 
     def get(self, request):
-        try:
-            admanager = Admanager.objects.select_related('user__wallet').annotate(
-                pending_campaigns=Count('pending_review_campaigns', distinct=True),
-                active_campaigns=Count('active_campaigns', distinct=True),
-                total_earnings=Coalesce(
-                    Sum('earnings__amount', filter=Q(earnings__is_credited=True)),
-                    Value(0.0),
-                    output_field=DecimalField()
-                ),
-                wallet_balance=Coalesce(
-                    F('user__wallet__balance'),
-                    Value(0.0),
-                    output_field=DecimalField()
-                )
-            ).get(user=request.user)
-            
-        except Admanager.DoesNotExist:
-            return Response({"error": "Admanager profile not found."}, status=404)
-        serializer = AdManagerDashboardSerializer(admanager)
+        ad_manager = request.user.ad_manager
+
+        total_earnings = AdManagerEarning.objects.filter(
+            ad_manager=ad_manager
+        ).aggregate(total=__import__("django.db.models", fromlist=["Sum"]).Sum("amount"))["total"] or Decimal("0")
+        total_withdrawn = PayoutRecord.objects.filter(
+            ad_manager=ad_manager,
+            status__in=[PayoutRecord.Status.SUCCESS, PayoutRecord.Status.PENDING],
+        ).aggregate(total=__import__("django.db.models", fromlist=["Sum"]).Sum("amount"))["total"] or Decimal("0")
+
+        data = {
+            "id": ad_manager.id,
+            "business_name": ad_manager.business_name,
+            "verification_status": ad_manager.verification_status,
+            "is_verified": ad_manager.is_verified,
+            "has_bank_account": ad_manager.has_bank_account,
+            "commission_rate": ad_manager.commission_rate,
+            "total_billboards": ad_manager.billboards.count(),
+            "total_campaigns_served": ad_manager.received_campaigns.filter(
+                status__in=[Campaign.Status.APPROVED, Campaign.Status.ACTIVE, Campaign.Status.COMPLETED]
+            ).count(),
+            "total_impressions": 0,  # wire up via PlaybackLog once decided
+            "pending_campaigns": ad_manager.pending_review_campaigns.count(),
+            "active_campaigns": ad_manager.active_campaigns.count(),
+            "total_earnings": total_earnings,
+            "available_balance": total_earnings - total_withdrawn,
+        }
+        serializer = AdManagerDashboardSerializer(data)
         return Response(serializer.data)
 
-class AdManagerBankAccountView(generics.RetrieveUpdateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = AdManagerBankAccountSerializer
-    def get_object(self):
-        return self.request.user.ad_manager
-    
-    def update(self, request, *args, **kwargs):
-        ad_manager = self.get_object()
+class AdManagerBankAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
+
+    def get(self, request):
+        ad_manager = request.user.ad_manager
+        subaccount = getattr(ad_manager, "paystack_subaccount", None)
+        if not subaccount:
+            return Response({"has_bank_account": False})
+        return Response({
+            "has_bank_account": True,
+            "bank_name": subaccount.bank_name,
+            "account_number_last4": subaccount.account_number_last4,
+            "account_name": subaccount.account_name,
+            "is_active": subaccount.is_active,
+            "is_verified": subaccount.is_verified,
+        })
+
+    def post(self, request):
+        from payments.services import create_paystack_subaccount, update_paystack_subaccount_bank_details
+
+        ad_manager = request.user.ad_manager
         if ad_manager.verification_status == Admanager.VerificationStatus.SUSPENDED:
             return Response(
                 {"detail": "Suspended ad manager accounts cannot update payout details."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        partial = kwargs.pop("partial", False)
-        serializer = self.get_serializer(ad_manager, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        with transaction.atomic():
-            serializer.save()
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK,
-        )
+        bank_code = str(request.data.get("bank_code", "")).strip()
+        account_number = str(request.data.get("account_number", "")).strip()
+        business_name = str(request.data.get("business_name", "")).strip()
+
+        if not bank_code:
+            return Response({"bank_code": "Please select a bank."}, status=status.HTTP_400_BAD_REQUEST)
+        if not account_number.isdigit() or len(account_number) != 10:
+            return Response(
+                {"account_number": "Account number must be exactly 10 digits."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        subaccount = getattr(ad_manager, "paystack_subaccount", None)
+
+        try:
+            if subaccount:
+                update_paystack_subaccount_bank_details(
+                    subaccount=subaccount, bank_code=bank_code, account_number=account_number,
+                    business_name=business_name or None, updated_by=request.user,
+                )
+            else:
+                if not business_name:
+                    return Response(
+                        {"business_name": "Business name is required."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                create_paystack_subaccount(
+                    ad_manager=ad_manager, bank_code=bank_code,
+                    account_number=account_number, business_name=business_name,
+                )
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"detail": "Bank account details saved. Verification pending."})
     
 class AdManagerCampaignRequestsListView(generics.ListAPIView):
     # Lists campaigns pending this manager's review
     serializer_class = AdManagerCampaignRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
 
     def get_queryset(self):
         ad_manager_profile = self.request.user.ad_manager
@@ -160,8 +206,7 @@ class AdManagerCampaignRequestsListView(generics.ListAPIView):
     
 class AdManagerCampaignDetailView(APIView):
     # Full detail of a single campaign targeting this manager's billboard.
-
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
  
     def get(self, request, pk):
         manager  = get_ad_manager(request.user)
@@ -175,21 +220,22 @@ class AdManagerCampaignDetailView(APIView):
 class AdManagerCampaignReviewView(APIView):
     """
     POST /admanager/campaigns/<uuid:pk>/review/
- 
+
     Ad manager approves or rejects a campaign in PENDING_MANAGER_REVIEW.
- 
+
     On APPROVE:
-      - Campaign → APPROVED
+      - Campaign → APPROVED, approved_at stamped (starts 7-day expiry clock)
       - Media    → FULLY_APPROVED
-      - Payment  → deducted from advertiser wallet, credited to ad manager
-      - Schedule → TimeSlots generated for every campaign day
-      All of this happens atomically via the service layer.
- 
+      - Advertiser notified to pick real campaign dates next
+      - Scheduling (TimeSlot generation) does NOT happen here — it only
+        happens once the advertiser confirms real dates via
+        confirm_campaign_dates(), since dates aren't known at approval time.
+
     On REJECT:
       - Campaign → REJECTED
       - Media stays at ADMIN_APPROVED (can be reused in a new campaign)
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdManager]
  
     def post(self, request, pk):
         manager  = get_ad_manager(request.user)
@@ -209,37 +255,20 @@ class AdManagerCampaignReviewView(APIView):
  
         try:
             if action == "approve":
-                # Goes through the service layer — payment + schedule fires here
-                result = approve_campaign_by_manager(
-                    campaign=campaign,
-                    manager_user=request.user,
-                )
+                result = approve_campaign_by_manager(campaign=campaign, manager_user=request.user)
                 return Response({
-                    "detail": f"Campaign '{campaign.name}' approved and deployed live.",
-                    "status": campaign.status,
-                    "slots_created": result["slots_created"],
-                    "slots_skipped": result["slots_skipped"],
-                    "payment_total": str(result["payment_total"]),
-                    "warning": (
-                        f"{result['slots_skipped']} slots skipped due to billboard capacity."
-                        if result["slots_skipped"] else None
-                    ),
+                    "detail": f"Campaign '{campaign.name}' approved. Advertiser can now select campaign dates.",
+                    "status": result["status"],
+                    "campaign_id": result["campaign_id"],
                 })
             else:
-                reject_campaign(
-                    campaign=campaign,
-                    reviewer=request.user,
-                    reason=reason,
-                )
+                reject_campaign(campaign=campaign, reviewer=request.user, reason=reason)
                 return Response({
                     "detail": f"Campaign '{campaign.name}' has been rejected.",
                     "status": campaign.status,
                 })
- 
         except DjangoValidationError as e:
-            raise DRFValidationError(
-                e.message_dict if hasattr(e, "message_dict") else e.messages
-            )
+            raise DRFValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
         
 # admin ----         
 class AdminAdManagerListView(generics.ListAPIView):
@@ -248,24 +277,20 @@ class AdminAdManagerListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Admanager.objects.select_related("user").order_by("-created_at")
-
         verification_status = self.request.query_params.get("verification_status")
         if verification_status:
             queryset = queryset.filter(verification_status=verification_status)
-
         return queryset
 
 class AdminAdManagerVerificationView(APIView):
-    # Admin-only — verify, reject, suspend, or reinstate an ad manager account.
+    # Admin-only verify, reject, suspend, or reinstate an ad manager account.
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request, pk):
         serializer = AdManagerVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         action = serializer.validated_data["action"]
         reason = serializer.validated_data.get("reason", "")
-
         with transaction.atomic():
             ad_manager = get_object_or_404(
                 Admanager.objects.select_for_update(),
@@ -296,45 +321,4 @@ class AdminAdManagerDetailView(generics.RetrieveAPIView):
     serializer_class = AdManagerProfileSerializer
     permission_classes = [permissions.IsAdminUser]
     queryset = Admanager.objects.select_related("user")
-
-
-class AdManagerApproveCampaignView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, pk, *args, **kwargs):
-        campaign = get_object_or_404(Campaign, pk=pk)
-        manager_profile = request.user.ad_manager
-
-        # Verify this campaign actually books this manager's billboards
-        has_ownership = campaign.campaign_slots.filter(billboard__ad_manager=manager_profile).exists()
-        if not has_ownership:
-            return Response({"error": "You do not have permission to approve this campaign request."}, status=status.HTTP_403_FORBIDDEN)
-        try: 
-            campaign.manager_approve(manager_user=request.user)
-            return Response({"message": f"Campaign '{campaign.name}' and its media files have been fully approved and deployed live."},status=status.HTTP_200_OK)
-        except ValidationError as e:
-            return Response({"error": e.message}, status=status.HTTP_400_BAD_REQUEST)           
-
-class AdManagerRejectCampaignView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, pk, *args, **kwargs):
-        campaign = get_object_or_404(Campaign, pk=pk)
-        manager_profile = request.user.ad_manager
-        reason = request.data.get("rejection_reason", "").strip()
-
-        has_ownership = campaign.campaign_slots.filter(billboard__ad_manager=manager_profile).exists()
-        if not has_ownership:
-            return Response({"error": "You do not have permission to reject this campaign request."}, status=status.HTTP_403_FORBIDDEN)
-        if not reason:
-            return Response({"rejection_reason": "A detailed rejection reason is required."},status=status.HTTP_400_BAD_REQUEST)
-        try:
-            campaign.reject(reviewer=request.user, reason=reason)
-            return Response(
-                {"message": f"Campaign '{campaign.name}' has been rejected."},
-                status=status.HTTP_200_OK
-            )
-        except ValidationError as e:
-            return Response({"error": e.message}, status=status.HTTP_400_BAD_REQUEST)
-
 

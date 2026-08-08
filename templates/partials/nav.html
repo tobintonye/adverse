@@ -1,0 +1,47 @@
+{% load static %}
+<nav id="nav">
+  <div class="wrap nav-row">
+    <a href="{% url 'adverse:home' %}" class="logo">
+      <img
+        src="{% static 'images/logo.png' %}"
+        alt="Adverse"
+        class="logo-mark-img"
+        onerror="this.outerHTML='<div class=&quot;logo-mark&quot;></div>'"
+      >
+      <span class="logo-word">ADVERS</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="{% url 'adverse:how_it_works' %}"
+         class="{% if request.resolver_match.url_name == 'how_it_works' %}active{% endif %}">How it works</a>
+      <a href="{% url 'adverse:about' %}"
+         class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">About</a>
+      <a href="{% url 'adverse:contact' %}"
+         class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">Contact</a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="{% url 'security:login' %}" class="see-how">Log in</a>
+      <a href="{% url 'security:register' %}" class="btn btn-primary">Get started</a>
+    </div>
+
+    <!-- Mobile-only hamburger, hidden on desktop via CSS -->
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile slide-down menu, hidden on desktop via CSS -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="{% url 'adverse:how_it_works' %}"
+     class="{% if request.resolver_match.url_name == 'how_it_works' %}active{% endif %}">How it works</a>
+  <a href="{% url 'adverse:about' %}"
+     class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">About</a>
+  <a href="{% url 'adverse:contact' %}"
+     class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">Contact</a>
+  <div class="mobile-actions">
+    <a href="{% url 'security:login' %}" class="btn btn-ghost">Log in</a>
+    <a href="{% url 'security:register' %}" class="btn btn-primary">Get started</a>
+  </div>
+</div>

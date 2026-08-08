@@ -1,0 +1,42 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Your campaign has ended. Thank you for advertising with AdVers.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Started</td>
+        <td class="td-value">{{ start_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Ended</td>
+        <td class="td-value">{{ end_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Duration</td>
+        <td class="td-value">{{ duration_days }} day{{ duration_days|pluralize }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-info">Completed</span></td>
+    </tr>
+</table>
+
+<p class="text">
+    Ready to run another campaign? You can start a new one from your dashboard.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ dashboard_url }}" class="btn">Start a New Campaign</a>
+</div>
+{% endblock %}

@@ -55,8 +55,22 @@ class Billboard(TimeStampedModel):
     # True if an active PlayerDevice is assigned to this billboard.
     @property
     def is_paired(self):
-        return hasattr(self, "player_device") and self.player_device is not None
-    
+        return hasattr(self, "player_device") and self.player_device is not None # 
+
+    @classmethod
+    def bookable(cls):
+        """
+        Billboards an advertiser can actually book: marked AVAILABLE by the
+        ad manager AND have an actively paired PlayerDevice. A billboard with
+        no hardware attached (or a disabled/unpaired one) can be created and
+        priced, but shouldn't be discoverable or bookable until real hardware
+        is confirmed paired to it.
+        """
+        return cls.objects.filter(
+            availability=cls.Availability.AVAILABLE,
+            player_device__isnull=False,
+        ).exclude(player_device__status=PlayerDevice.Status.DISABLED)
+
     @property
     def resolution(self):
         return f"{self.screen_width_px}x{self.screen_height_px}"
@@ -140,7 +154,7 @@ class PlayerDevice(TimeStampedModel):
         return f"{letters}-{digits}"
 
     # Assign this player to a billboard and reset to pending until first heartbeat
-    def pair_to_billboard(self, billboard: billboard ): # type: ignore
+    def pair_to_billboard(self, billboard: "Billboard" ): # type: ignore or billboard
         self.billboard = billboard
         self.status = self.Status.PENDING
         self.save(update_fields=["billboard", "status", "updated_at"])
@@ -200,6 +214,7 @@ class PlaybackLog(TimeStampedModel):
     # One row per ad play. Drives billing and analytics.
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="playback_logs")
+    time_slot = models.ForeignKey("scheduling.TimeSlot", on_delete=models.SET_NULL, null=True, blank=True, related_name="playback_logs", help_text="The scheduled slot this play fulfilled, if it matched one.")
     media_id = models.UUIDField(db_index=True)
     started_at = models.DateTimeField()
     duration_seconds = models.PositiveIntegerField()
@@ -222,7 +237,6 @@ class PlaybackLog(TimeStampedModel):
 
 class DeviceMetric(TimeStampedModel):
     """Point-in-time hardware health snapshot."""
-
     id  = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     player = models.ForeignKey(PlayerDevice, on_delete=models.CASCADE, related_name="metrics")
     cpu_usage_pct = models.FloatField(null=True, blank=True)

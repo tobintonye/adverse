@@ -1,0 +1,27 @@
+{% extends "emails/base_email.html" %}
+
+{% block subject %}New Contact Message{% endblock %}
+
+{% block body %}
+<div class="greeting">Hello Admin,</div>
+<div class="title">New Contact Form Submission</div>
+<p class="text">You have received a new inquiry through the AdVers contact form:</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">NAME</td>
+        <td class="td-value">{{ contact_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">EMAIL</td>
+        <td class="td-value"><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></td>
+    </tr>
+    <tr>
+        <td class="td-label">ROLE</td>
+        <td class="td-value"><span class="badge badge-info">{{ contact_role }}</span></td>
+    </tr>
+</table>
+
+<p class="text"><strong>Message:</strong></p>
+<p class="text" style="background: #f9f9f9; padding: 16px; border-left: 3px solid #111111; border-radius: 4px; white-space: pre-wrap;">{{ contact_message }}</p>
+{% endblock %}

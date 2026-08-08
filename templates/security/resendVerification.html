@@ -2,53 +2,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resend Verification</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resend Verification — Advers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0D0D0E',
+          panel: '#171717',
+          accent: '#3E8CFF',
+        },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif'],
+        },
+      },
+    },
+  }
+</script>
 </head>
-<body class="bg-base-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-bg text-white font-sans min-h-svh flex flex-col items-center justify-center p-4">
 
-    <div class="w-full max-w-sm">
-        <nav class="flex items-center gap-1.5 text-sm mb-4">
-            <span class="font-semibold">Resend Verification</span>
-        </nav>
-        <div class="card card-border bg-base-200 border-base-300 rounded-xl p-6 shadow-2xl">
-        
-        <div class="text-center mb-6">
-            <img src="{% static 'images/logo.png' %}" alt="Advers" class="w-14 h-14 object-contain mx-auto mb-3">
-            <h2 class="text-xl font-bold tracking-tight">Resend Verification</h2>
-            <p class="text-base-content/50 text-xs mt-2">Enter your email to receive a new link.</p>
-        </div>
+  <div class="w-full max-w-[340px] py-6 flex flex-col items-center">
 
-        <form method="post" class="space-y-4">
-            {% csrf_token %}
-            
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend text-[10px] uppercase">Email Address</legend>
-                <input type="email" name="email" id="email" placeholder="you@example.com" class="input w-full" required>
-            </fieldset>
-
-            <button type="submit" class="btn btn-primary w-full">
-                Send Link
-            </button>
-        </form>
-
-        <div class="text-center mt-6">
-            <a href="{% url 'security:login' %}" class="link link-hover text-base-content/50 text-xs hover:text-primary transition flex items-center justify-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back to Login
-            </a>
-        </div>
+    <div class="text-center mb-8">
+      <a href="{% url 'adverse:home' %}" class="inline-block transition-transform hover:scale-105 active:scale-95 duration-200">
+        <img src="{% static 'images/logo.png' %}" alt="Adverse" class="w-10 h-10 object-contain mx-auto mb-4">
+      </a>
+      <h2 class="font-bold text-2xl tracking-tight">Resend verification</h2>
+      <p class="text-white/50 text-xs mt-1">Enter your email to receive a new link</p>
     </div>
 
-    {% include "partials/theme_toggle.html" %}
+    {% if messages %}
+    <div class="w-full mb-5 space-y-2">
+      {% for message in messages %}
+      <div class="p-3 text-xs sm:text-sm rounded-full border text-center
+        {% if message.tags == 'error' %}
+          bg-red-500/10 border-red-500/30 text-red-400
+        {% else %}
+          bg-emerald-500/10 border-emerald-500/30 text-emerald-400
+        {% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" class="w-full space-y-3">
+      {% csrf_token %}
+      <div>
+        <input type="email" name="email" id="email" placeholder="Email address" required
+               class="w-full bg-[#0D0D0E] border border-white/20 focus:border-accent rounded-full px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-accent transition appearance-none">
+      </div>
+
+      <button type="submit"
+              class="w-full py-3 bg-accent hover:bg-blue-400 text-[#06101F] text-sm font-semibold rounded-full transition-all duration-200 mt-2 active:scale-[0.98] touch-manipulation cursor-pointer">
+        Send link
+      </button>
+    </form>
+
+    <div class="text-center mt-6">
+      <a href="{% url 'security:login' %}"
+         class="inline-flex items-center justify-center gap-1.5 text-white/50 hover:text-white text-xs transition-colors">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Back to login
+      </a>
+    </div>
+
+  </div>
+
 </body>
 </html>

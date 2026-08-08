@@ -1,0 +1,35 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ advertiser_name }},</p>
+<p class="text">
+    Your campaign has been submitted and is now in our review queue.
+    Our team will verify it and forward it to the billboard operator for final approval.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Schedule</td>
+        <td class="td-value">{{ start_date }} &mdash; {{ end_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-warning">Under review</span></td>
+    </tr>
+</table>
+
+<p class="text">
+    You'll receive an email when your campaign moves to the next stage.
+    You can track it anytime from your dashboard.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ campaign_url }}" class="btn">View Campaign</a>
+</div>
+
+<hr class="divider">
+<p class="note">If you didn't submit this campaign, please contact support immediately.</p>
+{% endblock %}

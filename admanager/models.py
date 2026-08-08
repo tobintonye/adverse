@@ -34,11 +34,11 @@ class Admanager(models.Model):
     country = models.CharField(max_length=100,default="Nigeria")
    
     verification_status = models.CharField(max_length=20, choices=VerificationStatus.choices, default=VerificationStatus.PENDING)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False) # to be changed to is approved is_approved
     rejection_reason = models.TextField(blank=True)
     suspension_reason = models.TextField(blank=True)
 
-    # Audit trail — who changed the status and when
+    # Audit trail who changed the status and when
     verified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="verified_ad_managers") # admin
     verified_at  = models.DateTimeField(null=True, blank=True)
     verification_requested = models.BooleanField(default=False)
@@ -47,8 +47,7 @@ class Admanager(models.Model):
     suspended_at = models.DateTimeField(null=True, blank=True)
 
     # financials 
-    # Commission rate — platform takes this % from each campaign earned by this manager
-
+    # Commission rate platform takes this % from each campaign earned by this manager
     # Default matches PLATFORM_FEE_PERCENT in payments/models.py (30%).
     # Can be overridden per manager (e.g. premium partners pay lower commission).
     commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=30.00, help_text="Platform commission percentage taken from this manager's earnings. Default 30%.")
@@ -61,7 +60,6 @@ class Admanager(models.Model):
     # NEW: Store the Paystack Recipient Code for easier API transfers
     recipient_code = models.CharField(max_length=50, unique=True, blank=True, null=True, help_text="Paystack RCP code.")
 
-
     total_billboards = models.PositiveIntegerField(default=0)
     total_campaigns_serverd = models.PositiveIntegerField(default=0)
     total_impressions = models.BigIntegerField(default=0)
@@ -71,7 +69,7 @@ class Admanager(models.Model):
     @property
     def is_verified(self):
         return self.verification_status == self.VerificationStatus.VERIFIED
-    
+
     @property
     def has_bank_account(self):
         return hasattr(self, "paystack_subaccount")
@@ -99,6 +97,9 @@ class Admanager(models.Model):
     
     # Global Tech Admin verifies the ad manager account
     def verify(self, admin_user):
+        # cheap insurance
+        if not admin_user.is_staff:
+            raise ValidationError("Only staff can verify ad manager accounts.")
         if self.verification_status == self.VerificationStatus.VERIFIED:
             raise ValidationError("Account is already verified.")
         self.verification_status = self.VerificationStatus.VERIFIED
@@ -114,6 +115,8 @@ class Admanager(models.Model):
         ])
     
     def reject(self, admin_user, reason=""):
+        if not admin_user.is_staff:
+            raise ValidationError("Only staff can verify ad manager accounts.")
         if not reason.strip():
             raise ValidationError("A rejection reason is required.")
         if self.verification_status not in [self.VerificationStatus.PENDING, self.VerificationStatus.VERIFIED]:
@@ -128,6 +131,8 @@ class Admanager(models.Model):
         ])
 
     def suspend(self, admin_user, reason=""):
+        if not admin_user.is_staff:
+            raise ValidationError("Only staff can verify ad manager accounts.")
         if not reason.strip():
             raise ValidationError("A suspension reason is required.")
         if self.verification_status != self.VerificationStatus.VERIFIED:
@@ -144,6 +149,8 @@ class Admanager(models.Model):
         ])        
     
     def reinstate(self, admin_user):
+        if not admin_user.is_staff:
+            raise ValidationError("Only staff can verify ad manager accounts.")
         if self.verification_status != self.VerificationStatus.SUSPENDED:
             raise ValidationError("Only suspended accounts can be reinstated.")
         self.verification_status = self.VerificationStatus.VERIFIED
@@ -158,7 +165,7 @@ class Admanager(models.Model):
     def request_verification(self):
         """
         Ad manager flags their account as ready for admin review.
-        Only meaningful from PENDING — already verified/rejected/suspended
+        Only meaningful from PENDING already verified/rejected/suspended
         accounts shouldn't be re-flagged via this path.
         """
         if self.verification_status != self.VerificationStatus.PENDING:

@@ -1,0 +1,151 @@
+<div>
+    {% if campaigns %}
+    <div class="bg-panel border border-white/10 rounded-xl overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[680px]">
+                <thead>
+                    <tr class="border-b border-white/10 bg-white/[0.02] text-[11px] font-semibold text-white/100 uppercase tracking-wider">
+                        <th class="py-3 px-4 whitespace-nowrap">Campaign</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Schedule</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Budget</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                        <th class="py-3 px-4 text-right whitespace-nowrap">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-xs">
+                    {% for campaign in campaigns %}
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <p class="font-semibold text-white">{{ campaign.name }}</p>
+                            <p class="text-[11px] text-white/40 mt-0.5">{{ campaign.media.title }}</p>
+                        </td>
+                        <td class="py-3.5 px-4 text-white/80 whitespace-nowrap">
+                            <p>{{ campaign.start_date }} — {{ campaign.end_date }}</p>
+                            <p class="text-[11px] text-white/40 font-mono mt-0.5">{{ campaign.duration_days }} days</p>
+                        </td>
+                        <td class="py-3.5 px-4 text-white font-mono font-medium whitespace-nowrap">₦{{ campaign.budget }}</td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            {% if campaign.status == 'draft' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/90 border border-white/10 px-3 py-1 rounded-full">Draft</span>
+                            {% elif campaign.status == 'pending_admin_review' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400  border border-amber-500/20 px-3 py-1 rounded-full">Pending Admin</span>
+                            {% elif campaign.status == 'pending_manager_review' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Pending Manager</span>
+                            {% elif campaign.status == 'approved' %}
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                    Approved
+                                </span>
+                            {% elif campaign.status == 'active' %}
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Active
+                                </span>
+                            {% elif campaign.status == 'rejected' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full">Rejected</span>
+                            {% elif campaign.status == 'cancelled' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full">Cancelled</span>
+                            {% elif campaign.status == 'completed' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-accent/15 text-accent border border-accent/30 px-3 py-1 rounded-full">Completed</span>
+                            {% elif campaign.status == 'paused' %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Paused</span>
+                            {% else %}
+                                <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/70 border border-white/10 px-3 py-1 rounded-full">{{ campaign.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <a href="{% url 'advertiser:campaign_detail' campaign.pk %}"
+                               class="inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 text-xs font-semibold text-accent border border-white/10 px-3 py-1.5 rounded-lg transition">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Pagination Bar #}
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="px-4 py-3 bg-white/[0.01] border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-white/50 font-mono">
+            <div>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} total
+            </div>
+
+            <div class="flex items-center gap-1 bg-bg border border-white/10 p-1 rounded-lg self-start sm:self-auto flex-wrap">
+                {% if page_obj.has_previous %}
+                    <button hx-get="{% url 'advertiser:campaign_list' %}?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ selected_status }}"
+                            hx-target="#campaign-table-container"
+                            hx-swap="innerHTML"
+                            hx-push-url="true"
+                            class="px-2.5 py-1 rounded text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer">
+                        ‹ Prev
+                    </button>
+                {% else %}
+                    <span class="px-2.5 py-1 text-white/20 cursor-not-allowed select-none">‹ Prev</span>
+                {% endif %}
+
+                {# Page numbers hidden on mobile so the bar doesn't wrap into a mess — Prev/Next still cover full navigation #}
+                <div class="hidden sm:flex items-center gap-1">
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num == page_obj.number %}
+                            <span class="w-7 h-7 flex items-center justify-center bg-white/20 text-white font-semibold rounded select-none">
+                                {{ page_num }}
+                            </span>
+                        {% else %}
+                            <button hx-get="{% url 'advertiser:campaign_list' %}?page={{ page_num }}&search={{ search_query }}&status={{ selected_status }}"
+                                    hx-target="#campaign-table-container"
+                                    hx-swap="innerHTML"
+                                    hx-push-url="true"
+                                    class="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded transition cursor-pointer">
+                                {{ page_num }}
+                            </button>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.has_next %}
+                    <button hx-get="{% url 'advertiser:campaign_list' %}?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ selected_status }}"
+                            hx-target="#campaign-table-container"
+                            hx-swap="innerHTML"
+                            hx-push-url="true"
+                            class="px-2.5 py-1 rounded text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer">
+                        Next ›
+                    </button>
+                {% else %}
+                    <span class="px-2.5 py-1 text-white/20 cursor-not-allowed select-none">Next ›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% else %}
+    {# Empty State #}
+    <div class="flex flex-col items-center justify-center py-20 text-center bg-panel border border-white/10 rounded-xl">
+        <div class="w-12 h-12 rounded-full bg-bg border border-white/10 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+            </svg>
+        </div>
+        {% if search_query or selected_status %}
+            <p class="text-white font-semibold text-xs">No matching campaigns</p>
+            <p class="text-white/40 text-xs mt-1">Try adjusting your search or filter criteria.</p>
+            <button hx-get="{% url 'advertiser:campaign_list' %}"
+                    hx-target="#campaign-table-container"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    type="button"
+                    class="text-xs font-semibold text-white/60 hover:text-white bg-white/10 border border-white/10 px-4 py-2 rounded-lg transition mt-4 inline-block cursor-pointer">
+                Clear all filters
+            </button>
+        {% else %}
+            <p class="text-white font-semibold text-xs">No campaigns yet</p>
+            <p class="text-white/40 text-xs mt-1">Create your first campaign to get started.</p>
+            <a href="{% url 'advertiser:campaign_create' %}" class="bg-accent hover:opacity-90 text-white font-semibold text-xs px-4 py-2 rounded-lg transition mt-4 inline-block shadow-md">
+                Create Campaign
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

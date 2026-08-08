@@ -1,285 +1,37 @@
 {% extends "advertiser/base.html" %}
-
-{% block title %}My Media{% endblock %}
+{% load static %}
+{% block title %}My Media — Advers{% endblock %}
 {% block page_title %}My Media{% endblock %}
-{% block page_description %}Manage your uploaded creative assets and media library.{% endblock %}
-
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Manage your uploaded creative assets and media library.</p>
+{% endblock %}
 {% block page_header_actions %}
 <a href="{% url 'advertiser:upload_media' %}"
-   class="btn btn-primary btn-sm gap-2">
+   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-accent hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 sm:py-2 rounded-lg transition shadow-md">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
     Upload
 </a>
 {% endblock %}
-
 {% block content %}
-
-{% if media_files %}
-<!-- Filter Tabs -->
-<div class="flex items-center justify-between gap-4 mb-6 border-b border-base-300 pb-4">
-    <div class="join">
-        <button onclick="filterMedia('all', this)" class="join-item btn btn-sm bg-base-300 text-base-content border-base-300 filter-tab-active">All Media</button>
-        <button onclick="filterMedia('image', this)" class="join-item btn btn-sm text-base-content/50 hover:text-base-content border-base-300">Images</button>
-        <button onclick="filterMedia('video', this)" class="join-item btn btn-sm text-base-content/50 hover:text-base-content border-base-300">Videos</button>
-    </div>
-    <div class="text-[11px] text-base-content/50 font-mono">
-        Showing <span id="visible-count">{{ media_files|length }}</span> of {{ media_files|length }} assets
-    </div>
+<!-- Dynamic HTMX Target Wrapper -->
+<div id="media-library-container">
+    {% include "advertiser/partials/media_grid.html" %}
 </div>
-
-<!-- Responsive Gallery Grid -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    <!-- Client-side empty state for filtering -->
-    <div id="gallery-empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center w-full col-span-full">
-        <div class="w-12 h-12 rounded-full bg-base-300 border border-base-300 flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-        </div>
-        <p class="text-base-content/70 text-xs font-bold">No assets match this filter</p>
-        <p class="text-base-content/40 text-[11px] mt-1">Try switching to another tab or upload more media.</p>
-    </div>
-
-    {% for media in media_files %}
-    <div onclick="openPreviewModal('{{ media.file.url }}', '{{ media.media_type }}', '{{ media.title|escapejs }}', '{{ media.file_size_mb }} MB', '{{ media.get_media_type_display }}', '{{ media.status }}')"
-         data-media-type="{{ media.media_type }}"
-         class="media-card-item card bg-base-200 border border-base-300 hover:border-base-content/30 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 relative group cursor-pointer">
-        
-        <!-- Thumbnail / Aspect-Video area -->
-        <figure class="aspect-[16/10] bg-base-100 border-b border-base-300 overflow-hidden relative">
-            {% if media.media_type == 'image' %}
-                <img src="{{ media.file.url }}" alt="{{ media.title }}"
-                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-            {% else %}
-                <video src="{{ media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
-                <div class="absolute inset-0 bg-base-100/30 flex items-center justify-center">
-                    <div class="w-10 h-10 rounded-full bg-base-100/70 flex items-center justify-center backdrop-blur-sm">
-                        <svg class="w-5 h-5 text-base-content ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                    </div>
-                </div>
-            {% endif %}
-            
-            <!-- Type badge on top left -->
-            <div class="absolute top-3 left-3 z-10">
-                <span class="badge badge-xs badge-ghost">
-                    {{ media.get_media_type_display }}
-                    {% if media.duration_seconds %}({{ media.duration_seconds }}s){% endif %}
-                </span>
-            </div>
-            
-            <!-- Status badge on top right -->
-            <div class="absolute top-3 right-3 z-10">
-               {% if media.id in active_media_ids %}
-    <span class="badge badge-success badge-sm absolute top-2 right-2">Live</span>
-{% elif media.id in completed_media_ids %}
-    <span class="badge badge-ghost badge-sm absolute top-2 right-2">Ended</span>
-{% elif media.status == 'fully_approved' %}
-    <span class="badge badge-info badge-sm absolute top-2 right-2">Ready</span>
-{% elif media.status == 'pending' %}
-    <span class="badge badge-warning badge-sm absolute top-2 right-2">Pending</span>
-{% else %}
-    <span class="badge badge-ghost badge-sm absolute top-2 right-2">{{ media.get_status_display }}</span>
-{% endif %}
-            </div>
-            
-            <!-- Action overlay hover effect -->
-            <div class="absolute inset-0 bg-base-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <span class="btn btn-ghost btn-sm">View Details</span>
-            </div>
-        </figure>
-        
-        <!-- Info area -->
-        <div class="card-body p-4">
-            <h3 class="card-title text-xs truncate" title="{{ media.title }}">{{ media.title }}</h3>
-            {% if media.rejection_reason %}
-                <p class="text-[10px] text-error mt-1 truncate" title="{{ media.rejection_reason }}">Reason: {{ media.rejection_reason }}</p>
-            {% endif %}
-            
-            <div class="flex items-center justify-between mt-3 pt-3 border-t border-base-300 text-[10px] text-base-content/50 font-mono">
-                <span>{{ media.file_size_mb }} MB</span>
-                <span>{{ media.created_at|date:"d M Y" }}</span>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-
-<!-- Creative Preview Modal Overlay (daisyUI 5 dialog) -->
-<dialog id="preview-modal" class="modal" onclick="closePreviewModalOnBackdrop(event)">
-    <div class="modal-box max-w-4xl w-full p-0 flex flex-col md:flex-row max-h-[90vh]" onclick="event.stopPropagation()">
+<dialog id="preview-modal"
+        class="bg-transparent backdrop:bg-black/70 backdrop:backdrop-blur-sm p-4 w-full max-w-4xl rounded-2xl border-0 overflow-hidden max-h-[90dvh]"
+        onclick="if (event.target === event.currentTarget) this.close()">
+    <div class="bg-panel border border-white/10 rounded-2xl overflow-y-auto max-h-[90dvh] flex flex-col md:flex-row shadow-2xl relative"
+         onclick="event.stopPropagation()">
         <!-- Close Button -->
-        <button onclick="closePreviewModal()" class="btn btn-sm btn-circle btn-ghost absolute top-4 right-4 z-10">✕</button>
-
-        <!-- Left half: Asset Copy Display -->
-        <div class="flex-1 bg-base-100 flex items-center justify-center p-6 min-h-[300px] md:min-h-[420px] max-h-[50vh] md:max-h-[80vh]">
-            <div id="modal-image-container" class="hidden w-full h-full flex items-center justify-center">
-                <img id="modal-image" src="" class="max-w-full max-h-[45vh] md:max-h-[70vh] object-contain rounded-lg shadow-lg select-none">
-            </div>
-            <div id="modal-video-container" class="hidden w-full h-full flex items-center justify-center">
-                <video id="modal-video" src="" controls class="max-w-full max-h-[45vh] md:max-h-[70vh] object-contain rounded-lg shadow-lg"></video>
-            </div>
-        </div>
-
-        <!-- Right half: Information Details Panel -->
-        <div class="w-full md:w-72 bg-base-200 p-6 border-t md:border-t-0 md:border-l border-base-300 flex flex-col justify-between md:max-h-[80vh]">
-            <div class="space-y-4">
-                <div>
-                    <span id="modal-badge-type" class="badge badge-ghost badge-xs"></span>
-                    <h3 id="modal-title" class="text-sm font-bold mt-2 leading-snug truncate"></h3>
-                </div>
-                <div class="border-t border-base-300 pt-4 space-y-3 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-base-content/50">File Size</span>
-                        <span id="modal-size" class="font-mono"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-base-content/50">Asset Type</span>
-                        <span id="modal-format"></span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-base-content/50">Approval State</span>
-                        <span id="modal-status" class="badge badge-sm"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="pt-6">
-                <a id="modal-download-link" href="" download class="btn btn-ghost btn-sm w-full gap-2">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                    Download Creative Copy
-                </a>
-            </div>
-        </div>
+        <button onclick="document.getElementById('preview-modal').close()"
+                class="absolute top-4 right-4 z-20 text-white/50 hover:text-white bg-bg/80 border border-white/10 hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
+        <!-- htmx swaps the preview pane + details sidebar in here -->
+        <div id="preview-modal-content" class="contents"></div>
     </div>
-    <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-    </form>
 </dialog>
-
-<!-- Javascript Modal Controller -->
-<script>
-    function openPreviewModal(url, type, title, size, format, statusKey) {
-        const modal = document.getElementById('preview-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalSize = document.getElementById('modal-size');
-        const modalFormat = document.getElementById('modal-format');
-        const modalStatus = document.getElementById('modal-status');
-        const modalBadgeType = document.getElementById('modal-badge-type');
-        const modalDownload = document.getElementById('modal-download-link');
-
-        const imageContainer = document.getElementById('modal-image-container');
-        const videoContainer = document.getElementById('modal-video-container');
-        const modalImage = document.getElementById('modal-image');
-        const modalVideo = document.getElementById('modal-video');
-
-        modalTitle.textContent = title;
-        modalSize.textContent = size;
-        modalFormat.textContent = format;
-        modalBadgeType.textContent = type;
-        modalDownload.href = url;
-
-        imageContainer.classList.add('hidden');
-        videoContainer.classList.add('hidden');
-        modalImage.src = "";
-        modalVideo.src = "";
-
-        // Format Status Badge
-        modalStatus.textContent = statusKey.replace('_', ' ').toUpperCase();
-        if (statusKey === 'pending') {
-            modalStatus.className = "badge badge-sm badge-warning";
-            modalStatus.textContent = "PENDING REVIEW";
-        } else if (statusKey === 'admin_approved') {
-            modalStatus.className = "badge badge-sm badge-info";
-            modalStatus.textContent = "ADMIN APPROVED";
-        } else if (statusKey === 'fully_approved') {
-            modalStatus.className = "badge badge-sm badge-success";
-            modalStatus.textContent = "LIVE";
-        } else {
-            modalStatus.className = "badge badge-sm badge-error";
-            modalStatus.textContent = "REJECTED";
-        }
-
-        if (type === 'image') {
-            imageContainer.classList.remove('hidden');
-            modalImage.src = url;
-        } else {
-            videoContainer.classList.remove('hidden');
-            modalVideo.src = url;
-            modalVideo.load();
-        }
-
-        modal.showModal();
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closePreviewModal() {
-        const modal = document.getElementById('preview-modal');
-        const modalVideo = document.getElementById('modal-video');
-        
-        if (modalVideo) {
-            modalVideo.pause();
-        }
-
-        modal.close();
-        document.body.style.overflow = '';
-    }
-
-    function closePreviewModalOnBackdrop(event) {
-        if (event.target === event.currentTarget) {
-            closePreviewModal();
-        }
-    }
-
-    function filterMedia(type, btn) {
-        const buttons = btn.parentElement.querySelectorAll('button');
-        buttons.forEach(b => {
-            b.classList.remove('bg-base-300', 'text-base-content', 'filter-tab-active');
-            b.classList.add('text-base-content/50');
-        });
-        
-        btn.classList.remove('text-base-content/50');
-        btn.classList.add('bg-base-300', 'text-base-content', 'filter-tab-active');
-
-        const cards = document.querySelectorAll('.media-card-item');
-        let visibleCount = 0;
-        
-        cards.forEach(card => {
-            const cardType = card.getAttribute('data-media-type');
-            if (type === 'all' || cardType === type) {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-        
-        document.getElementById('visible-count').textContent = visibleCount;
-        
-        const emptyState = document.getElementById('gallery-empty-state');
-        if (visibleCount === 0) {
-            emptyState.classList.remove('hidden');
-        } else {
-            emptyState.classList.add('hidden');
-        }
-    }
-</script>
-{% else %}
-<div class="flex flex-col items-center justify-center py-20 text-center">
-    <div class="w-12 h-12 rounded-full bg-base-300 border border-base-300 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-        </svg>
-    </div>
-    <p class="text-base-content/70 text-xs font-bold">No media uploaded yet</p>
-    <p class="text-base-content/40 text-[11px] mt-1">Upload images or videos to use in your ad campaigns.</p>
-    <a href="{% url 'advertiser:upload_media' %}"
-       class="btn btn-primary mt-4">Upload Media</a>
-</div>
-{% endif %}
-
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/advertiser/media-library.js' %}"></script>
 {% endblock %}

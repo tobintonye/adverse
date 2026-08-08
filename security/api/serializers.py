@@ -8,28 +8,33 @@ from django.contrib.auth.signals import user_login_failed
 
 User = get_user_model()
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    class Meta: 
+
+    class Meta:
         model = User
         fields = ('id', 'email', 'password')
-    
+
     def validate_email(self, value):
         email = value.lower().strip()
-
         if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError("Unable to create account.")
-
         return email
-    def create(self, validated_data): 
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
-            password=validated_data['password']
+            password=validated_data['password'],
         )
         user.is_active = False
-        user.role = "advertiser" # set for now
-        user.save()
+        user.save(update_fields=["is_active"])
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -41,31 +46,30 @@ class LoginSerializer(serializers.Serializer):
 
         if not email or not password:
             raise serializers.ValidationError("Must include 'email' and 'password'.")
-        
+
         request = self.context.get('request')
         user = authenticate(request=request, email=email, password=password)
-        
-        if not user: 
-            # axes will pick this up
+
+        if not user:
             user_login_failed.send(
                 sender=self.__class__,
-                credentials={"email": email},   
+                credentials={"email": email},
                 request=request,
             )
             raise serializers.ValidationError("Invalid email or password.")
 
-        if not user.is_active:
-            raise serializers.ValidationError("Invalid email or password.")
         data["user"] = user
         return data
-    
+
+
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, value):
-        return value.lower().strip()    
+        return value.lower().strip()
 
-class SetNewPasswordSerializer(serializers.Serializer): 
+
+class SetNewPasswordSerializer(serializers.Serializer):
     new_password1 = serializers.CharField(write_only=True)
     new_password2 = serializers.CharField(write_only=True)
 
@@ -80,17 +84,16 @@ class SetNewPasswordSerializer(serializers.Serializer):
         except exceptions.ValidationError as e:
             raise serializers.ValidationError({"password": list(e.messages)})
         return attrs
-    
+
     def save(self):
         user = self.context.get('user')
         user.set_password(self.validated_data['new_password1'])
         user.save(update_fields=["password"])
         return user
-    
 
 
 class RoleSelectionSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=[
-        CustomUser.UserRole.AD_MANAGER, 
-        CustomUser.UserRole.ADVERTISER
+        (CustomUser.UserRole.AD_MANAGER, CustomUser.UserRole.AD_MANAGER.label),
+        (CustomUser.UserRole.ADVERTISER, CustomUser.UserRole.ADVERTISER.label),
     ])

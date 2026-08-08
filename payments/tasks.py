@@ -32,13 +32,6 @@ def flag_suspicious_payouts(self):
     - Large payout shortly after bank details were changed
     - Payout amount exceeds total recent earnings (last 30 days)
     - More than 3 payouts in 24 hours from the same ad manager
- 
-    Safety guarantees:
-    - Idempotency lock prevents overlapping runs via Django cache.
-    - All flag writes are wrapped in a single atomic transaction so a
-      mid-run crash never leaves a partially-flagged batch.
-    - subaccount_code is never written to logs (use internal UUID instead).
-    - Earnings lookup is pre-aggregated to avoid N+1 queries.
     """
     # Idempotency lock (30-minute window) 
     LOCK_KEY = "lock:flag_suspicious_payouts"
@@ -51,24 +44,20 @@ def flag_suspicious_payouts(self):
         payout_ids_to_flag = []  # collect (payout, reason) pairs before writing
 
         # Trigger 1 — payout within 48 hours of a bank detail change
-        recent_payouts = (PayoutRecord.objects.filter(status=PayoutRecord.Status.PENDING, is_flagged=False, created_at__gte=now - timedelta(hours=48)).select_related("subaccount", "ad_manager"))
+        recent_payouts = (PayoutRecord.objects.filter(status=PayoutRecord.Status.PENDING,is_flagged=False,created_at__gte=now - timedelta(hours=48),).select_related("subaccount", "ad_manager"))
+
+        subaccounts_with_recent_bank_change = set(AdManagerSubaccountAuditLog.objects.filter(event=AdManagerSubaccountAuditLog.Event.BANK_DETAILS_CHANGED,created_at__gte=now - timedelta(hours=48),subaccount_id__in=[p.subaccount_id for p in recent_payouts],).values_list("subaccount_id", flat=True))
 
         for payout in recent_payouts:
-            subaccount = payout.subaccount
-            recent_bank_change = subaccount.audit_logs.filter(
-                event=AdManagerSubaccountAuditLog.Event.BANK_DETAILS_CHANGED, 
-                created_at__gte=now - timedelta(hours=48),
-            ).exists()
-
-            if recent_bank_change:
+            if payout.subaccount_id in subaccounts_with_recent_bank_change:
                 payout_ids_to_flag.append((
                     payout,
                     (
                         f"Payout of NGN {payout.amount} initiated within 48 hours "
-                        f"of bank detail change (subaccount id={subaccount.id})."
+                        f"of bank detail change (subaccount id={payout.subaccount_id})."
                     ),
                 ))
-
+                
         # Trigger 2 — payout exceeds total earnings in the last 30 days
         earnings_by_manager = dict(AdManagerEarning.objects.filter(earned_at__gte=now - timedelta(days=30)).values("ad_manager").annotate(total=Sum("amount")).values_list("ad_manager", "total"))
 
@@ -81,7 +70,11 @@ def flag_suspicious_payouts(self):
 
             total_earnings = earnings_by_manager.get(payout.ad_manager_id, 0)
             if payout.amount > total_earnings:
-                payout_ids_to_flag.append((payout, (f"Payout of NGN {payout.amount} exceeds total earnings ", f"of NGN {total_earnings} in the last 30 days."),))
+                payout_ids_to_flag.append((
+                    payout,
+                    f"Payout of NGN {payout.amount} exceeds total earnings "
+                    f"of NGN {total_earnings} in the last 30 days.",
+                ))
 
         # Trigger 3 — more than 3 UNFLAGGED payouts in 24 hours
         # is_flagged=False applied to both the count and the fetch so the
@@ -99,7 +92,11 @@ def flag_suspicious_payouts(self):
             for payout in recent: 
                 if payout.id in already_queued_ids:
                     continue
-                payout_ids_to_flag.append((payout, (f"High frequency: {entry['count']} unflagged payouts in the last 24 hours",  f"from the same ad manager."),))
+                payout_ids_to_flag.append((
+                    payout,
+                    f"High frequency: {entry['count']} unflagged payouts in the last 24 hours "
+                    f"from the same ad manager.",
+                ))
                 already_queued_ids.add(payout.id)
 
         with transaction.atomic(): 
@@ -126,24 +123,8 @@ def flag_suspicious_payouts(self):
 @shared_task(bind=True, max_retries=3)
 def expire_stale_campaign_payments(self):
     """
-    Runs daily at midnight. Marks campaign payments that have been PENDING
-    for more than 24 hours as FAILED. These are payments where the advertiser
-    opened the Paystack checkout but never completed it.
- 
-    NOTE — webhook race condition:
-    A payment may still be PENDING because Paystack's webhook hasn't arrived
-    yet (network delay). Our webhook handler MUST guard against a late
-    webhook arriving after this task has already marked a payment FAILED:
- 
-        if payment.status == CampaignPayment.Status.FAILED:
-            logger.warning("Late webhook for expired payment %s", payment.id)
-            # decide: trigger a refund, alert staff, or ignore
-            return
- 
-    We iterate and call save() individually so that any post_save signals,
-    audit log entries, or status-change hooks defined on CampaignPayment
-    are fired correctly. Use .iterator() to avoid loading all rows into
-    memory at once.
+    Runs daily at midnight. Marks campaign payments PENDING for more than
+    24 hours as FAILED.
     """
     try: 
         cutoff = timezone.now() - timedelta(hours=24)
@@ -171,8 +152,9 @@ def send_reconciliation_alert(self):
     - Total ad manager earnings yesterday
     - Count of flagged payouts pending review
     """
+    from adverseproject.emails import send_adverse_email
     try: 
-        yesterday_start = (timezone.now() - timedelta(day=1)).replace(
+        yesterday_start = (timezone.now() - timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0
         ) 
         yesterday_end = yesterday_start + timedelta(days=1)
@@ -198,49 +180,122 @@ def send_reconciliation_alert(self):
         if flagged_payouts > 0:
             message += "\nACTION REQUIRED: Review flagged payouts in the admin dashboard.\n"
     
-        send_mail(
-            subject=f"[AdVerse] Daily Reconciliation — {yesterday_start.date()}",
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=getattr(
-                settings, "BILLING_ALERT_EMAILS", [settings.DEFAULT_FROM_EMAIL]
-            ),
-            fail_silently=False,
+        admin_base_url = getattr(settings, "ADMIN_BASE_URL", "")
+ 
+        recipients = getattr(settings, "BILLING_ALERT_EMAILS", [settings.DEFAULT_FROM_EMAIL])
+ 
+        send_adverse_email(
+            template="staff_reconciliation",
+            to=recipients,
+            context={
+                "report_date": yesterday_start.date().strftime("%b %d, %Y"),
+                "completed_count": completed.count(),
+                "total_revenue": f"{total_revenue:,.2f}",
+                "total_fees": f"{total_fees:,.2f}",
+                "total_manager_earnings": f"{total_manager_earnings:,.2f}",
+                "flagged_payouts": flagged_payouts,
+                "admin_url": f"{admin_base_url}/admin/payments/payoutrecord/?is_flagged__exact=1",
+            },
         )
         logger.info("send_reconciliation_alert email sent.")
     except Exception as exc:
         logger.exception("send_reconciliation_alert failed: %s", exc)
         raise self.retry(exc=exc, countdown=60 * 5)
 
+@shared_task
+def sync_all_subaccounts():
+    """
+    Daily task — checks all active subaccounts against Paystack and
+    deactivates any that no longer exist.
+ 
+    Skips subaccounts whose bank details changed in the last 24 hours —
+    Paystack can briefly report a freshly-updated subaccount as inactive
+    during re-verification, and we don't want to punish the ad manager
+    for that normal, temporary state.
+    """
+    from payments.models import AdManagerSubaccount, AdManagerSubaccountAuditLog
+ 
+    active = AdManagerSubaccount.objects.filter(is_active=True)
+    synced = 0
+    skipped = 0
+ 
+    for sub in active:
+        recent_change = sub.audit_logs.filter(
+            event=AdManagerSubaccountAuditLog.Event.BANK_DETAILS_CHANGED,
+            created_at__gte=timezone.now() - timedelta(hours=24),
+        ).exists()
+ 
+        if recent_change:
+            skipped += 1
+            logger.info(
+                "sync_all_subaccounts: skipping subaccount %s — "
+                "bank details changed in the last 24 hours.",
+                sub.id,
+            )
+            continue
+ 
+        sub.sync_with_paystack()
+        synced += 1
+ 
+    logger.info(
+        "sync_all_subaccounts completed — %d synced, %d skipped (recent bank change).",
+        synced, skipped,
+    )
+
 # Internal Helpers
 def _alert_staff_flagged_payouts(count: int) -> None:
-    # Send an immediate email alert when payouts are flagged.
+    """Send an immediate branded email alert when payouts are flagged."""
+    from adverseproject.emails import send_adverse_email
+ 
     try:
         admin_base_url = getattr(settings, "ADMIN_BASE_URL", "")
-        send_mail(
-            subject=f"[AdVerse] {count} Suspicious Payout(s) Flagged",
-            message=(
-                f"{count} payout record(s) have been flagged as suspicious and require review.\n\n"
-                f"Please check the admin dashboard:\n"
-                f"{admin_base_url}/admin/billing/payoutrecord/?is_flagged__exact=1"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=getattr(
-                settings, "BILLING_ALERT_EMAILS", [settings.DEFAULT_FROM_EMAIL]
-            ),
-            fail_silently=True,
+        recipients = getattr(settings, "BILLING_ALERT_EMAILS", [settings.DEFAULT_FROM_EMAIL])
+ 
+        send_adverse_email(
+            template="staff_flagged_payouts",
+            to=recipients,
+            context={
+                "count": count,
+                "admin_url": f"{admin_base_url}/admin/payments/payoutrecord/?is_flagged__exact=1",
+            },
         )
     except Exception as e:
         logger.error("Failed to send flagged payout alert email: %s", e)
 
-@shared_task
-def sync_all_subaccounts():
+# testing - will remove later
+@shared_task(bind=True, max_retries=3)
+def reconcile_pending_payouts(self):
     """
-    Daily task — checks all active subaccounts against Paystack
-    and deactivates any that no longer exist.
+    Polls Paystack directly for any PayoutRecord stuck in PENDING for
+    more than N minutes, in case the transfer.success/failed webhook
+    was missed or delayed.
     """
-    from payments.models import AdManagerSubaccount
-    active = AdManagerSubaccount.objects.filter(is_active=True)
-    for sub in active:
-        sub.sync_with_paystack()
-    logger.info("sync_all_subaccounts completed for %d subaccounts.", active.count())
+    from .services import _paystack_get
+    from django.core.exceptions import ValidationError
+
+    cutoff = timezone.now() - timedelta(minutes=10)
+    stale_pending = PayoutRecord.objects.filter(
+        status=PayoutRecord.Status.PENDING,
+        created_at__lt=cutoff,
+    ).exclude(paystack_transfer_code="")
+
+    for payout in stale_pending:
+        try:
+            data = _paystack_get(
+                f"https://api.paystack.co/transfer/{payout.paystack_transfer_code}"
+            ).get("data", {})
+            paystack_status = data.get("status")
+
+            if paystack_status == "success":
+                payout.mark_success(
+                    paystack_transfer_code=payout.paystack_transfer_code,
+                    paystack_reference=data.get("reference", payout.paystack_reference),
+                    gateway_response=data,
+                )
+            elif paystack_status in ("failed", "reversed"):
+                payout.mark_failed(gateway_response=data)
+        except ValidationError:
+            logger.warning(
+                "reconcile_pending_payouts: could not check transfer %s",
+                payout.paystack_transfer_code,
+            )

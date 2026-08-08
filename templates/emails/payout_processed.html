@@ -1,0 +1,43 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ manager_name }},</p>
+<p class="text">
+    Your withdrawal has been processed and is on its way to your bank account.
+    Paystack typically settles within 1&ndash;3 business days.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Amount</td>
+        <td class="td-value amount">&#8358;{{ amount }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Bank</td>
+        <td class="td-value">{{ bank_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Account</td>
+        <td class="td-value mono">{{ masked_account }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Account name</td>
+        <td class="td-value">{{ account_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Transfer code</td>
+        <td class="td-value mono">{{ transfer_code }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-success">Sent</span></td>
+    </tr>
+</table>
+
+<p class="text">
+    If you don't see the funds after 3 business days, please contact support.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ withdrawals_url }}" class="btn">View Withdrawal History</a>
+</div>
+{% endblock %}

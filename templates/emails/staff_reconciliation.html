@@ -1,0 +1,41 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Daily Reconciliation — {{ report_date }}{% endblock %}
+{% block body %}
+<p class="greeting">AdVers Daily Reconciliation</p>
+<p class="text">Summary for {{ report_date }}.</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Completed payments</td>
+        <td class="td-value">{{ completed_count }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Total revenue</td>
+        <td class="td-value amount">&#8358;{{ total_revenue }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Platform fees</td>
+        <td class="td-value">&#8358;{{ total_fees }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Manager earnings</td>
+        <td class="td-value">&#8358;{{ total_manager_earnings }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Flagged payouts</td>
+        <td class="td-value">
+            {% if flagged_payouts > 0 %}
+                <span class="badge badge-error">{{ flagged_payouts }} pending review</span>
+            {% else %}
+                <span class="badge badge-success">None</span>
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+{% if flagged_payouts > 0 %}
+<div class="btn-wrap">
+    <a href="{{ admin_url }}" class="btn btn-error">Review Flagged Payouts</a>
+</div>
+{% endif %}
+{% endblock %}

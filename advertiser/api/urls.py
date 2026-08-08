@@ -2,7 +2,7 @@ from django.urls import path
  
 from .views import ( AdvertiserProfileView, BillboardBrowseView, BillboardBrowseDetailView,
                      MediaListUploadView, MediaDetailView, CampaignListCreateView, CampaignDetailView, CampaignSubmitView, 
-                     CampaignCancelView, CampaignReviewView, CampaignPriceEstimateView,
+                     CampaignCancelView, CampaignPriceEstimateView,
                     )                    
  
 urlpatterns = [
@@ -17,5 +17,5 @@ urlpatterns = [
     path("campaigns/<uuid:pk>/", CampaignDetailView.as_view(), name="advertiser-campaign-detail"),
     path("campaigns/<uuid:pk>/submit/", CampaignSubmitView.as_view(), name="advertiser-campaign-submit"),
     path("campaigns/<uuid:pk>/cancel/", CampaignCancelView.as_view(), name="advertiser-campaign-cancel"),
-    path("campaigns/<uuid:pk>/review/", CampaignReviewView.as_view(), name="advertiser-campaign-review"),
+  
 ]

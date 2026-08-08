@@ -1,0 +1,60 @@
+{% load static %}
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+
+    <div class="footer-brand">
+      <div class="logo">
+        <img
+          src="{% static 'images/logo.png' %}"
+          alt="Advers"
+          class="logo-mark-img"
+          onerror="this.outerHTML='<div class=&quot;logo-mark&quot;></div>'"
+        >
+        <span class="logo-word">ADVERS</span>
+      </div>
+      <p>The operating layer for physical out-of-home screens from campaign submission to live delivery, in real time.</p>
+      <div class="social-row">
+        <a href="#" aria-label="X / Twitter">X</a>
+        <a href="#" aria-label="LinkedIn">in</a>
+        <a href="#" aria-label="Instagram">IG</a>
+      </div>
+    </div>
+
+    <div class="footer-col">
+      <h4>Platform</h4>
+      <ul>
+        <li><a href="{% url 'adverse:how_it_works' %}">How it works</a></li>
+        <li><a href="{% url 'adverse:how_it_works' %}advertisers">For advertisers</a></li>
+        <li><a href="{% url 'adverse:how_it_works' %}screen-owners">For screen owners</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="{% url 'adverse:about' %}">About</a></li>
+        <li><a href="{% url 'adverse:contact' %}">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Privacy policy</a></li>
+        <li><a href="#">Terms of service</a></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="wrap footer-bottom">
+    <div class="footer-meta">
+      <a href="mailto:hello@advers.io">hello@advers.io</a>
+      <span class="dot">&middot;</span>
+      <span>&copy; 2026 Advers</span>
+    </div>
+    <div class="footer-meta">
+      <span>Built for Nigeria's outdoor advertising market</span>
+    </div>
+  </div>
+</footer>

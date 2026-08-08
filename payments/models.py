@@ -55,6 +55,8 @@ class AdManagerSubaccount(TimeStampedModel):
         "admanager.Admanager",
         on_delete=models.PROTECT,
         related_name="paystack_subaccount",
+        null=True,
+        blank=True,
     )
     subaccount_code = models.CharField(max_length=120, unique=True)
     business_name = models.CharField(max_length=180) # to be changed 
@@ -165,25 +167,36 @@ class AdManagerSubaccount(TimeStampedModel):
     def sync_with_paystack(self, changed_by=None):
         """
         Verify this subaccount still exists on Paystack.
-        If it doesn't, deactivate it locally and log the event.
-        Call this periodically or when a payment fails unexpectedly.
+        Only deactivates if Paystack explicitly returns active=False.
+        Network errors and timeouts are ignored — don't punish the ad manager
+        for Paystack being temporarily unreachable.
         """
         from payments.services import _paystack_get
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         try:
-            response = _paystack_get(f"https://api.paystack.co/subaccount/{self.subaccount_code}")
+            response = _paystack_get(
+                f"https://api.paystack.co/subaccount/{self.subaccount_code}"
+            )
             data = response.get("data", {})
-            # Re-sync active status from Paystack
-            paystack_active = data.get("active", False)
-            if not paystack_active and self.is_active:
+            paystack_active = data.get("active", True)  # default True — assume active if missing
+
+            if paystack_active is False and self.is_active:
                 self.deactivate(
-                    reason="Deactivated because subaccount no longer active on Paystack.",
+                    reason="Deactivated because subaccount is no longer active on Paystack.",
                     changed_by=changed_by,
                 )
-        except Exception:
-            # If Paystack returns 404 or error — subaccount is gone
-            self.deactivate(
-                reason="Subaccount not found on Paystack — may have been deleted.",
-                changed_by=changed_by,
+            elif paystack_active and not self.is_active:
+                # Paystack says active but we have it deactivated — re-sync
+                self.reactivate(changed_by=changed_by)
+
+        except DjangoValidationError:
+            # Paystack API error — don't deactivate, just log
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "sync_with_paystack: could not reach Paystack for subaccount %s — skipping.",
+                self.subaccount_code,
             )
     def __str__(self):
         return f"Subaccount [{self.ad_manager}] {self.subaccount_code}"
@@ -315,7 +328,7 @@ class CampaignPayment(TimeStampedModel):
         with transaction.atomic():
             payment = (
                 CampaignPayment.objects
-                .select_for_update()
+                .select_for_update(of=("self",))
                 .select_related("campaign", "subaccount__ad_manager")
                 .get(pk=self.pk)
             )
@@ -360,6 +373,45 @@ class CampaignPayment(TimeStampedModel):
             # Celery's activate_due_campaigns will pick it up on the right day.
             self._sync_from(payment)
 
+        # Emails fired AFTER transaction commits
+        from adverseproject.emails import send_adverse_email
+        site_url = getattr(settings, "SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+    
+        first_slot = payment.campaign.campaign_slots.select_related("billboard").first()
+        billboard_name = first_slot.billboard.name if first_slot else "Your billboard"
+    
+        # Payment confirmed → advertiser
+        send_adverse_email(
+            template="payment_confirmed",
+            to=payment.campaign.advertiser.user.email,
+            context={
+                "advertiser_name": payment.campaign.advertiser.user.get_full_name()
+                    or payment.campaign.advertiser.user.email,
+                "campaign_name": payment.campaign.name,
+                "amount": f"{payment.total_amount:,.2f}",
+                "reference": payment.reference,
+                "start_date": payment.campaign.start_date.strftime("%b %d, %Y"),
+                "end_date": payment.campaign.end_date.strftime("%b %d, %Y"),
+                "billboard_name": billboard_name,
+                "campaign_url": f"{site_url}/advertiser/campaigns/{payment.campaign.id}/",
+            },
+        )
+    
+        # Earnings credited → ad manager
+        send_adverse_email(
+            template="earnings_credited",
+            to=payment.subaccount.ad_manager.user.email,
+            context={
+                "manager_name": payment.subaccount.ad_manager.user.get_full_name()
+                    or payment.subaccount.ad_manager.user.email,
+                "campaign_name": payment.campaign.name,
+                "amount": f"{payment.manager_amount:,.2f}",
+                "platform_fee": f"{payment.platform_fee:,.2f}",
+                "billboard_name": billboard_name,
+                "reference": paystack_reference,
+                "withdrawals_url": f"{site_url}/admanager/withdrawals/",
+            },
+        )
     def mark_failed(self, gateway_response=None):
         with transaction.atomic():
             payment = CampaignPayment.objects.select_for_update().get(pk=self.pk)

@@ -1,0 +1,44 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ manager_name }},</p>
+<p class="text">
+    A campaign payment has been confirmed and your earnings have been
+    credited to your AdVers balance. You can request a withdrawal anytime.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Your earnings</td>
+        <td class="td-value amount">&#8358;{{ amount }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Platform fee</td>
+        <td class="td-value">&#8358;{{ platform_fee }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Reference</td>
+        <td class="td-value mono">{{ reference }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Status</td>
+        <td class="td-value"><span class="badge badge-success">Available</span></td>
+    </tr>
+</table>
+
+<p class="text">
+    Your earnings are available for withdrawal immediately via Paystack
+    directly to your registered bank account.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ withdrawals_url }}" class="btn">Request Withdrawal</a>
+</div>
+{% endblock %}

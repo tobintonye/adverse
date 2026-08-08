@@ -5,17 +5,8 @@ from .models import Admanager
 from device.models import Billboard
 import re
 
- # Regex for: +234..., 080..., 070..., 090... etc
-phone_regex = RegexValidator(
-    regex=r'^(\+234|0)[789][01]\d{8}$',
-    message="Phone number must be entered in the format: '08012345678' or '+2348012345678'."
-)
-
 class AdManagerProfileForm(forms.ModelForm): 
-    business_phone = forms.CharField(
-        max_length=20,
-        widget=forms.TextInput(attrs={'placeholder': 'e.g. 08012345678'})
-    )
+    business_phone = forms.CharField(max_length=20, widget=forms.TextInput(attrs={'placeholder': 'e.g. 08012345678'}))
     
     class Meta: 
         model = Admanager
@@ -47,7 +38,6 @@ class AdManagerProfileForm(forms.ModelForm):
             self.add_error('company_registration_number', "Company registration is required for business accounts.")
         return cleaned_data
     
-    
     def clean_business_phone(self):
         phone = self.cleaned_data.get('business_phone')
         # Remove any non-numeric characters except the '+'
@@ -57,7 +47,6 @@ class AdManagerProfileForm(forms.ModelForm):
                 "Phone number must be entered in the format: "
                 "'08012345678' or '+2348012345678'."
             )
-
         return clean_phone
 
 
@@ -74,6 +63,9 @@ class BillboardForm(forms.ModelForm):
         required=True,
         widget=forms.NumberInput(attrs={'placeholder': '3.4219', 'step': 'any'})
     )
+    price_per_slot = forms.DecimalField(min_value=0.01, widget=forms.NumberInput(attrs={'placeholder': '5000.00', 'step': '0.01'}))
+    screen_width_px = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'placeholder': '1920'}))
+    screen_height_px = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'placeholder': '1080'}))
 
     class Meta:
         model = Billboard
@@ -112,23 +104,3 @@ class BillboardForm(forms.ModelForm):
                 'class': 'select w-full'
             }),
         }
-
-'''
-class BankAccountForm(forms.ModelForm):
-    class Meta:
-        model = BankAccount
-        fields = ['bank_name', 'account_name', 'account_number', 'is_default']
-        widgets = {
-            'bank_name': forms.TextInput(attrs={'placeholder': 'e.g. GTBank, Access Bank'}),
-            'account_name': forms.TextInput(attrs={'placeholder': 'Full name on bank account'}),
-            'account_number': forms.TextInput(attrs={'placeholder': '10-digit account number', 'maxlength': '20'}),
-        }
-
-    def clean_account_number(self):
-        num = self.cleaned_data.get('account_number', '').strip()
-        if not num.isdigit():
-            raise ValidationError("Account number must contain digits only.")
-        if len(num) < 10:
-            raise ValidationError("Account number must be at least 10 digits.")
-        return num
-'''

@@ -1,174 +1,217 @@
 {% extends "adManager/base.html" %}
 
 {% block title %}Payment Setup{% endblock %}
-{% block page_title %}Payment setup{% endblock %}
-{% block page_description %}Add your bank account so AdVerse can route campaign earnings to you.{% endblock %}
-
-{% block breadcrumbs %}
-<a href="{% url 'admanager:dashboard' %}" class="text-base-content/50 hover:text-base-content transition text-xs">Dashboard</a>
-<span class="text-base-content/30 text-xs">/</span>
-<span class="text-base-content text-xs">Payment setup</span>
+{% block page_title %}Payment Setup{% endblock %}
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Add your bank account so AdVerse can route campaign earnings to you.</p>
 {% endblock %}
 
+{% block page_container_class %}max-w-2xl mx-auto{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-6">
+<div class="space-y-6">
 
-    {% if subaccount %}
-
-    <div class="card bg-base-200 border border-base-300">
-        <div class="card-body p-6">
-
-            {# Header row #}
-            <div class="flex items-center gap-4 pb-5 border-b border-base-300">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
-                    {% if subaccount.is_verified %}bg-success/15{% else %}bg-warning/15{% endif %}">
-                    {% if subaccount.is_verified %}
-                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {% else %}
-                    <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    {% endif %}
-                </div>
-                <div>
-                    <p class="font-bold text-base">
-                        {% if subaccount.is_verified %}Bank account verified{% else %}Bank account connected{% endif %}
-                    </p>
-                    <p class="text-xs text-base-content/50 mt-0.5">
-                        {% if subaccount.is_verified %}
-                            Your subaccount is active and ready to receive campaign earnings.
-                        {% else %}
-                            Your subaccount is pending Paystack verification.
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-
-            {# Details grid #}
-            <div class="grid grid-cols-2 gap-x-8 gap-y-5 pt-4">
-                <div>
-                    <p class="text-[10px] text-base-content/40 uppercase tracking-widest mb-1">Business name</p>
-                    <p class="text-sm font-semibold">{{ subaccount.business_name }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] text-base-content/40 uppercase tracking-widest mb-1">Bank</p>
-                    <p class="text-sm font-semibold">{{ subaccount.bank_name }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] text-base-content/40 uppercase tracking-widest mb-1">Account number</p>
-                    <p class="text-sm font-mono font-semibold tracking-wider">{{ subaccount.masked_account_number }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] text-base-content/40 uppercase tracking-widest mb-1">Account name</p>
-                    <p class="text-sm font-semibold">{{ subaccount.account_name }}</p>
-                </div>
-            </div>
-
-            {# Status row — full width, separate from grid #}
-            <div class="mt-5 pt-4 border-t border-base-300">
-                <p class="text-[10px] text-base-content/40 uppercase tracking-widest mb-3">Verification status</p>
+    {% if subaccount and not subaccount_inactive %}
+    <!-- Active / Verified Bank Account -->
+    <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+        <div class="flex items-center gap-4 pb-5 border-b border-white/10">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                {% if subaccount.is_verified %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %}">
                 {% if subaccount.is_verified %}
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-success"></span>
-                    <span class="text-sm font-semibold text-success">Verified by Paystack</span>
-                    {% if subaccount.verified_at %}
-                    <span class="text-xs text-base-content/40 ml-1">· {{ subaccount.verified_at|date:"M d, Y" }}</span>
-                    {% endif %}
-                </div>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
                 {% else %}
-                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
-                        <span class="text-sm font-semibold text-warning">Pending Paystack verification</span>
-                    </div>
-                    <form method="post" action="{% url 'admanager:payment_verify_subaccount' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-sm gap-2">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                            Check verification
-                        </button>
-                    </form>
-                </div>
-                <p class="text-[11px] text-base-content/40 mt-2">
-                    Paystack verifies subaccounts automatically — usually within minutes. Click above to sync the status.
-                </p>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
                 {% endif %}
             </div>
-        </div>
-    </div>
-    <div class="card bg-base-200 border border-base-300">
-        <div class="card-body p-6">
-            <div class="mb-5">
-                <h3 class="text-sm font-bold">Update bank details</h3>
-                <p class="text-xs text-base-content/50 mt-1">
-                    Changing your bank details will pause payments until the new account is re-verified by Paystack.
+            <div>
+                <p class="font-bold text-base text-white">
+                    {% if subaccount.is_verified %}Bank account verified{% else %}Bank account connected{% endif %}
+                </p>
+                <p class="text-xs text-white/50 mt-0.5">
+                    {% if subaccount.is_verified %}
+                        Your subaccount is active and ready to receive campaign earnings.
+                    {% else %}
+                        Your subaccount is pending Paystack verification.
+                    {% endif %}
                 </p>
             </div>
-            <form method="post" action="{% url 'admanager:payment_update_bank' %}">
-                {% csrf_token %}
-                {% include "adManager/_bank_form_fields.html" %}
-                <button type="submit" class="btn btn-warning btn-sm w-full mt-2 gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    Update bank details
-                </button>
-            </form>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 pt-5">
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Business name</p>
+                <p class="text-sm font-medium text-white">{{ subaccount.business_name }}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Bank</p>
+                <p class="text-sm font-medium text-white">{{ subaccount.bank_name }}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account number</p>
+                <p class="text-sm font-mono font-semibold text-white tracking-wider">{{ subaccount.masked_account_number }}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account name</p>
+                <p class="text-sm font-medium text-white">{{ subaccount.account_name }}</p>
+            </div>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-white/10">
+            <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-3">Verification status</p>
+            {% if subaccount.is_verified %}
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-sm font-semibold text-emerald-400">Verified by Paystack</span>
+                {% if subaccount.verified_at %}
+                <span class="text-xs text-white/80 ml-1">· {{ subaccount.verified_at|date:"M d, Y" }}</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="text-xs font-medium text-amber-300">Pending Paystack verification</span>
+                </div>
+                <form method="post" action="{% url 'admanager:payment_verify_subaccount' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Check verification
+                    </button>
+                </form>
+            </div>
+            <p class="text-[11px] text-white/40 mt-2">
+                Paystack verifies subaccounts automatically — usually within minutes. Click above to sync the status.
+            </p>
+            {% endif %}
         </div>
     </div>
 
-    {% else %}
+    <!-- Update Bank Details Card -->
+    <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+        <div class="mb-5">
+            <h3 class="text-sm font-bold text-white">Update bank details</h3>
+            <p class="text-xs text-white/50 mt-1">
+                Changing your bank details will pause payments until the new account is re-verified by Paystack.
+            </p>
+        </div>
+        <form method="post" action="{% url 'admanager:payment_update_bank' %}" class="space-y-4">
+            {% csrf_token %}
+            {% include "adManager/_bank_form_fields.html" %}
+            <button type="submit" class="w-full px-4 py-2 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition flex items-center justify-center gap-2 mt-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Update bank details
+            </button>
+        </form>
+    </div>
 
-    {# ── First-time setup ────────────────────────────────────────────── #}
-    <div class="alert alert-info text-sm">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    {% elif subaccount and subaccount_inactive %}
+    
+    <!-- Inactive Warning Alert -->
+    <div class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-xs text-rose-300 flex items-start gap-3">
+        <svg class="w-5 h-5 flex-shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
-        <span>
-            AdVerse uses Paystack subaccounts to route campaign earnings directly to your bank.
-            Your full account number is verified with Paystack and <strong>never stored on our servers</strong>.
+        <span class="leading-relaxed">
+            Your previous bank account is no longer active on Paystack and can't be updated.
+            Connect a new bank account below to resume receiving payments.
         </span>
     </div>
 
-    <div class="card bg-base-200 border border-base-300">
-        <div class="card-body p-6">
-            <div class="mb-5">
-                <h3 class="text-sm font-bold">Connect your bank account</h3>
-                <p class="text-xs text-base-content/50 mt-1">
-                    Enter your Nigerian bank details below. We'll verify the account name with your bank before saving.
-                </p>
+    <!-- Disabled/Previous Account Summary -->
+    <div class="bg-panel/50 border border-white/5 rounded-xl p-6 opacity-60">
+        <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-3">Previous account (inactive)</p>
+        <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Bank</p>
+                <p class="font-medium text-white">{{ subaccount.bank_name }}</p>
             </div>
-
-            <form method="post" action="{% url 'admanager:payment_setup' %}">
-                {% csrf_token %}
-
-                <div class="form-control mb-4">
-                    <label class="label pb-1">
-                        <span class="label-text text-xs font-medium">Business name <span class="text-error">*</span></span>
-                    </label>
-                    <input type="text" name="business_name"
-                           value="{{ ad_manager.business_name }}"
-                           class="input input-bordered input-sm w-full"
-                           placeholder="e.g. Lagos Billboard Co"
-                           required>
-                </div>
-
-                {% include "adManager/_bank_form_fields.html" %}
-
-                <button type="submit" class="btn btn-primary btn-sm w-full mt-2 gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Verify and connect account
-                </button>
-            </form>
+            <div>
+                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account number</p>
+                <p class="font-mono font-medium text-white">{{ subaccount.masked_account_number }}</p>
+            </div>
         </div>
     </div>
-    {% endif %}
 
+    <!-- Reconnect Bank Form -->
+    <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+        <div class="mb-5">
+            <h3 class="text-sm font-bold text-white">Connect a new bank account</h3>
+            <p class="text-xs text-white/50 mt-1">
+                This will replace your inactive subaccount with a brand new one on Paystack.
+            </p>
+        </div>
+        <form method="post" action="{% url 'admanager:payment_setup' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-medium text-white/70 mb-1.5">
+                    Business name <span class="text-rose-400">*</span>
+                </label>
+                <input type="text" name="business_name"
+                       value="{{ subaccount.business_name|default:ad_manager.business_name }}"
+                       class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/60 transition"
+                       placeholder="e.g. Lagos Billboard Co"
+                       required>
+            </div>
+            {% include "adManager/_bank_form_fields.html" %}
+            <button type="submit" class="w-full px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition flex items-center justify-center gap-2 mt-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Reconnect bank account
+            </button>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- Initial Setup Info Banner -->
+    <div class="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 text-xs text-sky-300 flex items-start gap-3">
+        <svg class="w-5 h-5 flex-shrink-0 text-sky-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="leading-relaxed">
+            AdVerse uses Paystack subaccounts to route campaign earnings directly to your bank.
+            Your full account number is verified with Paystack and <strong class="text-sky-200">never stored on our servers</strong>.
+        </span>
+    </div>
+
+    <!-- Fresh Bank Connection Form -->
+    <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+        <div class="mb-5">
+            <h3 class="text-sm font-bold text-white">Connect your bank account</h3>
+            <p class="text-xs text-white/50 mt-1">
+                Enter your Nigerian bank details below. We'll verify the account name with your bank before saving.
+            </p>
+        </div>
+        <form method="post" action="{% url 'admanager:payment_setup' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-medium text-white/70 mb-1.5">
+                    Business name <span class="text-rose-400">*</span>
+                </label>
+                <input type="text" name="business_name"
+                       value="{{ ad_manager.business_name }}"
+                       class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/60 transition"
+                       placeholder="e.g. Lagos Billboard Co"
+                       required>
+            </div>
+            {% include "adManager/_bank_form_fields.html" %}
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg text-xs font-semibold bg-emerald-500 text-black hover:bg-emerald-400 transition flex items-center justify-center gap-2 mt-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Verify and connect account
+            </button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

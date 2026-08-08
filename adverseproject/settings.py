@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'common',
     'scheduling',
     'axes',
-    'django_q',
     'core',
     'payments',
     'admin_panel',
@@ -88,13 +87,28 @@ TEMPLATES = [
     },
 ]
 
+
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ['GOOGLE_CLIENT_ID'],
+            'secret': os.environ['GOOGLE_CLIENT_SECRET'],
+            'key': ''
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
 #ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 #ACCOUNT_EMAIL_REQUIRED = True
 
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 LOGIN_URL = 'security:login'
 LOGIN_REDIRECT_URL = 'security:post_login'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'security:login'
@@ -163,7 +177,12 @@ REST_FRAMEWORK = {
         "anon": "20/hour",
         "user": "100/hour",
         # Custom scope for sensitive endpoints
-        "auth_sensitive": "5/hour",
+        "auth_register": "10/hour",
+        "auth_login": "10/hour",
+        "auth_password_reset": "5/hour",
+        "auth_resend_verification": "5/hour",
+        "device_pairing": "10/hour",           # web + API pairing form submission
+        "device_pairing_status": "30/hour",    # self-register + status polling
     },
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -210,14 +229,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # PASSWORD_RESET_TIMEOUT = 86400
 # Rate limit
 RATELIMIT_ENABLE = env.bool('RATELIMIT_ENABLE')
-EMAIL_BACKEND = env('EMAIL_BACKEND', default="=django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = env('EMAIL_BACKEND', default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
-
+ADMIN_BASE_URL = env('ADMIN_BASE_URL')
 RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 
@@ -227,31 +246,35 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 # Merge them into one:
 CELERY_BEAT_SCHEDULE = {
-    'activate-due-campaigns': {
-        'task': 'scheduling.tasks.activate_due_campaigns',
-        'schedule': crontab(hour=0, minute=5),
+    "activate-due-campaigns": {
+        "task": "scheduling.tasks.activate_due_campaigns",
+        "schedule": crontab(hour=0, minute=5), # 12:05am
     },
-    'expire-old-campaigns': {
-        'task': 'scheduling.tasks.expire_old_campaigns',
-        'schedule': crontab(hour=0, minute=10),
-    },
-    "flag-suspicious-payouts": {
-        "task": "payments.tasks.flag_suspicious_payouts",
-        "schedule": crontab(hour="*/6"),
+    "expire-old-campaigns": {
+        "task": "scheduling.tasks.expire_old_campaigns",
+        "schedule": crontab(hour=0, minute=10), # 12:10am
     },
     "expire-stale-payments": {
         "task": "payments.tasks.expire_stale_campaign_payments",
-        "schedule": crontab(hour="0", minute="0"),
+        "schedule": crontab(hour=0, minute=15),  # 12:15am 
+    },
+    "flag-suspicious-payouts": {
+        "task": "payments.tasks.flag_suspicious_payouts",
+        "schedule": crontab(hour="*/6"), # every 6 hours
     },
     "reconciliation-alert": {
         "task": "payments.tasks.send_reconciliation_alert",
-        "schedule": crontab(hour="8", minute="0"),
+        "schedule": crontab(hour=8, minute=0), # 8:00am
+    },
+    "sync-subaccounts": {
+        "task": "payments.tasks.sync_all_subaccounts",
+        "schedule": crontab(hour=2, minute=0), # 2:00am
     },
 
-    "sync-subaccounts": {
-    "task": "payments.tasks.sync_all_subaccounts",
-    "schedule": crontab(hour=2, minute=0),  # runs at 2am daily
-},
+    "expire-unconfirmed-approvals": {
+    "task": "scheduling.tasks.expire_unconfirmed_approvals",
+    "schedule": crontab(hour=0, minute=20),  # daily, staggered from your other midnight tasks
+    },
 }
 
 # CACHE CONFIGURATION 
@@ -285,18 +308,12 @@ AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler' # Uses Redis cache so it's
 PAYSTACK_SECRET_KEY=env('PAYSTACK_SECRET_KEY').strip().strip("'").strip('"')
 PAYSTACK_PUBLIC_KEY=env('PAYSTACK_PUBLIC_KEY').strip()
 
-# Django-Q2 config — ORM broker 
-Q_CLUSTER = {
-    'name': 'adverseproject',
-    'workers': 2,           # number of worker processes
-    'timeout': 60,          # task timeout in seconds
-    'retry': 120,           # retry failed tasks after 120s
-    'max_attempts': 3,      # give up after 3 tries
-    'orm': 'default',       # use your existing DB as broker
-    'ack_failures': True,   # don't requeue tasks that keep failing
-    'save_limit': 250,      # keep last 250 finished tasks for visibility
-    'bulk': 10,
-    'sync': False,          # set True in tests to run tasks synchronously
-}
 # settings.py
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")
+
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
+# Needed so Django trusts ngrok's forwarded HTTPS — otherwise Django thinks
+# the request came in over plain HTTP (ngrok terminates TLS and forwards
+# to your local server as HTTP internally)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

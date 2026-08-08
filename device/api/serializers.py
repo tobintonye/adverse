@@ -110,12 +110,19 @@ class PairDeviceSerializer(serializers.Serializer):
     def validate(self, attrs):
         # Prevent re-pairing a billboard that already has a live device
         billboard = getattr(self, "_billboard", None)
+        player = getattr(self, "_player", None)
+
         if billboard and billboard.is_paired:
             existing = billboard.player_device
             if existing.status != PlayerDevice.Status.DISABLED:
-                raise serializers.ValidationError(
-                    "This billboard already has an active device paired. Disable it first."
-                )
+                raise serializers.ValidationError("This billboard already has an active device paired. Disable it first.")
+
+        # check if a device that's already actively paired to a different billboard must be unpaired first
+        if player and player.is_paired and player.billboard_id != billboard.pk:
+            raise serializers.ValidationError(
+                "This device is already paired to another billboard."
+                "It must be unpaired first before it can be paired here."
+            )
         return attrs
     
     def save(self, **kwargs):
@@ -128,9 +135,11 @@ class HeartbeatSerializer(serializers.Serializer):
     current_media_id = serializers.UUIDField(required=False)
 
 class PlaybackLogSerializer(serializers.ModelSerializer):
+    time_slot_id = serializers.UUIDField(required=False, allow_null=True)
+    
     class Meta:
         model  = PlaybackLog
-        fields = ("id", "media_id", "started_at", "duration_seconds", "completed", "created_at")
+        fields = ("id", "time_slot_id", "media_id", "started_at", "duration_seconds", "completed", "created_at")
         read_only_fields = ("id", "created_at")
 
 class BulkPlaybackLogSerializer(serializers.Serializer):

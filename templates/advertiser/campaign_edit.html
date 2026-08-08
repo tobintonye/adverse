@@ -1,191 +1,224 @@
 {% extends "advertiser/base.html" %}
 
-{% block title %}Edit Campaign{% endblock %}
+{% block title %}Edit Campaign — {{ campaign.name }}{% endblock %}
 {% block page_title %}Edit Campaign{% endblock %}
-{% block page_description %}Update your campaign details, media, or schedule.{% endblock %}
-
-{% block breadcrumbs %}
-<nav class="breadcrumbs text-sm">
-    <ul>
-        <li><a href="{% url 'advertiser:campaign_list' %}" class="text-base-content/60 hover:text-base-content">Campaigns</a></li>
-        <li><a href="{% url 'advertiser:campaign_detail' campaign.pk %}" class="text-base-content/60 hover:text-base-content truncate max-w-[10rem]">{{ campaign.name }}</a></li>
-        <li><span class="text-base-content font-semibold">Edit</span></li>
-    </ul>
-</nav>
+{% block page_description %}
+<p class="text-sm text-white/50 mt-1">Update your campaign details before resubmitting for review.</p>
 {% endblock %}
-
-{% block page_container_class %}max-w-2xl mx-auto{% endblock %}
+{% block page_container_class %}max-w-4xl mx-auto{% endblock %}
 
 {% block content %}
-<div>
-    <div class="card card-border bg-base-200 border-base-300">
-        <div class="card-body">
-            <h2 class="card-title">Edit Campaign</h2>
-            <p class="text-sm text-base-content/50">Update your draft campaign. Changes are saved immediately.</p>
+<div class="bg-panel border border-white/10 rounded-xl p-4 sm:p-6 shadow-xl">
 
-            <form method="post" class="space-y-5 mt-4">
-                {% csrf_token %}
-
-                <!-- Campaign Name -->
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Campaign Name</legend>
-                    <input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. Ramadan Campaign 2026" required
-                           class="input w-full">
-                    {% if form.name.errors %}<p class="text-error text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
-                </fieldset>
-
-                <!-- Billboard Selector -->
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Select Billboard</legend>
-                    <select id="billboard-select" name="billboard" required class="select w-full">
-                        <option value="">Choose a billboard...</option>
-                        {% for bb in form.fields.billboard.queryset %}
-                        <option value="{{ bb.pk }}"
-                                {% if form.billboard.value|stringformat:"s" == bb.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ bb.name }} — {{ bb.location_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% if form.billboard.errors %}<p class="text-error text-xs mt-1">{{ form.billboard.errors.0 }}</p>{% endif %}
-                </fieldset>
-
-                <!-- Billboard Info Card -->
-                <div id="bb-info-card" class="hidden card bg-base-300 border border-base-300 overflow-hidden">
-                    <div id="bb-media-wrap" class="relative w-full aspect-video bg-base-100 border-b border-base-300 flex items-center justify-center">
-                        <img id="bb-preview-img" src="" alt="Billboard preview" class="w-full h-full object-cover hidden">
-                        <video id="bb-preview-vid" src="" class="w-full h-full object-cover hidden" controls preload="metadata"></video>
-                        <div id="bb-no-preview" class="flex flex-col items-center text-base-content/30">
-                            <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                            <span class="text-[10px] font-bold uppercase tracking-wider">No Preview Available</span>
-                        </div>
-                    </div>
-                    <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
-                            <p class="text-[9px] font-bold text-base-content/50 uppercase tracking-widest">Billboard</p>
-                            <p id="bb-name" class="text-sm font-bold mt-0.5 truncate">—</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-bold text-base-content/50 uppercase tracking-widest">Location</p>
-                            <p id="bb-location" class="text-xs text-base-content/70 mt-0.5 truncate">—</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-bold text-base-content/50 uppercase tracking-widest">Screen Type</p>
-                            <p id="bb-screen-type" class="text-xs text-base-content/70 mt-0.5">—</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-bold text-base-content/50 uppercase tracking-widest">Hours</p>
-                            <p id="bb-hours" class="text-xs text-base-content/70 mt-0.5">—</p>
-                        </div>
-                    </div>
-                    <div class="px-4 pb-4">
-                        <div class="rounded-lg bg-error/10 border border-error/30 px-4 py-3 flex items-center justify-between">
-                            <div>
-                                <p class="text-[9px] font-bold text-error uppercase tracking-widest">Billing Plan</p>
-                                <p id="bb-charge-label" class="text-sm font-bold mt-0.5">—</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[9px] font-bold text-base-content/50 uppercase tracking-widest">Rate</p>
-                                <p id="bb-rate" class="text-lg font-black text-error">₦—</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quantity Field -->
-                <div id="qty-row" class="hidden">
-                    <fieldset class="fieldset">
-                        <legend id="qty-label" class="fieldset-legend">Quantity</legend>
-                        <input type="number" id="slots-per-day" name="slots_per_day" value="{{ form.slots_per_day.value|default:'1' }}" min="1"
-                               class="input w-full">
-                        <p id="qty-hint" class="text-xs text-base-content/50 mt-1"></p>
-                    </fieldset>
-                </div>
-
-                <!-- Media -->
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Select Media <span class="text-base-content/50 normal-case">(admin-approved only)</span></legend>
-                    <select name="media" class="select w-full">
-                        <option value="">Select approved media...</option>
-                        {% for media in form.fields.media.queryset %}
-                        <option value="{{ media.pk }}" {% if form.media.value|stringformat:"s" == media.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ media.title }} ({{ media.get_media_type_display }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% if form.media.errors %}<p class="text-error text-xs mt-1">{{ form.media.errors.0 }}</p>{% endif %}
-                </fieldset>
-
-                <!-- Schedule -->
-                <div class="grid grid-cols-2 gap-4">
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">Start Date</legend>
-                        <input type="date" id="start-date" name="start_date" value="{{ form.start_date.value|default:'' }}" required
-                               class="input w-full">
-                        {% if form.start_date.errors %}<p class="text-error text-xs mt-1">{{ form.start_date.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                    <fieldset class="fieldset">
-                        <legend class="fieldset-legend">End Date</legend>
-                        <input type="date" id="end-date" name="end_date" value="{{ form.end_date.value|default:'' }}" required
-                               class="input w-full">
-                        {% if form.end_date.errors %}<p class="text-error text-xs mt-1">{{ form.end_date.errors.0 }}</p>{% endif %}
-                    </fieldset>
-                </div>
-
-                <!-- Live Price Breakdown -->
-                <div id="price-estimate" class="hidden card bg-base-100 border border-base-300">
-                    <div class="card-body p-4">
-                        <p class="card-title text-xs">💰 Cost Estimate</p>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-base-content/50">Billboard rate</span>
-                                <span id="est-rate" class="font-medium">—</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-base-content/50" id="est-qty-label">Quantity</span>
-                                <span id="est-qty-val" class="font-medium">—</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-base-content/50">Campaign days</span>
-                                <span id="est-days" class="font-medium">0 days</span>
-                            </div>
-                            <div class="border-t border-base-300 pt-2 flex justify-between items-center">
-                                <span class="text-sm font-semibold">Estimated Total</span>
-                                <span class="text-xl font-black text-error">₦<span id="est-total">0.00</span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Budget -->
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Budget (₦)</legend>
-                    <input type="number" id="budget-input" name="budget" value="{{ form.budget.value|default:'' }}" step="0.01" placeholder="500000.00" required
-                           class="input w-full">
-                    <p id="budget-warning" class="text-error text-xs mt-1 hidden">⚠ Budget is below the estimated cost.</p>
-                    {% if form.budget.errors %}<p class="text-error text-xs mt-1">{{ form.budget.errors.0 }}</p>{% endif %}
-                </fieldset>
-
-                <div class="flex items-center gap-3 pt-2 border-t border-base-300">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <a href="{% url 'advertiser:campaign_detail' campaign.pk %}" class="link link-hover text-sm text-base-content/50 hover:text-base-content">Cancel</a>
-                </div>
-            </form>
+    <div class="mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-white/10">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div>
+                <h2 class="text-base sm:text-lg font-bold text-white">{{ campaign.name }}</h2>
+                <p class="text-xs text-white/50 mt-1">
+                    Editing a {{ campaign.get_status_display|lower }} campaign. Changes take effect once you save and resubmit.
+                </p>
+            </div>
+            <span class="self-start sm:self-auto text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md
+                {% if campaign.status == 'rejected' %}bg-red-500/20 text-red-400 border border-red-500/30
+                {% else %}bg-white/10 text-white/60 border border-white/10{% endif %}">
+                {{ campaign.get_status_display }}
+            </span>
         </div>
+
+        {% if campaign.status == 'rejected' and campaign.rejection_reason %}
+        <div class="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3.5">
+            <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Rejection Reason</p>
+            <p class="text-xs text-white/70">{{ campaign.rejection_reason }}</p>
+        </div>
+        {% endif %}
     </div>
+
+    <form method="post" class="space-y-4 sm:space-y-6">
+        {% csrf_token %}
+
+        {# Campaign Name #}
+        <div>
+            <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Campaign Name</label>
+            <input type="text" name="name" value="{{ form.name.value|default:campaign.name }}" placeholder="e.g. Ramadan Campaign 2026" required
+                   class="w-full bg-bg border border-white/10 text-white placeholder:text-white/30 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+            {% if form.name.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        {# Billboard Selector #}
+        <div>
+            <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Select Billboard</label>
+            <select id="billboard-select" name="billboard" required
+                    class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer">
+                <option value="" class="bg-panel text-white">Choose a billboard...</option>
+                {% for bb in form.fields.billboard.queryset %}
+                <option value="{{ bb.pk }}" {% if preselected_billboard|stringformat:"s" == bb.pk|stringformat:"s" %}selected{% endif %} class="bg-panel text-white">
+                    {{ bb.name }} — {{ bb.location_name }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.billboard.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.billboard.errors.0 }}</p>{% endif %}
+            {# ↓ NEW — add right here #}
+            {% if not form.fields.billboard.queryset %}
+            <p class="text-amber-400 text-xs mt-2">
+                No billboards are currently available for booking. This can happen if billboards
+                exist but don't yet have an active device paired to them — check back soon.
+            </p>
+            {% endif %}
+        </div>
+
+        {# Billboard Info Card #}
+        <div id="bb-info-card" class="hidden bg-bg/50 border border-white/10 rounded-xl overflow-hidden shadow-inner">
+            <div id="bb-media-wrap" class="relative w-full aspect-video bg-black/40 border-b border-white/10 flex items-center justify-center">
+                <img id="bb-preview-img" src="" alt="Billboard preview" class="w-full h-full object-cover hidden">
+                <video id="bb-preview-vid" src="" class="w-full h-full object-cover hidden" controls preload="metadata"></video>
+                <div id="bb-no-preview" class="flex flex-col items-center text-white/30">
+                    <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">No Preview Available</span>
+                </div>
+            </div>
+            <div class="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 border-b border-white/10">
+                <div>
+                    <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Billboard</p>
+                    <p id="bb-name" class="text-xs font-semibold text-white mt-0.5 truncate">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Location</p>
+                    <p id="bb-location" class="text-xs text-white/70 mt-0.5 truncate">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Screen Type</p>
+                    <p id="bb-screen-type" class="text-xs text-white/70 mt-0.5">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Hours</p>
+                    <p id="bb-hours" class="text-xs text-white/70 mt-0.5">—</p>
+                </div>
+            </div>
+            <div class="p-4 bg-white/[0.02]">
+                <div class="rounded-lg bg-accent/10 border border-accent/20 p-3.5 flex items-center justify-between">
+                    <div>
+                        <p class="text-[9px] font-bold text-accent uppercase tracking-widest">Billing Plan</p>
+                        <p id="bb-charge-label" class="text-xs font-semibold text-white mt-0.5">—</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Rate</p>
+                        <p id="bb-rate" class="text-base font-bold text-accent font-mono">₦—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Quantity Field #}
+        <div id="qty-row" class="hidden">
+            <label id="qty-label" class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Quantity</label>
+            <input type="number" id="slots-per-day" name="slots_per_day" value="{{ initial_slots_per_day|default:'1' }}" min="1"
+                   class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+            <p id="qty-hint" class="text-xs text-white/40 mt-1.5"></p>
+        </div>
+
+        {# Media Selector #}
+        <div>
+            <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">
+                Select Media <span class="text-white/40 font-normal lowercase">(admin-approved)</span>
+            </label>
+            <select name="media" class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition cursor-pointer">
+                <option value="" class="bg-panel text-white">Select your approved media...</option>
+                {% for media in form.fields.media.queryset %}
+                <option value="{{ media.pk }}" {% if form.media.value|stringformat:"s" == media.pk|stringformat:"s" %}selected{% endif %} class="bg-panel text-white">
+                    {{ media.title }} ({{ media.get_media_type_display }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.media.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.media.errors.0 }}</p>{% endif %}
+            {% if not form.fields.media.queryset %}
+            <p class="text-amber-400 text-xs mt-2">
+                You have no approved media yet.
+                <a href="{% url 'advertiser:upload_media' %}" class="text-accent underline hover:opacity-90">Upload media</a>
+                first and wait for admin approval.
+            </p>
+            {% endif %}
+        </div>
+
+        {# Duration + Times #}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Duration (days)</label>
+                <input type="number" id="duration-days" name="duration_days" value="{{ form.duration_days.value|default:campaign.duration_days }}" min="1" max="365" required
+                       class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+                <p class="text-[11px] text-white/40 mt-1.5">Pick exact dates after approval.</p>
+                {% if form.duration_days.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.duration_days.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Daily Start Time</label>
+                <input type="time" id="daily-start-time" name="daily_start_time" value="{{ form.daily_start_time.value|default:campaign.daily_start_time|time:'H:i' }}" required
+                       class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+                {% if form.daily_start_time.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.daily_start_time.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Daily End Time</label>
+                <input type="time" id="daily-end-time" name="daily_end_time" value="{{ form.daily_end_time.value|default:campaign.daily_end_time|time:'H:i' }}" required
+                       class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+                {% if form.daily_end_time.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.daily_end_time.errors.0 }}</p>{% endif %}
+            </div>
+        </div>
+
+        {# Live Price Breakdown #}
+        <div id="price-estimate" class="hidden bg-bg border border-white/10 rounded-xl p-4 shadow-md">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
+                <span>💰</span> Cost Estimate
+            </h3>
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between text-white/60">
+                    <span>Billboard rate</span>
+                    <span id="est-rate" class="font-medium text-white font-mono">—</span>
+                </div>
+                <div class="flex justify-between text-white/60">
+                    <span id="est-qty-label">Quantity</span>
+                    <span id="est-qty-val" class="font-medium text-white">—</span>
+                </div>
+                <div class="flex justify-between text-white/60">
+                    <span>Campaign days</span>
+                    <span id="est-days" class="font-medium text-white">0 days</span>
+                </div>
+                <div class="border-t border-white/10 pt-3 mt-3 flex justify-between items-center">
+                    <span class="text-sm font-semibold text-white">Estimated Total</span>
+                    <span class="text-xl font-bold text-accent font-mono">₦<span id="est-total">0.00</span></span>
+                </div>
+            </div>
+        </div>
+
+        {# Budget #}
+        <div>
+            <label class="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1.5 sm:mb-2">Budget (₦)</label>
+            <input type="number" id="budget-input" name="budget" value="{{ form.budget.value|default:campaign.budget }}" step="0.01" placeholder="500000.00" required
+                   class="w-full bg-bg border border-white/10 text-white placeholder:text-white/30 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
+            <p id="budget-warning" class="text-red-400 text-xs mt-2 hidden flex items-center gap-1">
+                <span>⚠</span> Budget is below the estimated cost.
+            </p>
+            {% if form.budget.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.budget.errors.0 }}</p>{% endif %}
+        </div>
+
+        {# Actions #}
+        <div class="flex items-center gap-4 pt-4 border-t border-white/10">
+            <button type="submit" class="bg-accent hover:opacity-90 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md cursor-pointer">
+                Save Changes
+            </button>
+            <a href="{% url 'advertiser:campaign_detail' pk=campaign.pk %}" class="text-xs text-white/50 hover:text-white transition">
+                Cancel
+            </a>
+        </div>
+    </form>
 </div>
 
 <script>
 (function () {
     var BILLBOARDS = {{ billboards_json|safe }};
-
     var selectEl      = document.getElementById('billboard-select');
-    var startDateEl   = document.getElementById('start-date');
-    var endDateEl     = document.getElementById('end-date');
+    var durationEl    = document.getElementById('duration-days');
     var slotsEl       = document.getElementById('slots-per-day');
     var budgetEl      = document.getElementById('budget-input');
-
     var infoCard      = document.getElementById('bb-info-card');
     var qtyRow        = document.getElementById('qty-row');
     var bbName        = document.getElementById('bb-name');
@@ -197,7 +230,6 @@
     var bbPreviewImg  = document.getElementById('bb-preview-img');
     var bbPreviewVid  = document.getElementById('bb-preview-vid');
     var bbNoPreview   = document.getElementById('bb-no-preview');
-
     var pricePanel    = document.getElementById('price-estimate');
     var estRate       = document.getElementById('est-rate');
     var estQtyLabel   = document.getElementById('est-qty-label');
@@ -207,28 +239,17 @@
     var qtyLabel      = document.getElementById('qty-label');
     var qtyHint       = document.getElementById('qty-hint');
     var budgetWarning = document.getElementById('budget-warning');
-
     var currentBillboard = null;
 
     function fmt(n) {
         return n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-
     function getDays() {
-        var s = startDateEl.value ? new Date(startDateEl.value) : null;
-        var e = endDateEl.value   ? new Date(endDateEl.value)   : null;
-        if (s && e && e >= s) return Math.round((e - s) / 86400000) + 1;
-        return 0;
+        var d = parseInt(durationEl.value, 10);
+        return (d && d > 0) ? d : 0;
     }
-
-    function getHoursPerDay() {
-        // Use model defaults: 06:00 to 22:00 = 16 hours
-        return 16;
-    }
-
     function updateBillboardCard(bb) {
         currentBillboard = bb;
-
         if (bb.media_url) {
             if (bb.media_is_video) {
                 bbPreviewImg.classList.add('hidden');
@@ -246,13 +267,11 @@
             bbPreviewVid.classList.add('hidden');
             bbNoPreview.classList.remove('hidden');
         }
-
         bbName.textContent       = bb.name;
         bbLocation.textContent   = (bb.state ? bb.state + ', ' : '') + bb.country;
         bbScreenType.textContent = bb.screen_type;
         bbHours.textContent      = bb.hours_start + ' – ' + bb.hours_end;
         bbRate.textContent       = '₦' + fmt(bb.price);
-
         var unitLabel, qLabel, qHint;
         if (bb.charge_unit === 'hourly') {
             unitLabel = 'Hourly — billed per hour/day';
@@ -267,30 +286,24 @@
             qLabel    = 'Ad Slots Per Day';
             qHint     = 'Number of times your ad plays on this screen per day.';
         }
-
         bbChargeLabel.textContent = unitLabel;
         qtyLabel.textContent      = qLabel;
         qtyHint.textContent       = qHint;
-
-        // Always show the quantity field for all billing types
-        slotsEl.closest('div').classList.remove('hidden');
-
         infoCard.classList.remove('hidden');
         qtyRow.classList.remove('hidden');
         recalculate();
     }
-
     function recalculate() {
-        if (!currentBillboard) { pricePanel.classList.add('hidden'); return; }
-
+        if (!currentBillboard) {
+            pricePanel.classList.add('hidden');
+            return;
+        }
         var days  = getDays();
-        var hours = getHoursPerDay();
         var qty   = parseInt(slotsEl.value, 10) || 1;
         var price = currentBillboard.price;
         var unit  = currentBillboard.charge_unit;
         var total = 0;
         var rateText, qLabel, qVal;
-
         if (unit === 'daily') {
             total    = price * qty * days;
             rateText = '₦' + fmt(price) + ' / day';
@@ -307,26 +320,27 @@
             qLabel   = 'Slots × days';
             qVal     = qty + ' slot' + (qty !== 1 ? 's' : '') + ' × ' + days + ' day' + (days !== 1 ? 's' : '');
         }
-
         estRate.textContent     = rateText;
         estQtyLabel.textContent = qLabel;
         estQtyVal.textContent   = qVal;
         estDays.textContent     = days + ' day' + (days !== 1 ? 's' : '');
         estTotal.textContent    = fmt(total);
-
         if (days > 0) {
             pricePanel.classList.remove('hidden');
         } else {
             pricePanel.classList.add('hidden');
         }
-
         if (budgetEl.value && total > 0) {
-            budgetWarning.classList.toggle('hidden', parseFloat(budgetEl.value) >= total);
+            var budget = parseFloat(budgetEl.value);
+            if (budget < total) {
+                budgetWarning.classList.remove('hidden');
+            } else {
+                budgetWarning.classList.add('hidden');
+            }
         } else {
             budgetWarning.classList.add('hidden');
         }
     }
-
     selectEl.addEventListener('change', function () {
         var pk = this.value;
         if (pk && BILLBOARDS[pk]) {
@@ -338,13 +352,11 @@
             pricePanel.classList.add('hidden');
         }
     });
-
-    startDateEl.addEventListener('change', recalculate);
-    endDateEl.addEventListener('change', recalculate);
+    durationEl.addEventListener('input', recalculate);
     slotsEl.addEventListener('input', recalculate);
     if (budgetEl) budgetEl.addEventListener('input', recalculate);
 
-    // Auto-init if billboard already selected (editing existing draft)
+    // On edit, a billboard is pre-selected — load its card immediately on page load
     var initialPk = selectEl.value;
     if (initialPk && BILLBOARDS[initialPk]) {
         updateBillboardCard(BILLBOARDS[initialPk]);

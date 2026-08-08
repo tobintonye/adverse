@@ -4,10 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
+from django_ratelimit.decorators import ratelimit
 from admanager.decorators import ad_manager_required
 from device.models import Billboard, PlayerDevice
 from .forms import BillboardForm
 from scheduling.models import TimeSlot, BillboardCapacity
+from admanager.models import Admanager
 
 @login_required(login_url='security:login')
 @ad_manager_required
@@ -58,7 +60,11 @@ def billboard_list(request):
 def billboard_create(request):
     ad_manager = request.user.ad_manager
 
-    if ad_manager.verification_status == ad_manager.VerificationStatus.SUSPENDED:
+    if ad_manager.verification_status != Admanager.VerificationStatus.VERIFIED:
+        messages.error(request, "Your account must be verified before you can list billboards. Please complete verification from your dashboard")
+        return redirect("admanager:dashboard")
+
+    if ad_manager.verification_status == Admanager.VerificationStatus.SUSPENDED:
         messages.error(request, "Suspended accounts cannot add billboards.")
         return redirect("device:billboard_list")
 
@@ -174,6 +180,7 @@ def billboard_schedule(request, pk):
 # Device pairing
 @login_required(login_url='security:login')
 @ad_manager_required
+@ratelimit(key='user', rate='10/h', method='POST', block=True)
 def device_pair(request):
     """
     Ad manager enters the pairing code shown on the Android box's screen,
@@ -198,10 +205,6 @@ def device_pair(request):
         pairing_code = request.POST.get("pairing_code", "").strip().upper()
         billboard_id = request.POST.get("billboard_id", "").strip()
 
-        # DEBUG — remove once confirmed working
-        print(f"[device_pair] raw POST data: {dict(request.POST)}")
-        print(f"[device_pair] parsed pairing_code={pairing_code!r} billboard_id={billboard_id!r}")
-
         if not pairing_code:
             messages.error(request, "Please enter the pairing code shown on the device.")
             return redirect("device:device_pair")
@@ -225,24 +228,25 @@ def device_pair(request):
         if billboard.is_paired:
             existing = billboard.player_device
             if existing.status != PlayerDevice.Status.DISABLED:
-                messages.error(
-                    request,
-                    f"'{billboard.name}' already has an active device paired. Disable it first.",
-                )
+                messages.error(request, f"'{billboard.name}' already has an active device paired. Disable it first.",)
                 return redirect("device:device_pair")
 
+        # checks if device is paired somewhere
+        if player.is_paired and player.billboard_id != billboard.pk:
+            messages.error(request,
+                "This device is already paired to another billboard."
+                "It must be unpaired by its current owner before it can be paired here.",
+            )
+            return redirect("device:device_pair")
+        
         player.pair_to_billboard(billboard)
-        messages.success(
-            request,
-            f"Device paired to '{billboard.name}'. It will come online once it sends its first heartbeat.",
-        )
+        messages.success(request, f"Device paired to '{billboard.name}'. It will come online once it sends its first heartbeat.",)
         return redirect("device:billboard_list")
 
     context = {
         "available_billboards": available_billboards,
     }
     return render(request, "adManager/device_pair.html", context)
-
 
 @login_required(login_url='security:login')
 @ad_manager_required

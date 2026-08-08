@@ -1,0 +1,55 @@
+{% extends "emails/base_email.html" %}
+{% block body %}
+<p class="greeting">Hey {{ manager_name }},</p>
+<p class="text">
+    A new campaign has been forwarded to you for review on your billboard.
+    Please approve or reject it from your dashboard.
+</p>
+
+<table class="info-block">
+    <tr>
+        <td class="td-label">Campaign</td>
+        <td class="td-value">{{ campaign_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Advertiser</td>
+        <td class="td-value">{{ advertiser_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Billboard</td>
+        <td class="td-value">{{ billboard_name }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Location</td>
+        <td class="td-value">{{ billboard_location }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Start date</td>
+        <td class="td-value">{{ start_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">End date</td>
+        <td class="td-value">{{ end_date }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Daily hours</td>
+        <td class="td-value">{{ daily_start }} &mdash; {{ daily_end }}</td>
+    </tr>
+    <tr>
+        <td class="td-label">Your earnings</td>
+        <td class="td-value amount">&#8358;{{ manager_amount }}</td>
+    </tr>
+</table>
+
+<p class="text">
+    Review the campaign media and details before approving.
+    Once approved, the advertiser will be prompted to complete payment.
+</p>
+
+<div class="btn-wrap">
+    <a href="{{ review_url }}" class="btn">Review Campaign</a>
+</div>
+
+<hr class="divider">
+<p class="note">You have full discretion to approve or reject based on your billboard policies.</p>
+{% endblock %}
