@@ -260,15 +260,18 @@ def upload_media(request):
                 messages.success(request, f"'{media.title}' uploaded successfully. It's pending admin review.")
                 return redirect("advertiser:media_library")
             except ValidationError as e:
-                error_dict = ( e.message_dict if hasattr(e, "message_dict") else {"__all__": e.messages})
+                error_dict = (e.message_dict if hasattr(e, "message_dict") else {"__all__": e.messages})
                 for field, errors in error_dict.items():
                     for error in errors:
-                        messages.error(request, error)
+                        if field == "__all__":
+                            messages.warning(request, error)
+                        else:
+                            messages.error(request, error)
         else:
             for field, errors in form.errors.items():
                 for error in errors:
                     if field == "__all__":
-                        messages.error(request, error)
+                        messages.warning(request, error)
                     else:
                         label = form.fields[field].label or field.replace("_", " ").capitalize()
                         messages.error(request, f"{label}: {error}")
@@ -508,7 +511,7 @@ def campaign_select_dates(request, pk):
     advertiser = _get_advertiser(request)
     campaign = get_object_or_404(Campaign.objects.prefetch_related("campaign_slots__billboard__capacity"),pk=pk, advertiser=advertiser,)
     if campaign.status == Campaign.Status.APPROVAL_EXPIRED:
-        messages.error(request, "This campaign's approval window has expired. Please resubmit for review.")
+        messages.warning(request, "This campaign's approval window has expired. Please resubmit for review.")
         return redirect("advertiser:campaign_detail", pk=pk)
     
     if campaign.status != Campaign.Status.APPROVED:
@@ -969,7 +972,7 @@ def campaign_pay(request, pk):
     )
 
     if campaign.status != Campaign.Status.APPROVED:
-        messages.error(request, "Only approved campaigns can be paid for.")
+        messages.warning(request, "Only approved campaigns can be paid for.")
         return redirect("advertiser:campaign_detail", pk=pk)
 
     if not campaign.start_date:

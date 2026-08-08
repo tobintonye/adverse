@@ -171,16 +171,18 @@
         </div>
       </div>
       {% endblock %}
-      {% if messages %}
+     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for message in messages %}
-        <div class="p-3 rounded-lg border text-sm
+        <div class="p-4 rounded-lg border text-sm flex items-center gap-2
           {% if message.tags == 'error' %}
-            bg-red-500/10 border-red-500/30 text-red-400
+            bg-red-500/10 border-red-500/20 text-red-200
+          {% elif message.tags == 'warning' %}
+            bg-amber-500/10 border-amber-500/20 text-amber-200
           {% elif message.tags == 'success' %}
-            bg-emerald-500/10 border-emerald-500/30 text-emerald-400
+            bg-emerald-500/10 border-emerald-500/20 text-emerald-200
           {% else %}
-            bg-accent/10 border-accent/30 text-blue-300
+            bg-zinc-800 border-zinc-700 text-slate-300
           {% endif %}">
           {{ message }}
         </div>

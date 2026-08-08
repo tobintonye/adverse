@@ -50,6 +50,9 @@ class MediaUploadForm(forms.ModelForm):
             'duration_seconds': forms.NumberInput(attrs={'placeholder': 'Required for video, e.g. 15', 'min': '1'}),
         }
 
+    def validate_unique(self):
+        pass
+    
     def clean_file(self):
         file = self.cleaned_data.get("file")
         if not file:

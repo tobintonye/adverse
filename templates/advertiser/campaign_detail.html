@@ -74,6 +74,10 @@
                         <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 border border-white/10 rounded-full">
                             Draft
                         </span>
+                    {% elif campaign.status == 'approval_expired' %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full">
+                            Approval Expired
+                        </span>
                     {% elif campaign.status == 'rejected' %}
                         <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 rounded-full">
                             Rejected
@@ -105,7 +109,7 @@
                     <p class="font-medium text-white/80 font-mono">₦{{ campaign.budget|floatformat:2 }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] text-white/50 uppercase tracking-wider mb-1">Total price</p>
+                    <p class="text-[10px] text-white uppercase tracking-wider mb-1">Total price</p>
                     <p class="font-bold text-accent font-mono text-sm">₦{{ campaign.actual_price|floatformat:2 }}</p>
                 </div>
             </div>
@@ -185,7 +189,7 @@
                 {% with p=payment %}
                 <div class="space-y-3 text-xs">
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50">Status</span>
+                        <span class="text-white/90">Status</span>
                         {% if p.status == 'completed' %}
                             <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">Paid</span>
                         {% elif p.status == 'pending' %}
@@ -199,16 +203,16 @@
                         {% endif %}
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50">Total</span>
+                        <span class="text-white/90">Total</span>
                         <span class="font-bold text-white font-mono">₦{{ p.total_amount|floatformat:2 }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50">Reference</span>
+                        <span class="text-white/90">Reference</span>
                         <span class="font-mono text-[11px] text-white/70">{{ p.reference|truncatechars:18 }}</span>
                     </div>
                     {% if p.completed_at %}
                     <div class="flex justify-between items-center">
-                        <span class="text-white/50">Paid on</span>
+                        <span class="text-white/90">Paid on</span>
                         <span class="text-white/70 text-[11px]">{{ p.completed_at|date:"M d, Y H:i" }}</span>
                     </div>
                     {% endif %}
@@ -253,7 +257,7 @@
         {% if campaign.status == 'draft' or campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
         <div class="bg-panel border border-red-500/20 p-4 sm:p-5 shadow-lg rounded-xl">
             <h3 class="text-xs font-bold uppercase tracking-wider text-red-400 mb-2">Danger zone</h3>
-            <p class="text-xs text-white/70 mb-4">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
+            <p class="text-xs text-white/50 mb-4">Cancelling will stop this campaign from proceeding. This cannot be undone.</p>
             <form method="post">
                 {% csrf_token %}
                 <button type="submit" name="action" value="cancel"

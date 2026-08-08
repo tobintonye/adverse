@@ -26,9 +26,9 @@
                         <td class="py-3.5 px-4 text-white font-mono font-medium whitespace-nowrap">₦{{ campaign.budget }}</td>
                         <td class="py-3.5 px-4 whitespace-nowrap">
                             {% if campaign.status == 'draft' %}
-                                <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/70 border border-white/10 px-3 py-1 rounded-full">Draft</span>
+                                <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/90 border border-white/10 px-3 py-1 rounded-full">Draft</span>
                             {% elif campaign.status == 'pending_admin_review' %}
-                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Pending Admin</span>
+                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400  border border-amber-500/20 px-3 py-1 rounded-full">Pending Admin</span>
                             {% elif campaign.status == 'pending_manager_review' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Pending Manager</span>
                             {% elif campaign.status == 'approved' %}

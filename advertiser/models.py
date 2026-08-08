@@ -230,9 +230,10 @@ class Media(TimeStampedModel):
             if self.pk:
                 duplicate = duplicate.exclude(pk=self.pk)
             if duplicate.exists():
-                raise ValidationError({"file": "You have already uploaded this file. Check your media library."})
+                raise ValidationError("You have already uploaded this file. Check your media library.")
+        
     def save(self, *args, **kwargs):
-        self.full_clean(validate_unique=False)
+        self.full_clean(validate_unique=False, validate_constraints=False)
         super().save(*args, **kwargs)
 
     @property
