@@ -88,6 +88,12 @@ class Media(TimeStampedModel):
         FULLY_APPROVED = "fully_approved",  "Fully Approved" # final approval by the billboard owner
         REJECTED = "rejected", "Rejected"
 
+    class TranscodeStatus(models.TextChoices):
+        PENDING = "pending", "Not processed yet"
+        PROCESSING = "processing", "Processing"
+        DONE = "done", "Ready for playback"
+        FAILED = "failed", "Processing failed"
+
     ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"]
     ALLOWED_VIDEO_EXTENSIONS = ["mp4", "mov", "webm"]
     ALLOWED_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS + ALLOWED_VIDEO_EXTENSIONS
@@ -113,10 +119,21 @@ class Media(TimeStampedModel):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.TextField(blank=True)
 
+
+    """
+    Media file can be fully_approved and still not be safe to send to a billboard box if it's an incompatible codec/resolution the device's
+    hardware decoder can't handle. This is what get_playlist_for_billboard() gates on in addition to approval status.
+    """
+    processed_file = models.FileField(upload_to=media_upload_path, null=True, blank=True, help_text="Transcoded/normalized version actually served to devices. Empty if the original already met spec.")
+    transcode_status = models.CharField(max_length=12, choices=TranscodeStatus .choices, default=TranscodeStatus.PENDING, help_text="Whether this file is verified safe to decode on billboard hardware.",)
+    transcode_error = models.TextField(blank=True)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    video_codec = models.CharField(max_length=32, blank=True)
+
     # Approval trail
     # reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media")
     #reviewed_at = models.DateTimeField(null=True, blank=True)
-
     admin_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media_admin")
     admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     manager_reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_media_manager") 
@@ -233,8 +250,18 @@ class Media(TimeStampedModel):
                 raise ValidationError("You have already uploaded this file. Check your media library.")
         
     def save(self, *args, **kwargs):
+        is_new = self._state.adding,
+        file_changed = is_new
+        if not is_new and self.pk:
+            previous = Media.objects.filter(pk=self.pk).values_list("file", flat=True).first()
+            file_changed = previous != self.file.name
+
         self.full_clean(validate_unique=False, validate_constraints=False)
         super().save(*args, **kwargs)
+
+        if file_changed:
+            from .tasks import process_media_task
+            transaction.on_commit(lambda: process_media_task.delay(str(self.id)))
 
     @property
     def file_size_mb(self):
@@ -247,7 +274,20 @@ class Media(TimeStampedModel):
     @property
     def is_live(self):
         return self.status == self.Status.FULLY_APPROVED
-    
+
+    @property
+    def is_playable(self): 
+        # Check whether this file may ever reach a billboard device, independent of admin/manager approval.
+        return self.transcode_status == self.TranscodeStatus.DONE
+
+    @property 
+    def playback_url(self): 
+        """What the device actually downloads — the transcoded version if one exists, otherwise the original (it only reaches DONE without a
+        processed_file if the original already met spec)."""
+        if self.processed_file:
+            return self.processed_file.url
+        return self.file.url if self.file else None
+
     @property
     def file_url(self):
         return self.file.url if self.file else None

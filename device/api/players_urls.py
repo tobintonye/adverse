@@ -17,8 +17,8 @@ urlpatterns = [
     path("register/", PlayerSelfRegisterView.as_view(), name="player-self-register"),
     path("pairing-status/", PlayerPairingStatusView.as_view(), name="player-pairing-status"),
     path("playback/", PlayerPlaybackView.as_view(), name="player-playback"),
-    path("players/schedule/", PlayerScheduleView.as_view(), name="player-schedule"),
-    path("players/playback/bulk/", PlayerPlaybackBulkView.as_view(), name="player-playback-bulk"),
+    path("schedule/", PlayerScheduleView.as_view(), name="player-schedule"),
+    path("playback/bulk/", PlayerPlaybackBulkView.as_view(), name="player-playback-bulk"),
     path("metrics/", PlayerMetricsView.as_view(), name="player-metrics"),
 
 ]

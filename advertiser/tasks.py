@@ -1,12 +1,122 @@
 from decimal import Decimal
-
+import os
+import tempfile
 from celery import shared_task
-from .models import Campaign
+from django.core.files import File
+from .models import Campaign, Media
 import logging
 logger = logging.getLogger("advertiser.services")
 from adverseproject.emails import send_adverse_email
 from django.conf import settings
+from .media_processing import(download_field_file, probe_video, _video_stream, needs_transcode, transcode_video, process_image, MediaProcessingError)
 
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def process_media_task(self, media_id):
+    """
+    Runs after every Media upload/replace. Verifies the file is safe to
+    decode on billboard hardware and transcodes it if not. 
+    """
+    try:
+        media = Media.objects.get(id=media_id)
+    except Media.DoesNotExist: 
+        logger.warning("process_media_task: media %s not found", media_id)
+        return 
+
+    media.transcode_status = Media.TrancodeStatus.PROCESSING
+    media.save(update_fields=["transcode_status", "updated_at"])
+
+    try: 
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            original_ext = media.file.name.rsplit(".", 1)[-1].lower()
+            input_path = os.path.join(tmp_dir, f"input.{original_ext}")
+            download_field_file(media.file, input_path)
+
+            if media.media_type == Media.MediaType.VIDEO:
+                probe_data = probe_video(input_path)
+                must_transcode, reason = needs_transcode(probe_data)
+
+                if must_transcode:
+                    logger.info("Transcoding media %s: %s", media_id, reason)
+                    output_path = os.path.join(tmp_dir, f"{media.id}.mp4")
+                    transcode_video(input_path, output_path)
+                    with open(output_path, "rb") as f:
+                        media.processed_file.save(f"{media.id}.mp4", File(f), save=False)
+                    final_probe = probe_video(output_path)
+                else:
+                    final_probe = probe_data
+
+                video_stream = _video_stream(final_probe)
+                media.width = int(video_stream.get("width", 0))
+                media.height = int(video_stream.get("height", 0))
+                media.video_codec = int(video_stream.get("codec_name", ""))
+                media.transcode_status = Media.TranscodeStatus.DONE
+                media.transcode_error = ""
+
+            else:
+                output_path = os.path.join(tmp_dir, f"{media.id}.jpg")
+                width, height = process_image(input_path, output_path)
+                with open(output_path, "rb") as f:
+                    media.processed_file.save(f"{media.id}.jpg", File(f), save=False)
+                media.width = width
+                media.height = height
+                media.transcode_status = Media.TranscodeStatus.DONE
+                media.transcode_error = ""
+    except MediaProcessingError as exc: 
+        logger.warning("Media processing rejected media %s: %s", media_id, exc)
+        media.transcode_status = Media.TranscodeStatus.FAILED
+        media.transcode_error = str(exc)[:2000]
+    except Exception as exc: 
+        """
+        Transient failures (S3 blip, ffmpeg timeout, worker restart) are worth retrying automatically before giving up
+        """
+        if self.request.retires < self.max_retries: 
+            logger.warning(
+                "process_media_task transient failure for %s (attempt %s/%s): %s",
+                media_id, self.request.retries + 1, self.max_retries, exc,
+            )
+            media.transcode_status = Media.TranscodeStatus.PENDING
+            media.save(update_fields=["transcode_status", "updated_at"])
+            raise self.retry(exc=exc)
+
+        logger.exception("process_media_task exhausted retries for media %s", media_id)
+        media.transcode_status = Media.TranscodeStatus.FAILED
+        media.transcode_error = f"Failed after {self.max_retries} attempts: {exc}"[:2000]
+
+    media.save(update_fields=[
+        "transcode_status", "transcode_error", "processed_file", "width", "height", "video_codec", "updated_at",
+    ])
+
+    if media.transcode_status == Media.TrancodeStatus.FAILED:
+        _alert_if_paid_campaign_affected(media)
+
+def _alert_if_paid_campaign_affected(media):
+    """
+    Defensive check, not a currently-reachable path: there is no edit
+    endpoint on Media today (MediaDetailView only exposes GET/DELETE, and
+    media_delete already blocks deleting anything used by an active/approved
+    campaign), and initialize_campaign_payment() refuses to charge for
+    unplayable media in the first place. So a paid campaign ending up with
+    FAILED media shouldn't currently be possible.
+
+    Left in as a tripwire: if a future Media-replace feature is ever added,
+    this is what will catch the gap immediately instead of silently. No
+    refund flow exists in this app, so this only logs — there's nothing
+    automated to trigger here, just a signal for a human to notice fast.
+    """
+    affected = media.campaigns.filter(
+        payment__status="completed"
+    ).values_list("id", flat=True)
+
+    for campaign_id in affected:
+        logger.critical(
+            "UNEXPECTED: paid campaign %s (media %s) has FAILED media — this "
+            "should not be reachable given current app constraints (no media "
+            "replace endpoint exists). Reason: %s. Investigate immediately.",
+            campaign_id, media.id, media.transcode_error,
+       )
+
+
+    
 @shared_task(bind=True, max_retries=3)
 def _notify_campaign_submitted(self, campaign_id):
     """Email advertiser when their campaign is submitted for review."""

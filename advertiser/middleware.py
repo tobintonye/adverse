@@ -2,15 +2,13 @@ import logging
 
 from django.core.cache import cache
 from django.utils import timezone
-
+from scheduling.tasks import activate_due_campaigns, expire_old_campaigns
 from advertiser.models import Campaign
 
 logger = logging.getLogger("advertiser.middleware")
 
 
 class CampaignStatusSyncMiddleware:
-   
-
     SYNC_INTERVAL = 60 * 5  # run at most once every 5 minutes
     LOCK_KEY = "campaign_status_sync:last_run"
 
@@ -28,23 +26,8 @@ class CampaignStatusSyncMiddleware:
             return
 
         try:
-            today = timezone.now().date()
-
-            activated = Campaign.objects.filter(
-                status=Campaign.Status.APPROVED,
-                start_date__lte=today,
-            ).update(status=Campaign.Status.ACTIVE)
-
-            completed = Campaign.objects.filter(
-                status=Campaign.Status.ACTIVE,
-                end_date__lt=today,
-            ).update(status=Campaign.Status.COMPLETED)
-
-            if activated or completed:
-                logger.info(
-                    "CampaignStatusSyncMiddleware: activated=%d completed=%d (as of %s)",
-                    activated, completed, today,
-                )
+            activate_due_campaigns()
+            expire_old_campaigns()
         except Exception:
             # Never let a sync failure break the request. The cache lock
             # already prevents this from being retried in a tight loop;

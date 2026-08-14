@@ -9,19 +9,23 @@ logger = logging.getLogger("scheduling.tasks")
 @shared_task
 def activate_due_campaigns():
     """
-    Finds APPROVED campaigns whose start_date has arrived, and moves them to ACTIVE.
+    Finds APPROVED campaigns whose start_date has arrived AND have a completed payment and moves them to ACTIVE
+
+    The payment check is not optional: without it, any approved campaign whose start_date arrives goes live on a billboard whether or not
+    the advertiser ever actually paid. Dates get confirmed and Timeslots generated at approval time, independent of payment
     """
     today = timezone.now().date()
     due_campaigns = Campaign.objects.filter(
         status=Campaign.Status.APPROVED,
         start_date__lte=today,
+        payment__status="completed",
     )
 
     # bulk update — single query, skips full_clean() (correct here: this is a
     # routine scheduled transition, not a user-submitted edit needing validation)
     count = due_campaigns.update(status=Campaign.Status.ACTIVE)
 
-    logger.info(f"Automated check: Activated {count} campaigns due for {today}.")
+    logger.info(f"Automated check: Activated {count} paid campaigns due for {today}.")
     return f"Activated {count} campaigns."
 
 

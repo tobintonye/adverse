@@ -190,6 +190,12 @@ def get_playlist_for_billboard(billboard, target_date=None):
     """
     Returns the ordered list of active TimeSlots for a billboard on a given date.
     Called by the device schedule endpoint.
+
+    Deliberately filters on Media.transcode_status="done" as well as
+    approval status. A Media row can be fully_approved by humans and still
+    be unsafe to send to a billboard box (wrong codec, oversized resolution,
+    truncated/corrupt file). This is the one gate that guarantees a device
+    never receives a file its hardware decoder can't handle. 
     """
     if target_date is None:
         target_date = timezone.now().date()
@@ -201,6 +207,8 @@ def get_playlist_for_billboard(billboard, target_date=None):
             date=target_date,
             is_active=True,
             campaign__status__in=["approved", "active"],
+            campaign__status="active", 
+            campaign__media__transcode_status="done",
         )
         .select_related("campaign", "campaign__media", "campaign_slot")
         .order_by("play_order")
@@ -210,7 +218,7 @@ def get_playlist_for_billboard(billboard, target_date=None):
 def expire_campaigns():
     """
     Mark campaigns as completed when end_date has passed.
-    Called by a scheduled task (e.g. Celery beat, cron) — run daily.
+    Called by a scheduled task (e.g. Celery beat, cron) run daily.
     """
 
     today = timezone.now().date()
@@ -221,12 +229,12 @@ def expire_campaigns():
     count = expired.update(status=Campaign.Status.COMPLETED)
     return count
  
- 
+"""
 def activate_campaigns():
-    """
+
     Mark approved campaigns as active when start_date arrives.
     Called by the same daily task.
-    """
+
     today = timezone.now().date()
     activated = Campaign.objects.filter(
         status=Campaign.Status.APPROVED,
@@ -235,3 +243,4 @@ def activate_campaigns():
     )
     count = activated.update(status=Campaign.Status.ACTIVE)
     return count
+"""

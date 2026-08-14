@@ -12,6 +12,7 @@ from json import JSONDecodeError
 from django.db.models import Sum
 logger = logging.getLogger(__name__)
 import json
+
 # Paystack Webhook Signature Verification
 def verify_paystack_signature(raw_body: bytes, signature: str) -> bool:
     if not getattr(settings, "PAYSTACK_SECRET_KEY", None):
@@ -242,6 +243,19 @@ def initialize_campaign_payment(campaign) -> dict:
             "Please contact support to retry."
         )
 
+    # Never take money for content that isn't verified safe to play. Human approval (full_approved) is about content/policy; this is a separate automated check
+    # that the file can actually be decoded on the billboard hardware. Both must pass before payment is even offered/
+    media = campaign.media
+    if not media.is_playable:
+        if media.transcode_status == media.TranscodeStatus.FAILED:
+            raise ValidationError(
+                "This campaign's media failed processing and cannot be played on billboard hardware. "
+                "Please replace the file before paying for this campaign. "
+                f"(Reason: {media.transcode_error or 'unknown'})"
+            )
+        raise ValidationError(
+            "This campaign's media is still being processed. Please try again in a few minutes."
+        )
     first_slot = (
         campaign.campaign_slots
         .select_related("billboard__ad_manager__paystack_subaccount")

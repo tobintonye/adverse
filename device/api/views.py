@@ -15,7 +15,8 @@ from .authentication import DeviceTokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-
+from django.db.models import Max
+from django.utils.http import http_date, parse_http_date_safe
 
 def get_ad_manager(user):
     ad_manager, _ = Admanager.objects.get_or_create(
@@ -205,13 +206,27 @@ class PlayerScheduleView(APIView):
         from scheduling.models import get_playlist_for_billboard
         from scheduling.api.serializers import TimeSlotSerializer
         slots = get_playlist_for_billboard(player.billboard)
-        return Response({
+
+        latest = slots.aggregate(latest=Max("updated_at"))["latest"] # get the latest schedule/modified playlist
+        if latest is None: 
+            latest = timezone.now().replace(microsecond=0) 
+
+        since_header = request.META.get("HTTP_IF_MODIFIED_SINCE")
+        if since_header: 
+            since_ts = parse_http_date_safe(since_header)
+            if since_ts is not None and int(latest.timestamp()) <= since_ts:
+                response = Response(status=status.HTTP_304_NOT_MODIFIED)
+                response["Last-Modified"] = http_date(latest.timestamp())
+                return response
+        response = Response({
             "device_uid": player.device_uid,
             "billboard": player.billboard.name,
             "schedule": TimeSlotSerializer(slots, many=True).data,
             "fetched_at": timezone.now(),
         })
-
+        response["Last-Modified"] = http_date(latest.timestamp())
+        return response
+    
 class PlayerPlaybackView(APIView):
     authentication_classes = [DeviceTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]

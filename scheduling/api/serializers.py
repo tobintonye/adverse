@@ -4,12 +4,13 @@ from ..models import TimeSlot, BillboardCapacity, ScheduleGenerationLog
 class TimeSlotSerializer(serializers.ModelSerializer):
     campaign_name = serializers.CharField(source="campaign.name", read_only=True)
     media_title = serializers.CharField(source="campaign.media.title", read_only=True)
-    media_url = serializers.CharField(source="campaign.media.file_url", read_only=True)
+    media_url = serializers.CharField(source="campaign.media.playback_url", read_only=True)
+    content_hash = serializers.CharField(source="campaign.media.file_hash", read_only=True)
     advertiser = serializers.CharField(source="campaign.advertiser.business_name", read_only=True)
 
     class Meta: 
         model = TimeSlot
-        fields = ("id", "date", "play_order", "duration_seconds", "campaign_name", "media_title", "media_url", "advertiser", "is_active",)
+        fields = ("id", "date", "play_order", "duration_seconds", "campaign_name", "media_title", "media_url", "content_hash", "advertiser", "is_active",)
 
 
 class BillboardCapacitySerializer(serializers.ModelSerializer):
