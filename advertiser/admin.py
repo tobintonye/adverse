@@ -55,8 +55,8 @@ class AdvertiserAdmin(admin.ModelAdmin):
 
 @admin.register(Media)
 class MediaAdmin(admin.ModelAdmin):
-    list_display = ("title", "media_type", "advertiser_link", "display_status", "created_at")
-    list_filter = ("status", "media_type", "created_at")
+    list_display = ("title", "media_type", "advertiser_link", "display_status", "transcode_status", "created_at")
+    list_filter = ("status", "transcode_status", "media_type", "created_at")
     search_fields = ("title", "advertiser__business_name", "advertiser__first_name")
     readonly_fields = ("file_size_bytes", "created_at", "updated_at")
     actions = ["approve_media_admin", "reject_media_admin"]
@@ -65,9 +65,12 @@ class MediaAdmin(admin.ModelAdmin):
         (_("Media Specs"), {"fields": ("advertiser", "title", "media_type", "file", "duration_seconds", "thumbnail")}),
         (_("System Info"), {"fields": ("file_size_bytes", "created_at", "updated_at"), "classes": ("collapse",)}),
         (_("Review Status"), {"fields": ("status", "rejection_reason", "admin_reviewed_by", "manager_reviewed_by")}),
+        (_("Playback Processing"), {"fields": ("transcode_status", "transcode_error", "processed_file", "width", "height", "video_codec", "file_hash",)})
     )
 
-    readonly_fields = ("file_size_bytes", "created_at", "updated_at", "manager_reviewed_by")
+    readonly_fields = ("file_size_bytes", "created_at", "updated_at", "manager_reviewed_by", "transcode_status", "transcode_error", 
+                        "processed_file", "width", "height", "video_codec", "file_hash",
+                       )
 
     @admin.display(description="Advertiser")
     def advertiser_link(self, obj):

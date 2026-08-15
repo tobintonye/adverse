@@ -22,7 +22,7 @@ def process_media_task(self, media_id):
         logger.warning("process_media_task: media %s not found", media_id)
         return 
 
-    media.transcode_status = Media.TrancodeStatus.PROCESSING
+    media.transcode_status = Media.TranscodeStatus.PROCESSING
     media.save(update_fields=["transcode_status", "updated_at"])
 
     try: 
@@ -48,7 +48,7 @@ def process_media_task(self, media_id):
                 video_stream = _video_stream(final_probe)
                 media.width = int(video_stream.get("width", 0))
                 media.height = int(video_stream.get("height", 0))
-                media.video_codec = int(video_stream.get("codec_name", ""))
+                media.video_codec = video_stream.get("codec_name", "")
                 media.transcode_status = Media.TranscodeStatus.DONE
                 media.transcode_error = ""
 
@@ -69,7 +69,7 @@ def process_media_task(self, media_id):
         """
         Transient failures (S3 blip, ffmpeg timeout, worker restart) are worth retrying automatically before giving up
         """
-        if self.request.retires < self.max_retries: 
+        if self.request.retries < self.max_retries: 
             logger.warning(
                 "process_media_task transient failure for %s (attempt %s/%s): %s",
                 media_id, self.request.retries + 1, self.max_retries, exc,
@@ -86,7 +86,7 @@ def process_media_task(self, media_id):
         "transcode_status", "transcode_error", "processed_file", "width", "height", "video_codec", "updated_at",
     ])
 
-    if media.transcode_status == Media.TrancodeStatus.FAILED:
+    if media.transcode_status == Media.TranscodeStatus.FAILED:
         _alert_if_paid_campaign_affected(media)
 
 def _alert_if_paid_campaign_affected(media):

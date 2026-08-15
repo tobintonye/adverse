@@ -9,7 +9,7 @@ import json
 import logging
 import subprocess
 from PIL import Image
-
+from django.conf import settings
 logger = logging.getLogger("advertiser.media_processing")
 
 # Safe fallback profile: Forces 1080p H.264 to guarantee smooth playback.
@@ -20,6 +20,10 @@ TARGET_VIDEO_CODEC= "h264"
 TARGET_PIXEL_FORMAT= "yuv420p"
 
 MAX_IMAGE_DIMENSION = 3840  # device itself scales down further to its own resolution
+
+
+FFMPEG_BINARY = getattr(settings, "FFMPEG_BINARY", "ffmpeg")
+FFPROBE_BINARY = getattr(settings, "FFPROBE_BINARY", "ffprobe")
 
 FFPROBE_TIMEOUT_SECONDS = 60
 FFMPEG_TIMEOUT_SECONDS = 60 # 10 min ceiling for a single transcode
@@ -38,7 +42,7 @@ def download_field_file(field_file, destination_path: str) -> None:
         field_file.close()
 
 def probe_video(local_path:str) -> dict:
-    cmd = [ "ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show-format", local_path]
+    cmd = [FFPROBE_BINARY, "-v", "error", "-print_format", "json", "-show_streams", "-show_format", local_path]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=FFPROBE_TIMEOUT_SECONDS)
     if result.returncode != 0:
         raise MediaProcessingError(f"ffprobe failed: {result.stderr[:500]}")
@@ -69,7 +73,7 @@ def needs_transcode(probe_data: dict) -> tuple[bool, str]:
 
 def transcode_video(input_path: str, output_path: str) -> None:
     cmd = [
-        "ffmpeg", "-y", "-i", input_path,
+       FFMPEG_BINARY, "-y", "-i", input_path,
         "-vf", (
             f"scale='min({TARGET_MAX_WIDTH},iw)':'min({TARGET_MAX_HEIGHT},ih)':"
             "force_original_aspect_ratio=decrease"

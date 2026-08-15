@@ -250,15 +250,18 @@ class Media(TimeStampedModel):
                 raise ValidationError("You have already uploaded this file. Check your media library.")
         
     def save(self, *args, **kwargs):
-        is_new = self._state.adding,
-        file_changed = is_new
-        if not is_new and self.pk:
-            previous = Media.objects.filter(pk=self.pk).values_list("file", flat=True).first()
-            file_changed = previous != self.file.name
+        is_new = self._state.adding
+        update_fields = kwargs.get("update_fields")
 
+        if update_fields is not None:
+            file_changed = "file" in update_fields
+        else:
+            file_changed = is_new
+            if not is_new and self.pk:
+                previous = Media.objects.filter(pk=self.pk).values_list("file", flat=True).first()
+                file_changed = previous != self.file.name
         self.full_clean(validate_unique=False, validate_constraints=False)
         super().save(*args, **kwargs)
-
         if file_changed:
             from .tasks import process_media_task
             transaction.on_commit(lambda: process_media_task.delay(str(self.id)))
