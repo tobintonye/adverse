@@ -61,8 +61,14 @@
             <p class="text-sm font-medium text-white">{{ player.firmware_version|default:"—" }}</p>
         </div>
         <div>
-            <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Last Seen</p>
-            <p class="text-sm font-medium text-white">{{ player.last_seen_at|default:"Never"|timesince }} {% if player.last_seen_at %}ago{% endif %}</p>
+             <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Last Seen</p>
+            <p class="text-sm font-medium text-white">
+                {% if player.last_seen_at %}
+                    {{ player.last_seen_at|timesince }} ago
+                {% else %}
+                    Never
+                {% endif %}
+            </p>
         </div>
     </div>
 </div>

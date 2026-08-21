@@ -111,7 +111,7 @@ class Media(TimeStampedModel):
     file_hash = models.CharField(max_length=64, blank=True, help_text="SHA-256 of the uploaded file. Used to detect duplicates.") # used to detect is a file already exists
     media_type = models.CharField(max_length=10, choices=MediaType.choices, blank=False, null=False)
     duration_seconds = models.PositiveIntegerField(
-        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(15)],
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(90)],
         help_text="Required for video. Duration the ad will play on screen.", # something to think about because someone can place a 5mins ad that will be too long. the highest should be
     )
     file_size_bytes = models.PositiveBigIntegerField(editable=False, default=0)

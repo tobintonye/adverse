@@ -174,15 +174,15 @@ REST_FRAMEWORK = {
     ],
     
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "20/hour",
+        "anon": "40/hour",
         "user": "100/hour",
         # Custom scope for sensitive endpoints
         "auth_register": "10/hour",
         "auth_login": "10/hour",
         "auth_password_reset": "5/hour",
         "auth_resend_verification": "5/hour",
-        "device_pairing": "10/hour",           # web + API pairing form submission
-        "device_pairing_status": "30/hour",    # self-register + status polling
+        "device_pairing": "50/hour",           # web + API pairing form submission
+        "device_pairing_status": "600/hour",    # self-register + status polling
     },
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -241,7 +241,7 @@ RECAPTCHA_PUBLIC_KEY = env('RECAPTCHA_SITE_KEY')
 RECAPTCHA_PRIVATE_KEY = env('RECAPTCHA_SECRET_KEY')
 
 
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = "redis://localhost:6379/0" # redis
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 # Merge them into one:

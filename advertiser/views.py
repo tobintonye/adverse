@@ -984,7 +984,7 @@ def campaign_pay(request, pk):
         paystack_data = initialize_campaign_payment(campaign)
 
     except ValidationError as e:
-        messages.error(request, str(e))
+        messages.error(request, " ".join(e.messages))
         return redirect("advertiser:campaign_detail", pk=pk)
 
     authorization_url = paystack_data.get("authorization_url")

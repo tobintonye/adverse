@@ -29,7 +29,4 @@ class CampaignStatusSyncMiddleware:
             activate_due_campaigns()
             expire_old_campaigns()
         except Exception:
-            # Never let a sync failure break the request. The cache lock
-            # already prevents this from being retried in a tight loop;
-            # next request after SYNC_INTERVAL will just try again.
             logger.exception("CampaignStatusSyncMiddleware: sync failed")

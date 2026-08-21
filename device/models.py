@@ -74,7 +74,20 @@ class Billboard(TimeStampedModel):
     @property
     def resolution(self):
         return f"{self.screen_width_px}x{self.screen_height_px}"
-    
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            from scheduling.models import BillboardCapacity
+            BillboardCapacity.objects.get_or_create(
+                billboard=self,
+                defaults={
+                    "max_slots_per_day": 10,
+                    "slot_duration_seconds": 30,
+                }
+            )
+
     def __str__(self):
         return f"{self.name} — {self.location_name}"
     
@@ -135,6 +148,7 @@ class PlayerDevice(TimeStampedModel):
                     break
         is_new = self._state.adding
         super().save(*args, **kwargs)
+        """
         if is_new:
             from scheduling.models import BillboardCapacity
             BillboardCapacity.objects.get_or_create(
@@ -144,6 +158,7 @@ class PlayerDevice(TimeStampedModel):
                     "slot_duration_seconds": 30,
                 }
             )
+            """
     @staticmethod
     def _generate_pairing_code():
         clean_letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"
