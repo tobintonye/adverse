@@ -172,7 +172,8 @@ class PlayerDevice(TimeStampedModel):
     def pair_to_billboard(self, billboard: "Billboard" ): # type: ignore or billboard
         self.billboard = billboard
         self.status = self.Status.PENDING
-        self.save(update_fields=["billboard", "status", "updated_at"])
+        self.token_claimed_at = None  # allow the (possibly already-claimed) token to be handed out again on this new pairing
+        self.save(update_fields=["billboard", "status", "token_claimed_at", "updated_at"])
 
     def mark_heartbeat(self, firmware_version="", free_storage_mb=None, current_media_id=None):
         self.last_seen_at = timezone.now()

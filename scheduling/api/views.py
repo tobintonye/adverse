@@ -79,7 +79,7 @@ class BillboardCapacityRecalculateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        if not request.user.is_staff or request.user.ad_manager:
+        if not (request.user.is_staff or request.user.ad_manager):
             raise PermissionDenied("Only admins or ad managers can recalculate capacity.")
         try: 
             billboard = Billboard.objects.get(pk=pk)

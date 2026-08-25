@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
@@ -413,7 +413,12 @@ def _build_billboards_json(available_billboards):
         if media_url:
             ext = media_url.rsplit(".", 1)[-1].lower()
             media_is_video = ext in ("mp4", "mov", "webm", "m4v", "3gp")
- 
+
+        try:
+            slot_duration_seconds = bb.capacity.slot_duration_seconds
+        except ObjectDoesNotExist:
+            slot_duration_seconds = None  # no capacity configured yet — form skips the live seat check for this billboard
+
         result[str(bb.pk)] = {
             "name": bb.name,
             "location_name": bb.location_name,
@@ -426,6 +431,7 @@ def _build_billboards_json(available_billboards):
             "charge_unit": bb.charge_unit,
             "media_url": media_url,
             "media_is_video": media_is_video,
+            "slot_duration_seconds": slot_duration_seconds,
         }
     return json.dumps(result)
 

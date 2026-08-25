@@ -24,18 +24,22 @@ class TimeSlot(TimeStampedModel):
   campaign = models.ForeignKey("advertiser.Campaign",on_delete=models.CASCADE, related_name="time_slots",)
   campaign_slot = models.ForeignKey("advertiser.CampaignSlot", on_delete=models.CASCADE, related_name="time_slots",)
   date = models.DateField(db_index=True)
+  scheduled_time = models.TimeField(db_index=True, help_text=" The real clock time this exact play is scheduled for what the device actually checks against, not jst an " \
+  "ordering position. An advertiser's 7am - 9am window only ever gets seats whose scheduled_time actually falls in 7am-9am", null=True, blank=True)
   play_order = models.PositiveIntegerField()   # position in the day's rotation
   duration_seconds = models.PositiveIntegerField()
   is_active = models.BooleanField(default=True)
 
   def __str__(self): 
-    return (f"{self.billboard.name} | {self.date} | " f"#{self.play_order} | {self.campaign.name}")
+    return (f"{self.billboard.name} | {self.date} | " f"#{self.scheduled_time} | {self.campaign.name}")
   
   class Meta: 
-    # One play_order position per billboard per day — prevents double-booking
-    unique_together = [("billboard", "date", "play_order")]
+   # one scheduled_time per billboard per day this is the real physical
+   # double-booking guard now. prevents campains windows from landing on the same clock second.
+    unique_together = [("billboard", "date", "scheduled_time")]
     indexes = [
             models.Index(fields=["billboard", "date", "is_active"]),
+            models.Index(fields=["campaign", "date", "scheduled_time"]),
             models.Index(fields=["campaign", "date"]),
             models.Index(fields=["date"]),
     ] 
@@ -59,7 +63,7 @@ class BillboardCapacity(TimeStampedModel):
     start = datetime.combine(date.today(), b.operating_hours_start)
     end = datetime.combine(date.today(), b.operating_hours_end)
     operating_seconds = (end - start).seconds
-    self.slot_durations_seconds = slot_duration_seconds  
+    self.slot_duration_seconds = slot_duration_seconds  
     self.max_slots_per_day = operating_seconds // slot_duration_seconds
     self.save(update_fields=["max_slots_per_day", "slot_duration_seconds", "last_calculated_at"])
     return self.max_slots_per_day
@@ -92,27 +96,64 @@ class ScheduleGenerationLog(TimeStampedModel):
 
   def __str__(self):
         return f"ScheduleLog [{self.campaign.name}] {self.result} — {self.slots_created} slots"
-  
 
-def check_capacity(billboard, start_date, end_date, slots_per_day): 
-  """
-    Returns (ok: bool, conflicts: list[date] that are over booked)
-    Checks every date in the range has enough free capacity.
-  """
+def _window_seat_times(window_start, window_end, slot_duration_seconds):
+    """
+    Every fixed clock-time 'seat' in a window, quantized to slot_duration_seconds
+    e.g 7:00-9:00 at 30s => [7:00:00, 7:00:30, 7:01:00, ... 8:59:30]
+    This is the shared grid every campaign wanting that window draws from the mechanism that make two advertisers
+    7-9am booking never collide.
+    """
+    start_dt = datetime.combine(date.today(), window_start)
+    end_dt = datetime.combine(date.today(), window_end)
+    total_seconds = int((end_dt - start_dt).total_seconds())
+    seat_count = total_seconds // slot_duration_seconds
+    return [
+       (start_dt + timedelta(seconds=i * slot_duration_seconds)).time() 
+       for i in range(seat_count)
+    ]
 
-  try: 
-     capacity = billboard.capacity
-  except BillboardCapacity.DoesNotExist:
-     return False, [start_date]
-  
-  conflicts = [] 
-  current = start_date
-  while current <= end_date: 
-    available = capacity.available_slots_on(current)
-    if available < slots_per_day: 
-       conflicts.append(current)
-    current += timedelta(days=1)
-  return len(conflicts) == 0, conflicts
+def _available_seats_in_window(billboard, target_date, window_start, window_end, slot_duration_seconds):
+    """Seats in this window not already claimed by ANY campaign that day."""
+    all_seats = _window_seat_times(window_start, window_end, slot_duration_seconds)
+    taken = set(
+        TimeSlot.objects.filter(
+            billboard=billboard, date=target_date, is_active=True,
+            scheduled_time__gte=window_start, scheduled_time__lt=window_end,
+        ).values_list("scheduled_time", flat=True)
+    )
+    return [t for t in all_seats if t not in taken]
+
+def _pick_evenly_spaced(available_seats, count):
+    """
+    Picks 'count' seats spreads as evenly as possible across whatever seats are still open not across the whole window. This is what lets a second advertiser in the same window
+    get a fail, non-colliding spread of whatever's left, rather than just grabbing the first N free seats  
+    """
+    if count <= 0:
+       return []
+    if count >= len(available_seats):
+       return list(available_seats)
+    step = len(available_seats) / count
+    return [available_seats[int(i * step)] for i in range(count)]
+
+def check_capacity(billboard, start_date, end_date, slots_per_day, daily_start_time, daily_end_time):
+    """
+    Returns (ok, conflicts). Checks if enough open slots exist per day within
+    the target daypart window between start_date and end_date.
+    """
+    try:
+       capacity = billboard.capacity
+    except BillboardCapacity.DoesNotExist:
+       return False, [start_date]
+
+    conflicts = []
+    current = start_date
+    while current <= end_date:
+        available = _available_seats_in_window(billboard, current, daily_start_time, daily_end_time, capacity.slot_duration_seconds)
+        if len(available) < slots_per_day:
+           conflicts.append(current)
+        current += timedelta(days=1)
+    return len(conflicts) == 0, conflicts
 
 @transaction.atomic
 def generate_schedule(campaign):
@@ -135,7 +176,7 @@ def generate_schedule(campaign):
     all_conflicts = []  # list of (billboard, date) tuples
     for cs in campaign_slots:
        ok, conflicts = check_capacity(
-          cs.billboard, campaign.start_date, campaign.end_date, cs.slots_per_day
+          cs.billboard, campaign.start_date, campaign.end_date, cs.slots_per_day, campaign.daily_start_time, campaign.daily_end_time
        )
        if not ok:
             all_conflicts.extend((cs.billboard, d) for d in conflicts)
@@ -164,17 +205,23 @@ def generate_schedule(campaign):
     while current_date <= campaign.end_date:
         for cs in campaign_slots:
             billboard = cs.billboard
+            capacity = billboard.capacity
             last_order = TimeSlot.objects.filter(
                 billboard=billboard, date=current_date, is_active=True,
             ).aggregate(models.Max("play_order"))["play_order__max"] or 0
 
-            for i in range(cs.slots_per_day):
+            available = _available_seats_in_window(
+               billboard, current_date, campaign.daily_start_time, campaign.daily_end_time, capacity.slot_duration_seconds,
+            )
+            chosen_times = _pick_evenly_spaced(available, cs.slots_per_day)
+            for i, scheduled_time in enumerate(chosen_times):
                 TimeSlot.objects.create(
                     billboard=billboard,
                     campaign=campaign,
                     campaign_slot=cs,
                     date=current_date,
-                    play_order=last_order + i + 1,
+                    scheduled_time=scheduled_time,
+                    play_order = last_order + i + 1, # legacy display ordering only
                     duration_seconds=campaign.media.duration_seconds or 30,
                 )
                 slots_created += 1
@@ -187,16 +234,8 @@ def generate_schedule(campaign):
     )
     return slots_created
 def get_playlist_for_billboard(billboard, target_date=None):
-    """
-    Returns the ordered list of active TimeSlots for a billboard on a given date.
-    Called by the device schedule endpoint.
-
-    Deliberately filters on Media.transcode_status="done" as well as
-    approval status. A Media row can be fully_approved by humans and still
-    be unsafe to send to a billboard box (wrong codec, oversized resolution,
-    truncated/corrupt file). This is the one gate that guarantees a device
-    never receives a file its hardware decoder can't handle. 
-    """
+    """Returns the ordered list of active TimeSlots for a billboard on a given date."""
+    
     if target_date is None:
         target_date = timezone.now().date()
  
@@ -206,12 +245,12 @@ def get_playlist_for_billboard(billboard, target_date=None):
             billboard=billboard,
             date=target_date,
             is_active=True,
-            campaign__status__in=["approved", "active"],
+            #campaign__status__in=["approved", "active"],
             campaign__status="active", 
             campaign__media__transcode_status="done",
         )
         .select_related("campaign", "campaign__media", "campaign_slot")
-        .order_by("play_order")
+        .order_by("scheduled_time")
     )
  
 
@@ -229,18 +268,3 @@ def expire_campaigns():
     count = expired.update(status=Campaign.Status.COMPLETED)
     return count
  
-"""
-def activate_campaigns():
-
-    Mark approved campaigns as active when start_date arrives.
-    Called by the same daily task.
-
-    today = timezone.now().date()
-    activated = Campaign.objects.filter(
-        status=Campaign.Status.APPROVED,
-        start_date__lte=today,
-        end_date__gte=today,
-    )
-    count = activated.update(status=Campaign.Status.ACTIVE)
-    return count
-"""

@@ -57,7 +57,6 @@
                 {% endfor %}
             </select>
             {% if form.billboard.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.billboard.errors.0 }}</p>{% endif %}
-            {# ↓ NEW — add right here #}
             {% if not form.fields.billboard.queryset %}
             <p class="text-amber-400 text-xs mt-2">
                 No billboards are currently available for booking. This can happen if billboards
@@ -116,6 +115,9 @@
             <input type="number" id="slots-per-day" name="slots_per_day" value="{{ initial_slots_per_day|default:'1' }}" min="1"
                    class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent transition">
             <p id="qty-hint" class="text-xs text-white/40 mt-1.5"></p>
+            <p id="capacity-warning" class="text-amber-400 text-xs mt-1.5 hidden flex items-center gap-1">
+                <span>⚠</span> <span id="capacity-warning-text"></span>
+            </p>
         </div>
 
         {# Media Selector #}
@@ -239,6 +241,10 @@
     var qtyLabel      = document.getElementById('qty-label');
     var qtyHint       = document.getElementById('qty-hint');
     var budgetWarning = document.getElementById('budget-warning');
+    var capacityWarning     = document.getElementById('capacity-warning');
+    var capacityWarningText = document.getElementById('capacity-warning-text');
+    var startTimeEl = document.getElementById('daily-start-time');
+    var endTimeEl   = document.getElementById('daily-end-time');
     var currentBillboard = null;
 
     function fmt(n) {
@@ -247,6 +253,41 @@
     function getDays() {
         var d = parseInt(durationEl.value, 10);
         return (d && d > 0) ? d : 0;
+    }
+    function windowSeconds() {
+        var s = startTimeEl.value, e = endTimeEl.value;
+        if (!s || !e) return null;
+        var sp = s.split(':'), ep = e.split(':');
+        var diff = (parseInt(ep[0], 10) * 3600 + parseInt(ep[1], 10) * 60)
+                 - (parseInt(sp[0], 10) * 3600 + parseInt(sp[1], 10) * 60);
+        return diff > 0 ? diff : null;
+    }
+    function checkCapacityFit() {
+        // Sanity check only — total theoretical seats in the chosen window.
+        // Not a live query against what other campaigns already booked
+        // there; the real, authoritative check still happens server-side
+        // at date-confirmation. This just catches an obviously-impossible
+        // request before submission, without adding a network round-trip.
+        if (!currentBillboard || currentBillboard.slot_duration_seconds == null) {
+            capacityWarning.classList.add('hidden');
+            return;
+        }
+        var winSec = windowSeconds();
+        var qty = parseInt(slotsEl.value, 10) || 0;
+        if (winSec === null || qty === 0) {
+            capacityWarning.classList.add('hidden');
+            return;
+        }
+        var maxPossible = Math.floor(winSec / currentBillboard.slot_duration_seconds);
+        if (qty > maxPossible) {
+            capacityWarningText.textContent =
+                'This time window can hold at most ' + maxPossible + ' slot' + (maxPossible !== 1 ? 's' : '') +
+                ' at ' + currentBillboard.slot_duration_seconds + 's each — reduce quantity or widen the window. ' +
+                '(Actual availability may be lower if other campaigns already share this window.)';
+            capacityWarning.classList.remove('hidden');
+        } else {
+            capacityWarning.classList.add('hidden');
+        }
     }
     function updateBillboardCard(bb) {
         currentBillboard = bb;
@@ -296,6 +337,7 @@
     function recalculate() {
         if (!currentBillboard) {
             pricePanel.classList.add('hidden');
+            capacityWarning.classList.add('hidden');
             return;
         }
         var days  = getDays();
@@ -340,6 +382,7 @@
         } else {
             budgetWarning.classList.add('hidden');
         }
+        checkCapacityFit();
     }
     selectEl.addEventListener('change', function () {
         var pk = this.value;
@@ -350,10 +393,13 @@
             infoCard.classList.add('hidden');
             qtyRow.classList.add('hidden');
             pricePanel.classList.add('hidden');
+            capacityWarning.classList.add('hidden');
         }
     });
     durationEl.addEventListener('input', recalculate);
     slotsEl.addEventListener('input', recalculate);
+    startTimeEl.addEventListener('input', recalculate);
+    endTimeEl.addEventListener('input', recalculate);
     if (budgetEl) budgetEl.addEventListener('input', recalculate);
 
     // On edit, a billboard is pre-selected — load its card immediately on page load

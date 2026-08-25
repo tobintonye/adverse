@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.db.models import Max
 from django.utils.http import http_date, parse_http_date_safe
-
+import datetime  # new
 def get_ad_manager(user):
     ad_manager, _ = Admanager.objects.get_or_create(
         user=user,
@@ -177,6 +177,7 @@ class PlayerHeartbeatView(APIView):
     """
     authentication_classes = [DeviceTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "device_heartbeat"
 
     def post(self, request):
         serializer = HeartbeatSerializer(data=request.data)
@@ -195,7 +196,9 @@ class PlayerHeartbeatView(APIView):
 class PlayerScheduleView(APIView):
     authentication_classes = [DeviceTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "device_schedule"
+    
     def get(self, request):
         player = request.user
         if not player.is_paired:
@@ -207,9 +210,11 @@ class PlayerScheduleView(APIView):
         from scheduling.api.serializers import TimeSlotSerializer
         slots = get_playlist_for_billboard(player.billboard)
 
-        latest = slots.aggregate(latest=Max("updated_at"))["latest"] # get the latest schedule/modified playlist
-        if latest is None: 
-            latest = timezone.now().replace(microsecond=0) 
+        EMPTY_SCHEDULE_SENTINEL = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+
+        latest = slots.aggregate(latest=Max("updated_at"))["latest"]
+        if latest is None:
+            latest = EMPTY_SCHEDULE_SENTINEL
 
         since_header = request.META.get("HTTP_IF_MODIFIED_SINCE")
         if since_header: 
@@ -219,17 +224,18 @@ class PlayerScheduleView(APIView):
                 response["Last-Modified"] = http_date(latest.timestamp())
                 return response
         response = Response({
-            "device_uid": player.device_uid,
-            "billboard": player.billboard.name,
-            "schedule": TimeSlotSerializer(slots, many=True).data,
-            "fetched_at": timezone.now(),
-        })
+                "device_uid": player.device_uid,
+                "billboard": player.billboard.name,
+                "schedule": TimeSlotSerializer(slots, many=True, context={"request": request}).data,
+                "fetched_at": timezone.now(),
+            })
         response["Last-Modified"] = http_date(latest.timestamp())
         return response
     
 class PlayerPlaybackView(APIView):
     authentication_classes = [DeviceTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "device_playback_bulk"
 
     def post(self, request):
         serializer = PlaybackLogSerializer(data=request.data)
@@ -254,7 +260,8 @@ class PlayerPlaybackView(APIView):
 class PlayerPlaybackBulkView(APIView):
     authentication_classes = [DeviceTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-
+    throttle_scope = "device_playback_bulk"
+    
     def post(self, request):
         serializer = BulkPlaybackLogSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

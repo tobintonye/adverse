@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django_extensions',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -167,6 +168,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
          "device.api.authentication.DeviceTokenAuthentication", 
     ),
+
     
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -181,9 +183,15 @@ REST_FRAMEWORK = {
         "auth_login": "10/hour",
         "auth_password_reset": "5/hour",
         "auth_resend_verification": "5/hour",
-        "device_pairing": "50/hour",           # web + API pairing form submission
+        "device_pairing": "30/hour",           # web + API pairing form submission
         "device_pairing_status": "600/hour",    # self-register + status polling
+        "device_operation": "1000/hour",   # heartbeat + schedule + playback + metrics, generous headroom
+        "device_heartbeat": "300/hour", # device sends every -30s (120/hr) + margin
+        "device_playback_bulk": "1000/hour",  # bursty - can batch up to 500 logs/call, needs headroom to drain a backlog after an outage
+        "device_schedule": "120/hour"   # device polls every ~5min (~12/hr) — generous margin for admin force-syncs/retries
+
     },
+    
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
