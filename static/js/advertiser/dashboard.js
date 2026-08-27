@@ -13,34 +13,62 @@
 
   let monthlyChartInstance = null;
   let annualChartInstance = null;
+  let chartsBuilt = false;
 
-  const customTooltipOptions = {
-    enabled: true,
-    backgroundColor: '#131316',
-    titleColor: '#F2F2F5',
-    titleFont: { family: 'Inter', weight: 'bold', size: 11 },
-    bodyColor: '#A9A9B2',
-    bodyFont: { family: 'Inter', size: 11 },
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    padding: 10,
-    displayColors: false,
-    callbacks: {
-      label: function (context) {
-        let label = context.dataset.label || '';
-        if (label) {
-          label += ': ';
+  function isLight() {
+    return document.documentElement.classList.contains('light');
+  }
+
+  function themeColors() {
+    return isLight()
+      ? {
+          tooltipBg: '#FFFFFF',
+          tooltipTitle: '#111827',
+          tooltipBody: '#6B7280',
+          tooltipBorder: 'rgba(17,24,39,0.1)',
+          gridColor: 'rgba(17,24,39,0.08)',
+          tickColor: '#6B7280',
         }
-        if (context.parsed.y !== null) {
-          label += new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: 'NGN',
-          }).format(context.parsed.y);
-        }
-        return label;
+      : {
+          tooltipBg: '#131316',
+          tooltipTitle: '#F2F2F5',
+          tooltipBody: '#A9A9B2',
+          tooltipBorder: 'rgba(255,255,255,0.1)',
+          gridColor: 'rgba(255,255,255,0.06)',
+          tickColor: '#A9A9B2',
+        };
+  }
+
+  function tooltipOptions() {
+    const c = themeColors();
+    return {
+      enabled: true,
+      backgroundColor: c.tooltipBg,
+      titleColor: c.tooltipTitle,
+      titleFont: { family: 'Inter', weight: 'bold', size: 11 },
+      bodyColor: c.tooltipBody,
+      bodyFont: { family: 'Inter', size: 11 },
+      borderColor: c.tooltipBorder,
+      borderWidth: 1,
+      padding: 10,
+      displayColors: false,
+      callbacks: {
+        label: function (context) {
+          let label = context.dataset.label || '';
+          if (label) {
+            label += ': ';
+          }
+          if (context.parsed.y !== null) {
+            label += new Intl.NumberFormat('en-NG', {
+              style: 'currency',
+              currency: 'NGN',
+            }).format(context.parsed.y);
+          }
+          return label;
+        },
       },
-    },
-  };
+    };
+  }
 
   function buildSpendChart(canvasId, labels, values, datasetLabel) {
     const canvas = document.getElementById(canvasId);
@@ -49,6 +77,7 @@
     const gradient = ctx.createLinearGradient(0, 0, 0, 240);
     gradient.addColorStop(0, 'rgba(239, 68, 68, 0.65)');
     gradient.addColorStop(1, 'rgba(239, 68, 68, 0.02)');
+    const c = themeColors();
     return new Chart(ctx, {
       type: 'bar',
       data: {
@@ -71,13 +100,13 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: customTooltipOptions,
+          tooltip: tooltipOptions(),
         },
         scales: {
           y: {
-            grid: { color: 'rgba(255,255,255,0.06)' },
+            grid: { color: c.gridColor },
             ticks: {
-              color: '#A9A9B2',
+              color: c.tickColor,
               font: { family: 'Inter', size: 9 },
               callback: function (value) {
                 return (
@@ -93,7 +122,7 @@
           x: {
             grid: { display: false },
             ticks: {
-              color: '#A9A9B2',
+              color: c.tickColor,
               font: { family: 'Inter', size: 9 },
             },
           },
@@ -102,7 +131,9 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function ensureChartsBuilt() {
+    if (chartsBuilt) return;
+    chartsBuilt = true;
     monthlyChartInstance = buildSpendChart(
       'monthlyChart',
       monthlyLabels,
@@ -115,7 +146,41 @@
       annualValues,
       'Annual Marketing Spend'
     );
-  });
+  }
+
+  function rebuildChartsForTheme() {
+    if (!chartsBuilt) return;
+    if (monthlyChartInstance) monthlyChartInstance.destroy();
+    if (annualChartInstance) annualChartInstance.destroy();
+    monthlyChartInstance = buildSpendChart(
+      'monthlyChart',
+      monthlyLabels,
+      monthlyValues,
+      'Monthly Marketing Spend'
+    );
+    annualChartInstance = buildSpendChart(
+      'annualChart',
+      annualLabels,
+      annualValues,
+      'Annual Marketing Spend'
+    );
+  }
+
+  window.addEventListener('themechange', rebuildChartsForTheme);
+
+  window.toggleSpendAnalytics = function () {
+    const body = document.getElementById('spend-analytics-body');
+    const chevron = document.getElementById('spend-analytics-chevron');
+    if (!body) return;
+    const opening = body.classList.contains('hidden');
+    body.classList.toggle('hidden');
+    if (chevron) chevron.style.transform = opening ? 'rotate(180deg)' : '';
+    if (opening) {
+      ensureChartsBuilt();
+      if (monthlyChartInstance) monthlyChartInstance.resize();
+      if (annualChartInstance) annualChartInstance.resize();
+    }
+  };
 
   window.switchChart = function (type) {
     const btnMonthly = document.getElementById('btn-monthly');

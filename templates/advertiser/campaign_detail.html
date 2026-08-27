@@ -59,7 +59,7 @@
                             <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>Active
                         </span>
                     {% elif campaign.status == 'approved' %}
-                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-accent/15 text-accent border border-accent/30 rounded-full">
                             Approved
                         </span>
                     {% elif campaign.status == 'pending_admin_review' or campaign.status == 'pending_manager_review' %}
@@ -67,7 +67,7 @@
                             <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>Under review
                         </span>
                     {% elif campaign.status == 'completed' %}
-                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 border border-white/10 rounded-full">
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20 rounded-full">
                             Completed
                         </span>
                     {% elif campaign.status == 'draft' %}
@@ -102,15 +102,15 @@
                 </div>
                 <div>
                     <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Daily hours</p>
-                    <p class="font-medium font-mono text-white/80">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
+                    <p class="font-medium text-white/80 tabular-nums">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
                 </div>
                 <div>
                     <p class="text-[10px] text-white/100 uppercase tracking-wider mb-1">Budget</p>
-                    <p class="font-medium text-white/80 font-mono">₦{{ campaign.budget|floatformat:2 }}</p>
+                    <p class="font-medium text-white/80 tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.budget|floatformat:2 }}</p>
                 </div>
                 <div>
                     <p class="text-[10px] text-white uppercase tracking-wider mb-1">Total price</p>
-                    <p class="font-bold text-accent font-mono text-sm">₦{{ campaign.actual_price|floatformat:2 }}</p>
+                    <p class="font-bold text-accent text-sm tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.actual_price|floatformat:2 }}</p>
                 </div>
             </div>
         </div>
@@ -136,7 +136,7 @@
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-white/10 text-white/60 uppercase rounded">{{ campaign.media.get_media_type_display }}</span>
                         {% if campaign.media.duration_seconds %}
-                        <span class="text-[10px] text-white/40 font-mono">{{ campaign.media.duration_seconds }}s</span>
+                        <span class="text-[10px] text-white/40 tabular-nums">{{ campaign.media.duration_seconds }}s</span>
                         {% endif %}
                         <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">{{ campaign.media.get_status_display }}</span>
                     </div>
@@ -204,11 +204,11 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-white/90">Total</span>
-                        <span class="font-bold text-white font-mono">₦{{ p.total_amount|floatformat:2 }}</span>
+                        <span class="font-bold text-white tabular-nums"><span class="font-normal mr-1">₦</span>{{ p.total_amount|floatformat:2 }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-white/90">Reference</span>
-                        <span class="font-mono text-[11px] text-white/70">{{ p.reference|truncatechars:18 }}</span>
+                        <span class="text-[11px] text-white/70">{{ p.reference|truncatechars:18 }}</span>
                     </div>
                     {% if p.completed_at %}
                     <div class="flex justify-between items-center">

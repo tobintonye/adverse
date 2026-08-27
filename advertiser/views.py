@@ -20,6 +20,7 @@ from scheduling.models import TimeSlot
 from security.models import CustomUser
 from decimal import Decimal, InvalidOperation
 import logging
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -415,9 +416,9 @@ def _build_billboards_json(available_billboards):
             media_is_video = ext in ("mp4", "mov", "webm", "m4v", "3gp")
 
         try:
-            slot_duration_seconds = bb.capacity.slot_duration_seconds
+            max_concurrent_positions = bb.capacity.max_concurrent_positions
         except ObjectDoesNotExist:
-            slot_duration_seconds = None  # no capacity configured yet — form skips the live seat check for this billboard
+            max_concurrent_positions = None  # no capacity configured yet — form skips the live seat check for this billboard
 
         result[str(bb.pk)] = {
             "name": bb.name,
@@ -431,7 +432,7 @@ def _build_billboards_json(available_billboards):
             "charge_unit": bb.charge_unit,
             "media_url": media_url,
             "media_is_video": media_is_video,
-            "slot_duration_seconds": slot_duration_seconds,
+            "max_concurrent_positions": max_concurrent_positions,
         }
     return json.dumps(result)
 
@@ -566,7 +567,9 @@ def campaign_select_dates(request, pk):
         day_ok = True
         for cs in slots:
             try:
-                available = cs.billboard.capacity.available_slots_on(day)
+                available = cs.billboard.capacity.available_positions_on(
+                    day, campaign.daily_start_time, campaign.daily_end_time
+                )
             except Exception:
                 available = 0
             if available < cs.slots_per_day:
@@ -863,9 +866,15 @@ def campaign_playback_log(request, pk):
     rows = []
     for ts in time_slots:
         log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
+        billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone)) # converts the utc timezone to a local billboard timezone
+        billboard_today = billboard_now.date()
         if log:
             state = "confirmed"
-        elif ts.date > today:
+        elif ts.date > billboard_today:
+            state = "upcoming"
+        elif ts.date == billboard_today and billboard_now.time() < ts.campaign.daily_end_time:
+            # Today (in THIS billboard's local time), daypart hasn't
+            # closed yet — still has a chance to play.
             state = "upcoming"
         else:
             state = "missed"

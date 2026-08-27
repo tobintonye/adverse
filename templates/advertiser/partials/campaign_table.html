@@ -21,9 +21,9 @@
                         </td>
                         <td class="py-3.5 px-4 text-white/80 whitespace-nowrap">
                             <p>{{ campaign.start_date }} — {{ campaign.end_date }}</p>
-                            <p class="text-[11px] text-white/40 font-mono mt-0.5">{{ campaign.duration_days }} days</p>
+                            <p class="text-[11px] text-white/40 mt-0.5 tabular-nums">{{ campaign.duration_days }} days</p>
                         </td>
-                        <td class="py-3.5 px-4 text-white font-mono font-medium whitespace-nowrap">₦{{ campaign.budget }}</td>
+                        <td class="py-3.5 px-4 text-white font-medium whitespace-nowrap tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.budget }}</td>
                         <td class="py-3.5 px-4 whitespace-nowrap">
                             {% if campaign.status == 'draft' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/90 border border-white/10 px-3 py-1 rounded-full">Draft</span>
@@ -32,8 +32,8 @@
                             {% elif campaign.status == 'pending_manager_review' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Pending Manager</span>
                             {% elif campaign.status == 'approved' %}
-                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-accent/15 text-accent border border-accent/30 px-3 py-1 rounded-full">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
                                     Approved
                                 </span>
                             {% elif campaign.status == 'active' %}
@@ -46,9 +46,9 @@
                             {% elif campaign.status == 'cancelled' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full">Cancelled</span>
                             {% elif campaign.status == 'completed' %}
-                                <span class="inline-flex items-center text-[11px] font-medium bg-accent/15 text-accent border border-accent/30 px-3 py-1 rounded-full">Completed</span>
+                                <span class="inline-flex items-center text-[11px] font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20 px-3 py-1 rounded-full">Completed</span>
                             {% elif campaign.status == 'paused' %}
-                                <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Paused</span>
+                                <span class="inline-flex items-center text-[11px] font-medium bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-3 py-1 rounded-full">Paused</span>
                             {% else %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/70 border border-white/10 px-3 py-1 rounded-full">{{ campaign.get_status_display }}</span>
                             {% endif %}
@@ -67,7 +67,7 @@
 
         {# Pagination Bar #}
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="px-4 py-3 bg-white/[0.01] border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-white/50 font-mono">
+        <div class="px-4 py-3 bg-white/[0.01] border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-white/50 tabular-nums">
             <div>
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} total
             </div>

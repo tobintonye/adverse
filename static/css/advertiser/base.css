@@ -13,10 +13,109 @@ html.light {
   --color-bg: 248 249 250;      /* #F8F9FA */
   --color-panel: 255 255 255;   /* #FFFFFF */
   --color-accent: 37 99 235;    /* #2563EB - crisp high-contrast blue */
-  --color-text-main: 17 24 39;  /* #111827 - dark text */
+  --color-text-main: 0 0 0;     /* pure black */
   --color-text-sub: 107 114 128;/* #6B7280 */
   --color-border: 229 231 235; /* #E5E7EB */
 }
+
+/* Native date/time inputs render their own browser calendar/clock popup —
+   tie it to the active theme instead of hardcoding one, so light mode gets
+   a light popup and dark mode gets a dark one. */
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark input[type="datetime-local"] { color-scheme: dark; }
+html.light input[type="date"],
+html.light input[type="time"],
+html.light input[type="datetime-local"] { color-scheme: light; }
+
+/* ---- Global light-mode re-theme ----
+   Templates use raw text-white/N, border-white/N, bg-white/N utilities
+   for hierarchy on the dark surface. These overrides remap the same
+   hierarchy onto light surfaces so the toggle works across every
+   advertiser page without editing each template's markup. */
+html.light body { background-color: rgb(var(--color-bg)); color: rgb(var(--color-text-main)); }
+
+html.light .text-white,
+html.light .text-white\/100,
+html.light .text-white\/90,
+html.light .text-white\/80,
+html.light .text-white\/70,
+html.light .text-white\/60,
+html.light .text-white\/55,
+html.light .text-white\/50,
+html.light .text-white\/40,
+html.light .text-white\/30,
+html.light .text-white\/20 { color: rgb(var(--color-text-main)) !important; }
+
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/20,
+html.light .border-white\/25 { border-color: rgb(var(--color-border)) !important; }
+
+html.light .bg-white\/5 { background-color: rgb(var(--color-text-main) / 0.04) !important; }
+html.light .bg-white\/10 { background-color: rgb(var(--color-text-main) / 0.06) !important; }
+html.light .bg-white\/15 { background-color: rgb(var(--color-text-main) / 0.08) !important; }
+html.light .bg-white\/20 { background-color: rgb(var(--color-text-main) / 0.1) !important; }
+html.light .divide-white\/5 > * + * { border-color: rgb(var(--color-text-main) / 0.06) !important; }
+html.light .placeholder-white\/30::placeholder,
+html.light .placeholder-white\/40::placeholder,
+html.light .placeholder\:text-white\/30::placeholder,
+html.light .placeholder\:text-white\/40::placeholder { color: rgb(var(--color-text-sub)) !important; opacity: 0.8; }
+
+/* Native file-input "Choose File" button: Tailwind's file: variant styles
+   ::file-selector-button, a different selector shape than the generic
+   text-white/bg-white overrides above, so it needs its own rule or it
+   renders as white text on a near-invisible background in light mode. */
+html.light .file\:bg-white\/10::file-selector-button { background-color: rgb(var(--color-text-main) / 0.06) !important; }
+html.light .file\:text-white::file-selector-button { color: rgb(var(--color-text-main)) !important; }
+html.light .hover\:file\:bg-white\/20:hover::file-selector-button { background-color: rgb(var(--color-text-main) / 0.1) !important; }
+
+/* Status colors: lighten-on-dark shades read too faint on white */
+/* Accent-colored CTA buttons (New Campaign, Book Screen, Upload): the dark
+   navy text pairs well with dark mode's lighter accent blue, but light
+   mode's accent is a deeper, more saturated blue for visibility against
+   white — dark text there is nearly unreadable, so flip to white. */
+html.light .text-\[\#06101F\] { color: #FFFFFF !important; }
+
+html.light .text-amber-300 { color: #92400e !important; }
+html.light .text-amber-200 { color: #92400e !important; }
+html.light .text-amber-100 { color: #92400e !important; }
+html.light .text-amber-300\/50 { color: rgb(146 64 14 / 0.6) !important; }
+html.light .text-amber-400 { color: #92400e !important; }
+html.light .text-blue-400 { color: #1d4ed8 !important; }
+html.light .text-cyan-400 { color: #0e7490 !important; }
+html.light .text-cyan-300 { color: #0e7490 !important; }
+html.light .text-emerald-400 { color: #047857 !important; }
+html.light .text-emerald-400\/70 { color: rgb(4 120 87 / 0.75) !important; }
+html.light .text-emerald-400\/80 { color: rgb(4 120 87 / 0.85) !important; }
+html.light .text-emerald-200 { color: #047857 !important; }
+html.light .text-red-400 { color: #b91c1c !important; }
+html.light .text-red-300 { color: #b91c1c !important; }
+html.light .text-red-200 { color: #b91c1c !important; }
+html.light .text-rose-400 { color: #be123c !important; }
+html.light .text-rose-400\/80 { color: rgb(190 18 60 / 0.85) !important; }
+html.light .text-sky-400 { color: #0369a1 !important; }
+html.light .text-sky-400\/80 { color: rgb(3 105 161 / 0.85) !important; }
+html.light .text-violet-400 { color: #6d28d9 !important; }
+html.light .text-zinc-400 { color: #52525b !important; }
+html.light .bg-zinc-800 { background-color: rgb(var(--color-panel)) !important; }
+html.light .border-zinc-700 { border-color: rgb(var(--color-border)) !important; }
+html.light .text-slate-300 { color: rgb(var(--color-text-main)) !important; }
+
+/* Sticky header uses bg-bg/80 for a blur backdrop, keep it tied to the surface var */
+html.light .bg-bg\/80 { background-color: rgb(var(--color-bg) / 0.8) !important; }
+
+/* Media preview boxes (billboard photo/video thumbnails) keep a dark
+   backdrop in both themes since they're overlaying real photos/videos —
+   text and overlay chips on them ("Image Box", "No Preview Available")
+   must stay light, or the global light-mode text darkening above would
+   make them invisible. More specific selector wins over the general rule. */
+html.light .dark-surface,
+html.light .dark-surface .text-white\/80,
+html.light .dark-surface .text-white\/40,
+html.light .dark-surface .text-white\/20 { color: rgba(255, 255, 255, 0.8) !important; }
+html.light .dark-surface .text-white\/20 { color: rgba(255, 255, 255, 0.35) !important; }
+html.light .dark-surface .text-white\/40 { color: rgba(255, 255, 255, 0.5) !important; }
 
 #sidebar { width: 14rem; min-width: 0; overflow: hidden; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
 #main-content { transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1); }

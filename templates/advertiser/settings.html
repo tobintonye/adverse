@@ -74,19 +74,19 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-white mb-1.5">First Name</label>
-                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" 
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"  placeholder="Enter your first name" 
                            class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-white mb-1.5">Last Name</label>
-                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" 
+                    <label class="block text-xs font-medium text-white mb-1.5">Last Name</label> 
+                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" placeholder="Enter your last name" 
                            class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-white mb-1.5">Business Name</label>
-                <input type="text" name="business_name" value="{{ form.business_name.value|default:'' }}" 
+                <label class="block text-xs font-medium text-white mb-1.5">Business Name</label> 
+                <input type="text" name="business_name" value="{{ form.business_name.value|default:'' }}"  placeholder="Enter your business name" 
                        class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
             </div>
 
@@ -101,17 +101,15 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-white mb-1.5">Phone</label>
-                    <input type="text" name="contact_phone" value="{{ form.contact_phone.value|default:'' }}" 
+                    <input type="text" name="contact_phone" value="{{ form.contact_phone.value|default:'' }}"  placeholder="Enter phone number" 
                            class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-white mb-1.5">Website</label>
-                <input type="url" name="website" value="{{ form.website.value|default:'' }}" 
-                       class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30">
-            </div>
-
+                <label class="block text-xs font-medium text-white mb-1.5">Website</label> 
+            <input type="url" name="website" value="{{ form.website.value|default:'' }}" placeholder="https://example.com" class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 sm:py-2 text-xs text-white focus:outline-none focus:border-accent transition placeholder-white/30"> 
+            </div>  
             <div>
                 <label class="block text-xs font-medium text-white mb-1.5">Address</label>
                 <textarea name="address" rows="3" 

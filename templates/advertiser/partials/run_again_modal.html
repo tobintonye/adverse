@@ -34,11 +34,11 @@
             </div>
             <div class="flex justify-between">
                 <span class="text-white/40 uppercase tracking-wider font-medium text-[10px]">Daily hours</span>
-                <span class="font-semibold text-white font-mono">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</span>
+                <span class="font-semibold text-white tabular-nums">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-white/40 uppercase tracking-wider font-medium text-[10px]">Budget</span>
-                <span class="font-semibold text-white font-mono">₦{{ campaign.budget|floatformat:2 }}</span>
+                <span class="font-semibold text-white tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.budget|floatformat:2 }}</span>
             </div>
         </div>
 

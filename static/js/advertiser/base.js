@@ -32,6 +32,24 @@
   function toggleUserMenu() {
     document.getElementById('user-menu').classList.toggle('hidden');
   }
+  function applyThemeIcon() {
+    const isLight = document.documentElement.classList.contains('light');
+    const iconDark = document.getElementById('theme-icon-dark');
+    const iconLight = document.getElementById('theme-icon-light');
+    if (!iconDark || !iconLight) return;
+    iconDark.classList.toggle('hidden', isLight);
+    iconLight.classList.toggle('hidden', !isLight);
+  }
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.classList.contains('light');
+    html.classList.remove('light', 'dark');
+    html.classList.add(isLight ? 'dark' : 'light');
+    localStorage.setItem('theme', isLight ? 'dark' : 'light');
+    applyThemeIcon();
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: isLight ? 'dark' : 'light' } }));
+  }
+  applyThemeIcon();
   document.addEventListener('click', (e) => {
     const container = document.getElementById('user-menu-container');
     if (container && !container.contains(e.target)) {
@@ -46,5 +64,6 @@
   window.toggleCollapse = toggleCollapse;
   window.toggleUserMenu = toggleUserMenu;
   window.toggleMoreSheet = toggleMoreSheet;
+  window.toggleTheme = toggleTheme;
   applyCollapse();
 })();

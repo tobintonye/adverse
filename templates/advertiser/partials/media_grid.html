@@ -27,7 +27,7 @@
             </button>
         </div>
         <!-- Real-time Count Info -->
-        <div class="text-xs text-white/50 font-mono">
+        <div class="text-xs text-white/50 tabular-nums">
             Showing <span class="text-white font-medium">{{ media_files|length }}</span> of {{ page_obj.paginator.count }} assets
         </div>
     </div>
@@ -61,21 +61,6 @@
                             {{ media.get_media_type_display }}
                         </span>
                     </div>
-
-                    <!-- Status Badge Top Right -->
-                    <div class="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 z-10">
-                        {% if media.id in active_media_ids %}
-                            <span class="text-[9px] sm:text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 sm:px-2 py-0.5 rounded-md">Live</span>
-                        {% elif media.id in completed_media_ids %}
-                            <span class="text-[9px] sm:text-[10px] font-semibold bg-white/10 text-white/50 border border-white/10 px-1.5 sm:px-2 py-0.5 rounded-md">Ended</span>
-                        {% elif media.status == 'fully_approved' %}
-                            <span class="text-[9px] sm:text-[10px] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 sm:px-2 py-0.5 rounded-md">Ready</span>
-                        {% elif media.status == 'pending' %}
-                            <span class="text-[9px] sm:text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 sm:px-2 py-0.5 rounded-md">Pending</span>
-                        {% else %}
-                            <span class="text-[9px] sm:text-[10px] font-semibold bg-white/10 text-white/50 border border-white/10 px-1.5 sm:px-2 py-0.5 rounded-md">{{ media.get_status_display }}</span>
-                        {% endif %}
-                    </div>
                     <!-- Action Hover Overlay (desktop only — no hover on touch) -->
                     <div class="hidden sm:flex absolute inset-0 bg-bg/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center backdrop-blur-xs">
                         <span class="text-xs font-semibold text-white bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg">View Details</span>
@@ -84,8 +69,21 @@
 
                 <!-- Info -->
                 <div class="p-2.5 sm:p-4">
-                    <h3 class="text-[11px] sm:text-xs font-semibold text-white truncate" title="{{ media.title }}">{{ media.title }}</h3>
-                    <div class="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/10 text-[10px] sm:text-[11px] text-white/50 font-mono">
+                    <div class="flex items-start justify-between gap-2">
+                        <h3 class="text-[11px] sm:text-xs font-semibold text-white truncate flex-1 min-w-0" title="{{ media.title }}">{{ media.title }}</h3>
+                        {% if media.id in active_media_ids %}
+                            <span class="text-[9px] sm:text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 sm:px-2 py-0.5 rounded-md flex-shrink-0">Live</span>
+                        {% elif media.id in completed_media_ids %}
+                            <span class="text-[9px] sm:text-[10px] font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-1.5 sm:px-2 py-0.5 rounded-md flex-shrink-0">Ended</span>
+                        {% elif media.status == 'fully_approved' %}
+                            <span class="text-[9px] sm:text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 sm:px-2 py-0.5 rounded-md flex-shrink-0">Ready</span>
+                        {% elif media.status == 'pending' %}
+                            <span class="text-[9px] sm:text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 sm:px-2 py-0.5 rounded-md flex-shrink-0">Pending</span>
+                        {% else %}
+                            <span class="text-[9px] sm:text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 px-1.5 sm:px-2 py-0.5 rounded-md flex-shrink-0">{{ media.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/10 text-[10px] sm:text-[11px] text-white/50 tabular-nums">
                         <span>{{ media.file_size_mb }} MB</span>
                         <span>{{ media.created_at|date:"d M Y" }}</span>
                     </div>
@@ -95,7 +93,7 @@
         </div>
         <!-- Bottom Pagination Bar (Only shows if total pages > 1) -->
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-8 pt-4 border-t border-white/10 text-xs text-white/50 font-mono">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-8 pt-4 border-t border-white/10 text-xs text-white/50 tabular-nums">
             <!-- Counter Information -->
             <div class="order-2 sm:order-1">
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} total

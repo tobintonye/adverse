@@ -35,7 +35,7 @@
                     Start date <span class="text-red-400">*</span>
                 </label>
                 <input type="date" name="start_date" min="{{ min_date }}"
-                       class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition [color-scheme:dark]" required>
+                       class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition" required>
             </div>
             
             <button type="submit" class="w-full bg-accent hover:opacity-90 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition shadow-md flex items-center justify-center gap-2">
@@ -57,7 +57,7 @@
             </div>
             <div>
                 <p class="text-[10px] text-white/40 uppercase tracking-wider mb-1">Daily hours</p>
-                <p class="font-medium font-mono text-white/90">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
+                <p class="font-medium text-white/90 tabular-nums">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
             </div>
             {% for slot in slots %}
             <div class="col-span-2 pt-2 border-t border-white/10">

@@ -1,11 +1,9 @@
-import random
 import secrets
-import string
 import uuid
-
 from django.db import models
 from django.utils import timezone
-
+from zoneinfo import available_timezones
+from django.core.exceptions import ValidationError
 from admanager.models import Admanager
 from common.models import TimeStampedModel
 
@@ -28,6 +26,19 @@ class Billboard(TimeStampedModel):
         DAILY = "daily", "Daily"
         SLOT = "slot", "Per Slot"
 
+    TIMEZONE_CHOICES = [
+        ("Africa/Lagos", "Lagos (WAT, UTC+1)"),
+        ("Africa/Accra", "Accra (GMT, UTC+0)"),
+        ("Africa/Nairobi", "Nairobi (EAT, UTC+3)"),
+        ("Africa/Johannesburg", "Johannesburg (SAST, UTC+2)"),
+        ("Africa/Cairo", "Cairo (EET, UTC+2)"),
+        ("America/New_York", "New York (ET)"),
+        ("America/Chicago", "Chicago (CT)"),
+        ("America/Los_Angeles", "Los Angeles (PT)"),
+        ("Europe/London", "London (GMT/BST)"),
+        ("Asia/Dubai", "Dubai (GST, UTC+4)"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     ad_manager = models.ForeignKey(Admanager, on_delete=models.CASCADE, related_name="billboards")
     name = models.CharField(max_length=120)
@@ -48,7 +59,7 @@ class Billboard(TimeStampedModel):
     charge_unit = models.CharField(max_length=10, choices=ChargeUnit.choices, default=ChargeUnit.SLOT)
     operating_hours_start = models.TimeField(default="06:00")
     operating_hours_end = models.TimeField(default="22:00")
-    
+    timezone = models.CharField(max_length=64, default="Africa/Lagos", choices=TIMEZONE_CHOICES, help_text="timezone name for this billboard's physical location.")
     # Status — independent of whether a device is paired or online
     availability = models.CharField( max_length=24, choices=Availability.choices, default=Availability.AVAILABLE)
 
@@ -83,8 +94,7 @@ class Billboard(TimeStampedModel):
             BillboardCapacity.objects.get_or_create(
                 billboard=self,
                 defaults={
-                    "max_slots_per_day": 10,
-                    "slot_duration_seconds": 30,
+                    "max_concurrent_positions": 8,
                 }
             )
 
@@ -154,8 +164,7 @@ class PlayerDevice(TimeStampedModel):
             BillboardCapacity.objects.get_or_create(
                 billboard=self,
                 defaults={
-                    "max_slots_per_day": 10,
-                    "slot_duration_seconds": 30,
+                    "max_concurrent_positions": 8,
                 }
             )
             """

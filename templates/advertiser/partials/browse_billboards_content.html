@@ -25,9 +25,9 @@
                     <div class="w-full md:w-44">
                         <select name="screen_type"
                                 class="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition duration-200 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22rgba(255,255,255,0.4)%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:9px_9px] bg-[right_12px_center] bg-no-repeat pr-8">
-                            <option value="" {% if not selected_screen_type %}selected{% endif %} class="bg-[#0b121e] text-white">All Screen Types</option>
+                            <option value="" {% if not selected_screen_type %}selected{% endif %} class="bg-panel text-white">All Screen Types</option>
                             {% for val, label in screen_type_choices %}
-                            <option value="{{ val }}" {% if selected_screen_type == val %}selected{% endif %} class="bg-[#0b121e] text-white">{{ label }}</option>
+                            <option value="{{ val }}" {% if selected_screen_type == val %}selected{% endif %} class="bg-panel text-white">{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -81,15 +81,15 @@
         <div class="billboard-card group bg-panel border border-white/[0.08] hover:border-white/20 rounded-xl flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5">
             <div class="p-4 sm:p-5 flex-1 flex flex-col">
                 <!-- Visual Media Preview Header -->
-                <figure class="relative aspect-video rounded-lg overflow-hidden bg-black/40 border border-white/10 mb-4 shadow-inner flex-shrink-0">
+                <figure class="dark-surface relative aspect-video rounded-lg overflow-hidden bg-black/40 border border-white/10 mb-4 shadow-inner flex-shrink-0">
                     {% if bb.media_file %}
                         {% with url_str=bb.media_file.url|lower %}
                             {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
                                 <video src="{{ bb.media_file.url }}" class="w-full h-full object-cover" preload="metadata" controls></video>
-                                <span class="inline-flex items-center text-[10px] sm:text-[9px] font-mono font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Video Box</span>
+                                <span class="inline-flex items-center text-[10px] sm:text-[9px] font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Video Box</span>
                             {% else %}
                                 <img src="{{ bb.media_file.url }}" alt="{{ bb.name }}" class="w-full h-full object-cover select-none">
-                                <span class="inline-flex items-center text-[10px] sm:text-[9px] font-mono font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Image Box</span>
+                                <span class="inline-flex items-center text-[10px] sm:text-[9px] font-medium px-2 py-0.5 rounded bg-black/60 text-white/80 border border-white/10 absolute top-2.5 left-2.5 backdrop-blur-md">Image Box</span>
                             {% endif %}
                         {% endwith %}
                     {% else %}
@@ -108,13 +108,13 @@
                         <!-- Country & State tags -->
                         <div class="flex flex-wrap gap-1.5 mt-2">
                             {% if bb.state %}
-                                <span class="inline-block text-[10px] sm:text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.state }}</span>
+                                <span class="inline-block text-[10px] sm:text-[9px] font-medium px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.state }}</span>
                             {% endif %}
                             {% if bb.country %}
-                                <span class="inline-block text-[10px] sm:text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.country }}</span>
+                                <span class="inline-block text-[10px] sm:text-[9px] font-medium px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">{{ bb.country }}</span>
                             {% endif %}
                             {% if bb.latitude and bb.longitude %}
-                                <span class="inline-block text-[10px] sm:text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10">📍 {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}</span>
+                                <span class="inline-block text-[10px] sm:text-[9px] font-medium px-2 py-0.5 rounded bg-white/5 text-white/80 border border-white/10 tabular-nums">📍 {{ bb.latitude|floatformat:4 }}, {{ bb.longitude|floatformat:4 }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -130,11 +130,11 @@
                     </div>
                     <div class="flex justify-between items-center gap-2">
                         <span class="flex-shrink-0">Resolution</span>
-                        <span class="font-medium text-white/80 font-mono truncate text-right">{{ bb.resolution }}</span>
+                        <span class="font-medium text-white/80 truncate text-right tabular-nums">{{ bb.resolution }}</span>
                     </div>
                     <div class="flex justify-between items-center gap-2">
                         <span class="flex-shrink-0">Operating hours</span>
-                        <span class="font-medium text-white/80 font-mono text-xs sm:text-[11px] truncate text-right">{{ bb.operating_hours_start }} — {{ bb.operating_hours_end }}</span>
+                        <span class="font-medium text-white/80 text-xs sm:text-[11px] truncate text-right tabular-nums">{{ bb.operating_hours_start }} — {{ bb.operating_hours_end }}</span>
                     </div>
                 </div>
             </div>
@@ -143,10 +143,10 @@
                     <p class="text-[10px] sm:text-[9px] text-white/90 uppercase tracking-wider font-semibold truncate">
                         Price per {% if bb.charge_unit == 'hourly' %}hour{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
                     </p>
-                    <p class="text-base sm:text-lg font-bold text-emerald-400 font-mono truncate">₦{{ bb.price_per_slot|floatformat:0 }}</p>
+                    <p class="text-base sm:text-lg font-bold text-emerald-400 truncate tabular-nums"><span class="font-normal mr-1">₦</span>{{ bb.price_per_slot|floatformat:0 }}</p>
                 </div>
                 <a href="{% url 'advertiser:campaign_create' %}?billboard={{ bb.pk }}"
-                   class="inline-flex items-center justify-center bg-accent hover:bg-blue-400 text-[#06101F] text-xs font-semibold px-3.5 sm:px-4 py-2 rounded-lg transition duration-200 flex-shrink-0">
+                   class="inline-flex items-center justify-center bg-accent hover:bg-blue-400 text-[#06101F] text-xs font-semibold px-3.5 sm:px-4 py-2 rounded-lg shadow-sm transition duration-200 flex-shrink-0">
                     Book Screen
                 </a>
             </div>

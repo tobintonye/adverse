@@ -19,6 +19,7 @@ class BillboardSerializer(serializers.ModelSerializer):
             "price_per_slot",
             "operating_hours_start",
             "operating_hours_end",
+            "timezone",
             "availability",
             "is_paired",
             "created_at",
@@ -42,6 +43,7 @@ class BillboardWriteSerializer(serializers.ModelSerializer):
             "price_per_slot",
             "operating_hours_start",
             "operating_hours_end",
+            "timezone",
             "availability",
         )
 class PlayerDeviceSerializer(serializers.ModelSerializer):

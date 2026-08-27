@@ -7,7 +7,9 @@ class TimeSlotSerializer(serializers.ModelSerializer):
     media_url = serializers.SerializerMethodField()
     content_hash = serializers.CharField(source="campaign.media.file_hash", read_only=True)
     advertiser = serializers.CharField(source="campaign.advertiser.business_name", read_only=True)
-
+    daily_start_time = serializers.TimeField(source="campaign.daily_start_time", read_only=True)
+    daily_end_time = serializers.TimeField(source="campaign.daily_end_time", read_only=True)
+    
     def get_media_url(self, obj):
         relative_url = obj.campaign.media.playback_url
         if not relative_url:
@@ -17,7 +19,7 @@ class TimeSlotSerializer(serializers.ModelSerializer):
 
     class Meta: 
         model = TimeSlot
-        fields = ("id", "date", "scheduled_time", "play_order", "duration_seconds", "campaign_name", "media_title", "media_url", "content_hash", "advertiser", "is_active",)
+        fields = ("id", "date", "scheduled_time", "play_order", "duration_seconds", "daily_start_time", "daily_end_time", "campaign_name", "media_title", "media_url", "content_hash", "advertiser", "is_active",)
 
 class BillboardCapacitySerializer(serializers.ModelSerializer):
     billboard_name = serializers.CharField(source="billboard.name", read_only=True)
@@ -37,15 +39,20 @@ class ScheduleGenerationLogSerializer(serializers.ModelSerializer):
 
 class CapacityCheckSerializer(serializers.Serializer):
     """Used by the estimate endpoint before booking."""
-    billboard_id  = serializers.UUIDField()
-    start_date    = serializers.DateField()
-    end_date      = serializers.DateField()
+    billboard_id = serializers.UUIDField()
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
     slots_per_day = serializers.IntegerField(min_value=1)
- 
+    daily_start_time = serializers.TimeField()
+    daily_end_time = serializers.TimeField()
     def validate(self, attrs):
-        if attrs["end_date"] < attrs["start_date"]:
-            raise serializers.ValidationError(
-                {"end_date": "End date cannot be before start date."}
-            )
-        return attrs
+            if attrs["end_date"] < attrs["start_date"]:
+                raise serializers.ValidationError(
+                    {"end_date": "End date cannot be before start date."}
+                )
+            if attrs["daily_end_time"] <= attrs["daily_start_time"]:
+                raise serializers.ValidationError(
+                    {"daily_end_time": "Daily end time must be after start time."}
+                )
+            return attrs
  

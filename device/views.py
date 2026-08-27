@@ -154,15 +154,15 @@ def billboard_schedule(request, pk):
     #  Capacity for this billboard
     try:
         capacity = billboard.capacity
-        max_slots_per_day = capacity.max_slots_per_day
+        max_concurrent_positions = capacity.max_concurrent_positions
     except BillboardCapacity.DoesNotExist:
         capacity = None
-        max_slots_per_day = 0
+        max_concurrent_positions = 0
 
     #  The actual playlist for the selected date
     time_slots  = ( TimeSlot.objects.filter(billboard=billboard, date=target_date, is_active=True,).select_related("campaign", "campaign__media", "campaign__advertiser", "campaign_slot").order_by("play_order"))
     booked_count = time_slots.count()
-    free_count = max(0, max_slots_per_day - booked_count)
+    free_count = max(0, max_concurrent_positions - booked_count)
     context = {
         "billboard": billboard,
         "time_slots": time_slots,
@@ -170,7 +170,7 @@ def billboard_schedule(request, pk):
         "prev_date": prev_date,
         "next_date": next_date,
         "is_today": target_date == today,
-        "max_slots_per_day": max_slots_per_day,
+        "max_concurrent_positions": max_concurrent_positions,
         "booked_count": booked_count,
         "free_count": free_count,
         "has_capacity_set": capacity is not None,

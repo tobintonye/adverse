@@ -74,7 +74,7 @@
             <p class="text-sm font-bold text-white">Dates confirmed — payment required to go live</p>
             <p class="text-xs text-white/60 mt-1">
                 Scheduled for <strong class="text-white">{{ campaign.start_date|date:"M d" }} – {{ campaign.end_date|date:"M d, Y" }}</strong>.
-                Complete payment of <strong class="text-white font-mono">₦{{ campaign.actual_price|floatformat:2 }}</strong> to activate.
+                Complete payment of <strong class="text-white tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.actual_price|floatformat:2 }}</strong> to activate.
             </p>
         </div>
     </div>
@@ -84,7 +84,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
             </svg>
-            Pay ₦{{ campaign.actual_price|floatformat:2 }}
+            Pay <span class="font-normal mx-1">₦</span>{{ campaign.actual_price|floatformat:2 }}
         </button>
     </form>
 </div>
@@ -124,7 +124,7 @@
             </svg>
         </div>
         <div>
-            <p class="text-sm font-bold text-400">Payment failed</p>
+            <p class="text-sm font-bold text-red-400">Payment failed</p>
             <p class="text-xs text-white/70 mt-1">
                 Your previous payment attempt did not go through. Try again to activate this campaign.
             </p>

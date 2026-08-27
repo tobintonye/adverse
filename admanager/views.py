@@ -8,6 +8,7 @@ from django.db.models import Sum
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 import json
 from django.db import transaction
 from admanager.decorators import ad_manager_required
@@ -403,15 +404,18 @@ def campaign_playback_log(request, pk):
     ad_manager = request.user.ad_manager
     campaign = _get_campaign_for_manager(ad_manager, pk)
 
-    time_slots = (TimeSlot.objects.filter(campaign=campaign, billboard__ad_manager=ad_manager).select_related("billboard").prefetch_related("playback_logs").order_by("date", "play_order"))
-
-    today = timezone.now().date()
+    time_slots = (TimeSlot.objects.filter(...).order_by("date", "play_order"))
+    today = timezone.now().date()  # rough UTC date, refined per-row below
     rows = []
     for ts in time_slots:
         log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
+        billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone))
+        billboard_today = billboard_now.date()
         if log:
             state = "confirmed"
-        elif ts.date > today:
+        elif ts.date > billboard_today:
+            state = "upcoming"
+        elif ts.date == billboard_today and billboard_now.time() < ts.campaign.daily_end_time:
             state = "upcoming"
         else:
             state = "missed"

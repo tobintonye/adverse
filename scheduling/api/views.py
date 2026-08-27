@@ -46,7 +46,7 @@ class BillboardScheduleView(APIView):
             "billboard": billboard.name,
             "date":target_date,
             "total_slots": slots.count(),
-            "playlist":TimeSlotSerializer(slots, many=True).data
+            "playlist":TimeSlotSerializer(slots, many=True, context={"request": request}).data
         })
     
 class BillboardCapacityView(APIView):
@@ -65,10 +65,8 @@ class BillboardCapacityView(APIView):
             raise NotFound("Billboard not found.")
         
         capacity, _ = BillboardCapacity.objects.get_or_create(billboard=billboard)
-        if capacity.max_slots_per_day == 0:
-            capacity.recalculate()
 
-        available_today = capacity.available_slots_on(timezone.now().date())
+        available_today = capacity.available_positions_on(timezone.now().date())
 
         return Response({
             **BillboardCapacitySerializer(capacity).data,
@@ -86,14 +84,13 @@ class BillboardCapacityRecalculateView(APIView):
         except Billboard.DoesNotExist:
             raise NotFound("Billboard not found.")
         
-        slot_duration = int(request.data.get("slot_duration_seconds", 30))
+        max_concurrent_positions = int(request.data.get("max_concurrent_positions", 8))
         capacity, _ = BillboardCapacity.objects.get_or_create(billboard=billboard)
-        new_max = capacity.recalculate(slot_duration_seconds=slot_duration)
+        new_max = capacity.recalculate(max_concurrent_positions=max_concurrent_positions)
 
         return Response({
-            "detail": "Capacity recalculated.",
-            "max_slots_per_day":  new_max,
-            "slot_duration_seconds": slot_duration,
+            "detail": "Capacity updated.",
+            "max_concurrent_positions": new_max,
         })
     
 class CapacityCheckView(APIView):
@@ -117,6 +114,8 @@ class CapacityCheckView(APIView):
             serializer.validated_data["start_date"],
             serializer.validated_data["end_date"],
             serializer.validated_data["slots_per_day"],
+            serializer.validated_data["daily_start_time"],
+            serializer.validated_data["daily_end_time"],
         )
 
         return Response({

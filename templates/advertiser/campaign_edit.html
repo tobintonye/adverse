@@ -103,7 +103,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-[9px] font-bold text-white/40 uppercase tracking-widest">Rate</p>
-                        <p id="bb-rate" class="text-base font-bold text-accent font-mono">₦—</p>
+                        <p id="bb-rate" class="text-base font-bold text-accent tabular-nums"><span class="font-normal mr-1">₦</span><span id="bb-rate-value">—</span></p>
                     </div>
                 </div>
             </div>
@@ -174,7 +174,7 @@
             <div class="space-y-2 text-xs">
                 <div class="flex justify-between text-white/60">
                     <span>Billboard rate</span>
-                    <span id="est-rate" class="font-medium text-white font-mono">—</span>
+                    <span id="est-rate" class="font-medium text-white tabular-nums">—</span>
                 </div>
                 <div class="flex justify-between text-white/60">
                     <span id="est-qty-label">Quantity</span>
@@ -186,7 +186,7 @@
                 </div>
                 <div class="border-t border-white/10 pt-3 mt-3 flex justify-between items-center">
                     <span class="text-sm font-semibold text-white">Estimated Total</span>
-                    <span class="text-xl font-bold text-accent font-mono">₦<span id="est-total">0.00</span></span>
+                    <span class="text-xl font-bold text-accent tabular-nums"><span class="font-normal mr-1">₦</span><span id="est-total">0.00</span></span>
                 </div>
             </div>
         </div>
@@ -228,7 +228,7 @@
     var bbScreenType  = document.getElementById('bb-screen-type');
     var bbHours       = document.getElementById('bb-hours');
     var bbChargeLabel = document.getElementById('bb-charge-label');
-    var bbRate        = document.getElementById('bb-rate');
+    var bbRate        = document.getElementById('bb-rate-value');
     var bbPreviewImg  = document.getElementById('bb-preview-img');
     var bbPreviewVid  = document.getElementById('bb-preview-vid');
     var bbNoPreview   = document.getElementById('bb-no-preview');
@@ -312,7 +312,7 @@
         bbLocation.textContent   = (bb.state ? bb.state + ', ' : '') + bb.country;
         bbScreenType.textContent = bb.screen_type;
         bbHours.textContent      = bb.hours_start + ' – ' + bb.hours_end;
-        bbRate.textContent       = '₦' + fmt(bb.price);
+        bbRate.textContent       = fmt(bb.price);
         var unitLabel, qLabel, qHint;
         if (bb.charge_unit === 'hourly') {
             unitLabel = 'Hourly — billed per hour/day';
