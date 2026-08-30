@@ -50,7 +50,8 @@ class Billboard(TimeStampedModel):
     media_file = models.FileField(upload_to="billboards/media/", null=True, blank=True, help_text="Upload an image or video representing this billboard's physical state.")
 
     # Screen specs
-    screen_type = models.CharField(max_length=24, choices=ScreenType.choices, default=ScreenType.LED)
+    screen_type = models.CharField(max_length=24, choices=ScreenType.choices, default=ScreenType.DIGITAL)
+    audio_enable = models.BooleanField(default=False, help_text="Only enable for indoor installs where the venue actually wants sound. Leave off for outdoor/highway billboards.")
     screen_width_px = models.PositiveIntegerField(default=1920)
     screen_height_px = models.PositiveIntegerField(default=1080)
     

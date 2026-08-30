@@ -125,7 +125,7 @@
                                 <p class="text-success font-medium">Admin Approved by: <span class="text-base-content/70">{{ media.admin_reviewed_by.get_full_name|default:media.admin_reviewed_by.email }}</span></p>
                             {% endif %}
                         </div>
-                        <span class="text-[10px] font-mono text-base-content/40">Reviewed on: {{ media.admin_reviewed_at|date:"d M Y H:i" }}</span>
+                        <span class="text-[10px] text-base-content/40">Reviewed on: {{ media.admin_reviewed_at|date:"d M Y H:i" }}</span>
                     </div>
                 {% endif %}
             </div>

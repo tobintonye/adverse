@@ -778,6 +778,9 @@ def campaign_edit(request, pk):
     }
     return render(request, "advertiser/campaign_edit.html", context)
 
+# A campaign is "active" for its whole data range that does not mean it's airing this exact second, only that
+# today falls within it and payment/approval cleared. Checked per-billboard (not once globally) since a campaign can run
+# on billboards in different timezones, each with its own local "is it currently within the daypart" answer. 
 @login_required(login_url="security:login")
 @advertiser_required
 def campaign_detail(request, pk):
@@ -814,8 +817,19 @@ def campaign_detail(request, pk):
                     )
     except Exception:
         payment = None
-
     slots = campaign.campaign_slots.select_related("billboard").all()
+
+    now = timezone.now()
+    on_air_billboards = []
+    if campaign.status == Campaign.Status.ACTIVE:
+        for slot in slots:
+            billboard_now = now.astimezone(ZoneInfo(slot.billboard.timezone))
+            if (
+                campaign.start_date <= billboard_now.date() <= campaign.end_date
+                and campaign.daily_start_time <= billboard_now.time() < campaign.daily_end_time
+            ):
+                on_air_billboards.append(slot.billboard.name)
+    is_on_air_now = bool(on_air_billboards)
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -841,6 +855,9 @@ def campaign_detail(request, pk):
         "campaign": campaign,
         "slots": slots,
         "payment": payment,
+        "is_on_air_now": is_on_air_now, 
+        "on_air_billboard": on_air_billboards,
+       
     })
 
 

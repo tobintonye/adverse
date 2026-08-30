@@ -35,7 +35,7 @@
         <div class="text-center min-w-0">
             <p class="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{{ target_date|date:"l, F j, Y" }}</p>
             {% if is_today %}
-                <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-accent/10 border border-accent/30 text-accent">Today</span>
+                <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-accent/10 border border-accent/30 text-accent">Today</span>
             {% endif %}
         </div>
         <a href="?date={{ next_date|date:'Y-m-d' }}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition flex-shrink-0">
@@ -48,18 +48,18 @@
     {# Capacity Summary Stats #}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
-            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Total Capacity</p>
-            <div class="text-2xl font-bold text-white font-mono">{{ max_concurrent_positions }}</div>
-            <p class="text-[11px] text-white/40 mt-1">concurrent positions</p>
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-white/90 mb-1">Total Capacity</p>
+            <div class="text-2xl font-bold text-white tabular-nums">{{ max_slots_per_day }}</div>
+            <p class="text-[11px] text-white/40 mt-1">slots / day</p>
         </div>
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
-            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Booked</p>
-            <div class="text-2xl font-bold text-accent font-mono">{{ booked_count }}</div>
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-white/90 mb-1">Booked</p>
+            <div class="text-2xl font-bold text-accent tabular-nums">{{ booked_count }}</div>
             <p class="text-[11px] text-white/40 mt-1">slots on this date</p>
         </div>
         <div class="bg-panel border border-white/10 rounded-xl p-5 shadow-xl">
-            <p class="text-[10px] font-mono uppercase tracking-widest font-bold text-white/90 mb-1">Free</p>
-            <div class="text-2xl font-bold text-emerald-400 font-mono">{{ free_count }}</div>
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-white/90 mb-1">Free</p>
+            <div class="text-2xl font-bold text-emerald-400 tabular-nums">{{ free_count }}</div>
             <p class="text-[11px] text-white/40 mt-1">slots still open</p>
         </div>
     </div>
@@ -69,22 +69,21 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left min-w-[600px]">
                 <thead>
-                    <tr class="border-b border-white/10 bg-black/30 select-none">
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest w-16">#</th>
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest w-24">Creative</th>
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest">Campaign</th>
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest">Advertiser</th>
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest">Daypart</th>
-                        <th class="px-6 py-3.5 text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest text-right">Duration</th>
+                    <tr class="border-b border-white/10 bg-white/5 select-none">
+                        <th class="px-6 py-3.5 text-[10px] font-semibold text-white/90 uppercase tracking-widest w-16">#</th>
+                        <th class="px-6 py-3.5 text-[10px] font-semibold text-white/90 uppercase tracking-widest w-24">Creative</th>
+                        <th class="px-6 py-3.5 text-[10px] font-semibold text-white/90 uppercase tracking-widest">Campaign</th>
+                        <th class="px-6 py-3.5 text-[10px] font-semibold text-white/90 uppercase tracking-widest">Advertiser</th>
+                        <th class="px-6 py-3.5 text-[10px] font-semibold text-white/90 uppercase tracking-widest text-right">Duration</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
                     {% for slot in time_slots %}
                     <tr class="hover:bg-white/[0.02] transition">
-                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/40 whitespace-nowrap">{{ slot.play_order }}</td>
+                        <td class="px-6 py-4 align-middle text-xs text-white/40 whitespace-nowrap tabular-nums">{{ slot.play_order }}</td>
                         <td class="px-6 py-4 align-middle">
                             {% if slot.campaign.media.file %}
-                                <div class="w-16 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center shrink-0">
+                                <div class="w-16 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                                     {% if slot.campaign.media.media_type == 'video' %}
                                         <video src="{{ slot.campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
                                     {% else %}
@@ -92,15 +91,14 @@
                                     {% endif %}
                                 </div>
                             {% else %}
-                                <div class="w-16 h-10 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-[10px] text-white/20">
+                                <div class="w-16 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-white/40">
                                     No media
                                 </div>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 align-middle font-semibold text-white whitespace-nowrap">{{ slot.campaign.name }}</td>
                         <td class="px-6 py-4 align-middle text-xs text-white/60 whitespace-nowrap">{{ slot.campaign.advertiser.business_name }}</td>
-                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/60 whitespace-nowrap">{{ slot.campaign.daily_start_time|time:"H:i" }}–{{ slot.campaign.daily_end_time|time:"H:i" }}</td>
-                        <td class="px-6 py-4 align-middle font-mono text-xs text-white/90 text-right whitespace-nowrap">{{ slot.duration_seconds }}s</td>
+                        <td class="px-6 py-4 align-middle text-xs text-white/90 text-right whitespace-nowrap tabular-nums">{{ slot.duration_seconds }}s</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -109,7 +107,7 @@
     </div>
     {% else %}
     <div class="bg-panel border border-white/10 rounded-xl p-16 flex flex-col items-center justify-center text-center shadow-xl">
-        <div class="w-12 h-12 bg-black/40 border border-white/10 rounded-full flex items-center justify-center text-white/30 mb-4 shadow-inner">
+        <div class="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/40 mb-4 shadow-inner">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>

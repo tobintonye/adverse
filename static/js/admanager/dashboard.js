@@ -13,36 +13,66 @@
     const TAB_ACTIVE = "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 bg-accent text-[#06101F]";
     const TAB_INACTIVE = "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 text-white/50 hover:text-white";
 
-    const customTooltipOptions = {
-        enabled: true,
-        backgroundColor: "#131316",
-        titleColor: "#F2F2F5",
-        titleFont: { family: "Inter", weight: "bold", size: 11 },
-        bodyColor: "#A9A9B2",
-        bodyFont: { family: "Inter", size: 11 },
-        borderColor: "rgba(255,255,255,0.1)",
-        borderWidth: 1,
-        padding: 10,
-        displayColors: false,
-        callbacks: {
-            label: function (context) {
-                let label = context.dataset.label || "";
-                if (label) {
-                    label += ": ";
+    function isLight() {
+        return document.documentElement.classList.contains("light");
+    }
+
+    function themeColors() {
+        return isLight()
+            ? {
+                tooltipBg: "#FFFFFF",
+                tooltipTitle: "#111827",
+                tooltipBody: "#6B7280",
+                tooltipBorder: "rgba(17,24,39,0.1)",
+                gridColor: "rgba(17,24,39,0.08)",
+                tickColor: "#6B7280",
+              }
+            : {
+                tooltipBg: "#131316",
+                tooltipTitle: "#F2F2F5",
+                tooltipBody: "#A9A9B2",
+                tooltipBorder: "rgba(255,255,255,0.1)",
+                gridColor: "rgba(255,255,255,0.06)",
+                tickColor: "#A9A9B2",
+              };
+    }
+
+    function tooltipOptions() {
+        const c = themeColors();
+        return {
+            enabled: true,
+            backgroundColor: c.tooltipBg,
+            titleColor: c.tooltipTitle,
+            titleFont: { family: "Inter", weight: "bold", size: 11 },
+            bodyColor: c.tooltipBody,
+            bodyFont: { family: "Inter", size: 11 },
+            borderColor: c.tooltipBorder,
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+                label: function (context) {
+                    let label = context.dataset.label || "";
+                    if (label) {
+                        label += ": ";
+                    }
+                    if (context.parsed.y !== null) {
+                        label += new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(context.parsed.y);
+                    }
+                    return label;
                 }
-                if (context.parsed.y !== null) {
-                    label += new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(context.parsed.y);
-                }
-                return label;
             }
-        }
-    };
+        };
+    }
 
     function buildRevenueChart(canvasId, labels, values, datasetLabel) {
-        const ctx = document.getElementById(canvasId).getContext("2d");
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        const ctx = canvas.getContext("2d");
         const gradient = ctx.createLinearGradient(0, 0, 0, 240);
         gradient.addColorStop(0, "rgba(239, 68, 68, 0.65)");
         gradient.addColorStop(1, "rgba(239, 68, 68, 0.02)");
+        const c = themeColors();
 
         return new Chart(ctx, {
             type: "bar",
@@ -64,13 +94,13 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: customTooltipOptions
+                    tooltip: tooltipOptions()
                 },
                 scales: {
                     y: {
-                        grid: { color: "rgba(255,255,255,0.06)" },
+                        grid: { color: c.gridColor },
                         ticks: {
-                            color: "#A9A9B2",
+                            color: c.tickColor,
                             font: { family: "Inter", size: 9 },
                             callback: function (value) {
                                 return "\u20a6" + new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
@@ -81,7 +111,7 @@
                     x: {
                         grid: { display: false },
                         ticks: {
-                            color: "#A9A9B2",
+                            color: c.tickColor,
                             font: { family: "Inter", size: 9 }
                         }
                     }
@@ -89,6 +119,19 @@
             }
         });
     }
+
+    function buildBothCharts() {
+        monthlyChartInstance = buildRevenueChart("monthlyChart", monthlyLabels, monthlyValues, "Monthly Revenue");
+        annualChartInstance = buildRevenueChart("annualChart", annualLabels, annualValues, "Annual Revenue");
+    }
+
+    function rebuildChartsForTheme() {
+        if (monthlyChartInstance) monthlyChartInstance.destroy();
+        if (annualChartInstance) annualChartInstance.destroy();
+        buildBothCharts();
+    }
+
+    window.addEventListener("themechange", rebuildChartsForTheme);
 
     function switchChart(type) {
         const btnMonthly = document.getElementById("btn-monthly");
@@ -113,8 +156,5 @@
 
     window.switchChart = switchChart;
 
-    document.addEventListener("DOMContentLoaded", function () {
-        monthlyChartInstance = buildRevenueChart("monthlyChart", monthlyLabels, monthlyValues, "Monthly Revenue");
-        annualChartInstance = buildRevenueChart("annualChart", annualLabels, annualValues, "Annual Revenue");
-    });
+    document.addEventListener("DOMContentLoaded", buildBothCharts);
 })();

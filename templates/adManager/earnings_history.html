@@ -1,4 +1,4 @@
-V{% extends "adManager/base.html" %}
+{% extends "adManager/base.html" %}
 {% load static %}
 
 {% block title %}Earnings History{% endblock %}
@@ -12,7 +12,7 @@ V{% extends "adManager/base.html" %}
 
     <!-- Top Navigation -->
     <div class="flex flex-wrap items-center justify-between gap-4">
-        <a href="{% url 'admanager:dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition">
+        <a href="{% url 'admanager:dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white hover:text-white hover:bg-white/10 transition">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
@@ -28,9 +28,9 @@ V{% extends "adManager/base.html" %}
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Total Earned</p>
+            <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest">Total Earned</p>
         </div>
-        <p class="font-display text-3xl font-bold text-emerald-400">&#8358;{{ total_earned|floatformat:2 }}</p>
+        <p class="font-display text-3xl font-bold text-emerald-400 tabular-nums"><span class="font-normal mr-1">&#8358;</span>{{ total_earned|floatformat:2 }}</p>
         <p class="text-xs text-white/40 mt-1">
             Paystack settles your 70% share directly to your registered bank account as soon as each advertiser payment clears.
         </p>
@@ -39,23 +39,23 @@ V{% extends "adManager/base.html" %}
     <!-- Earnings Table -->
     <div class="bg-panel border border-white/10 rounded-xl overflow-hidden shadow-xl">
         <div class="p-4 sm:p-5 border-b border-white/10">
-            <h3 class="text-xs font-mono font-bold tracking-wider uppercase text-white/90">Payment History</h3>
+            <h3 class="text-xs font-bold tracking-wider uppercase text-white/90">Payment History</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b border-white/10 bg-white/[0.02]">
-                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Date</th>
-                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Campaign</th>
-                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-right">Amount Earned</th>
-                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest text-right">Platform Fee</th>
-                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest">Reference</th>
+                        <th class="py-3 px-4 text-[10px] font-semibold text-white uppercase tracking-widest">Date</th>
+                        <th class="py-3 px-4 text-[10px] font-semibold text-white uppercase tracking-widest">Campaign</th>
+                        <th class="py-3 px-4 text-[10px] font-semibold text-white uppercase tracking-widest text-right">Amount Earned</th>
+                        <th class="py-3 px-4 text-[10px] font-semibold text-white uppercase tracking-widest text-right">Platform Fee</th>
+                        <th class="py-3 px-4 text-[10px] font-semibold text-white uppercase tracking-widest">Reference</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5 text-sm">
                     {% for earning in earnings %}
                     <tr class="hover:bg-white/[0.02] transition-colors">
-                        <td class="py-3 px-4 font-mono text-xs text-white/90 whitespace-nowrap">
+                        <td class="py-3 px-4 text-xs text-white/90 whitespace-nowrap tabular-nums">
                             {{ earning.earned_at|date:"M j, Y" }}
                         </td>
                         <td class="py-3 px-4">
@@ -63,13 +63,13 @@ V{% extends "adManager/base.html" %}
                                 {{ earning.payment.campaign.name|default:"—" }}
                             </p>
                         </td>
-                        <td class="py-3 px-4 text-right font-mono text-xs text-emerald-400 font-semibold">
-                            &#8358;{{ earning.amount|floatformat:2 }}
+                        <td class="py-3 px-4 text-right text-xs text-emerald-400 font-semibold tabular-nums">
+                            <span class="font-normal mr-1">&#8358;</span>{{ earning.amount|floatformat:2 }}
                         </td>
-                        <td class="py-3 px-4 text-right font-mono text-xs text-white/50">
+                        <td class="py-3 px-4 text-right text-xs text-white tabular-nums">
                             &#8358;{{ earning.platform_fee|floatformat:2 }}
                         </td>
-                        <td class="py-3 px-4 font-mono text-[11px] text-white/40 truncate max-w-[160px]">
+                        <td class="py-3 px-4 text-[11px] text-white/70 truncate max-w-[160px]">
                             {{ earning.paystack_reference|default:"—" }}
                         </td>
                     </tr>

@@ -191,6 +191,7 @@ class PlayerHeartbeatView(APIView):
             "device_status": player.status,
             "firmware_version": player.firmware_version or None,
             "billboard": player.billboard.name if player.billboard_id else None,
+            "audio_enabled": player.billboard.audio_enabled if player.billboard_id else False,
         })
 
 class PlayerScheduleView(APIView):
@@ -390,5 +391,6 @@ class PlayerPairingStatusView(APIView):
                 "resolution": player.billboard.resolution,
                 "operating_hours_start": player.billboard.operating_hours_start,
                 "operating_hours_end": player.billboard.operating_hours_end,
+                "audio_enabled": player.billboard.audio_enabled,
             },
         })

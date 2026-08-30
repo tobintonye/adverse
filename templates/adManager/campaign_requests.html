@@ -17,13 +17,13 @@
 
         {# Search Input #}
         <div class="sm:flex-1 sm:min-w-[240px] sm:max-w-md space-y-1.5">
-            <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
+            <label class="block text-[10px] font-semibold uppercase tracking-widest text-white/50">
                 Search campaigns
             </label>
             <div class="relative">
                 <input type="text" name="search" value="{{ search_query }}"
                        placeholder="Search by name, advertiser, or media…"
-                       class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 pl-9 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition">
+                       class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2 pl-9 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition">
                 <svg class="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -34,19 +34,19 @@
 
         {# Status Dropdown #}
         <div class="w-full sm:w-44 space-y-1.5">
-            <label class="block text-[10px] font-mono font-bold uppercase tracking-widest text-white/50">
+            <label class="block text-[10px] font-semibold uppercase tracking-widest text-white/50">
                 Status
             </label>
             <select name="status" id="status-select" 
-                    class="w-full h-[34px] bg-black/40 border border-white/10 rounded-xl px-3 text-xs text-white focus:outline-none focus:border-white/30 transition cursor-pointer">
-                <option value="" class="bg-zinc-900 text-white">All statuses</option>
-                <option value="pending_manager_review" {% if selected_status == 'pending_manager_review' %}selected{% endif %} class="bg-zinc-900 text-white">Pending Review</option>
-                <option value="approved"  {% if selected_status == 'approved'  %}selected{% endif %} class="bg-zinc-900 text-white">Approved</option>
-                <option value="active"    {% if selected_status == 'active'    %}selected{% endif %} class="bg-zinc-900 text-white">Active</option>
-                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %} class="bg-zinc-900 text-white">Completed</option>
-                <option value="rejected"  {% if selected_status == 'rejected'  %}selected{% endif %} class="bg-zinc-900 text-white">Rejected</option>
-                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %} class="bg-zinc-900 text-white">Cancelled</option>
-                <option value="paused"    {% if selected_status == 'paused'    %}selected{% endif %} class="bg-zinc-900 text-white">Paused</option>
+                    class="w-full h-[34px] bg-white/[0.03] border border-white/10 rounded-xl px-3 text-xs text-white focus:outline-none focus:border-white/30 transition cursor-pointer">
+                <option value="" class="bg-panel text-white">All statuses</option>
+                <option value="pending_manager_review" {% if selected_status == 'pending_manager_review' %}selected{% endif %} class="bg-panel text-white">Pending Review</option>
+                <option value="approved"  {% if selected_status == 'approved'  %}selected{% endif %} class="bg-panel text-white">Approved</option>
+                <option value="active"    {% if selected_status == 'active'    %}selected{% endif %} class="bg-panel text-white">Active</option>
+                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %} class="bg-panel text-white">Completed</option>
+                <option value="rejected"  {% if selected_status == 'rejected'  %}selected{% endif %} class="bg-panel text-white">Rejected</option>
+                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %} class="bg-panel text-white">Cancelled</option>
+                <option value="paused"    {% if selected_status == 'paused'    %}selected{% endif %} class="bg-panel text-white">Paused</option>
             </select>
         </div>
 

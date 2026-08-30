@@ -22,11 +22,11 @@
     <div class="grid grid-cols-2 lg:grid-cols-12 gap-3 items-end">
         <!-- Search (Full-width on mobile) -->
         <div class="col-span-2 lg:col-span-5">
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/80 mb-1.5">Search billboards</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-white/80 mb-1.5">Search billboards</label>
             <div class="relative">
                 <input type="text" name="search" value="{{ search_query }}"
                        placeholder="Search by name or location…"
-                       class="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition">
+                       class="w-full bg-white/[0.03] border border-white/10 rounded-lg pl-9 pr-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition">
                 <svg class="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
@@ -36,37 +36,37 @@
 
         <!-- Availability (Half-width on mobile) -->
         <div class="col-span-1 lg:col-span-2">
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/80 mb-1.5">Availability</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-white/80 mb-1.5">Availability</label>
             <select name="availability" onchange="this.form.submit()"
-                    class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
-                <option value="" class="bg-[#131316]">All Statuses</option>
-                <option value="available"   {% if selected_availability == 'available'   %}selected{% endif %} class="bg-[#131316]">Available</option>
-                <option value="maintenance" {% if selected_availability == 'maintenance' %}selected{% endif %} class="bg-[#131316]">Maintenance</option>
-                <option value="unavailable" {% if selected_availability == 'unavailable' %}selected{% endif %} class="bg-[#131316]">Unavailable</option>
+                    class="w-full bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
+                <option value="" class="bg-panel text-white">All Statuses</option>
+                <option value="available"   {% if selected_availability == 'available'   %}selected{% endif %} class="bg-panel text-white">Available</option>
+                <option value="maintenance" {% if selected_availability == 'maintenance' %}selected{% endif %} class="bg-panel text-white">Maintenance</option>
+                <option value="unavailable" {% if selected_availability == 'unavailable' %}selected{% endif %} class="bg-panel text-white">Unavailable</option>
             </select>
         </div>
 
         <!-- Screen type (Half-width on mobile) -->
         <div class="col-span-1 lg:col-span-2">
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/80 mb-1.5">Screen type</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-white/80 mb-1.5">Screen type</label>
             <select name="screen_type" onchange="this.form.submit()"
-                    class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
-                <option value="" class="bg-[#131316]">All Types</option>
-                <option value="led"     {% if selected_screen_type == 'led'     %}selected{% endif %} class="bg-[#131316]">LED</option>
-                <option value="lcd"     {% if selected_screen_type == 'lcd'     %}selected{% endif %} class="bg-[#131316]">LCD</option>
-                <option value="digital" {% if selected_screen_type == 'digital' %}selected{% endif %} class="bg-[#131316]">Digital</option>
+                    class="w-full bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
+                <option value="" class="bg-panel text-white">All Types</option>
+                <option value="led"     {% if selected_screen_type == 'led'     %}selected{% endif %} class="bg-panel text-white">LED</option>
+                <option value="lcd"     {% if selected_screen_type == 'lcd'     %}selected{% endif %} class="bg-panel text-white">LCD</option>
+                <option value="digital" {% if selected_screen_type == 'digital' %}selected{% endif %} class="bg-panel text-white">Digital</option>
             </select>
         </div>
 
         <!-- State -->
         {% if states %}
         <div class="col-span-1 lg:col-span-2">
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/80 mb-1.5">State</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-white/80 mb-1.5">State</label>
             <select name="state" onchange="this.form.submit()"
-                    class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
-                <option value="" class="bg-[#131316]">All States</option>
+                    class="w-full bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white/90 focus:outline-none focus:border-accent transition appearance-none cursor-pointer truncate">
+                <option value="" class="bg-panel text-white">All States</option>
                 {% for s in states %}
-                <option value="{{ s }}" {% if selected_state == s %}selected{% endif %} class="bg-[#131316]">{{ s }}</option>
+                <option value="{{ s }}" {% if selected_state == s %}selected{% endif %} class="bg-panel text-white">{{ s }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -91,7 +91,7 @@
 {% if billboards %}
 
 {% if search_query or selected_availability or selected_screen_type or selected_state %}
-<p class="text-xs font-mono text-white/50 mb-4">
+<p class="text-xs text-white/50 mb-4 tabular-nums">
     Showing <span class="text-white font-bold">{{ billboards|length }}</span> billboard{{ billboards|pluralize }} matching criteria.
 </p>
 {% endif %}
@@ -101,7 +101,7 @@
     <div class="bg-panel border border-white/10 rounded-xl overflow-hidden group transition-all duration-300 hover:border-white/20 hover:-translate-y-0.5 flex flex-col">
         
         <!-- Card Preview Header -->
-        <div class="relative h-44 bg-black/50 overflow-hidden border-b border-white/10">
+        <div class="dark-surface relative h-44 bg-black/50 overflow-hidden border-b border-white/10">
             {% if bb.media_file %}
                 {% with url_str=bb.media_file.url|lower %}
                     {% if ".mp4" in url_str or ".mov" in url_str or ".webm" in url_str or ".m4v" in url_str or ".3gp" in url_str %}
@@ -122,7 +122,7 @@
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
-                    <span class="text-[10px] font-mono tracking-widest uppercase">No Media Preview</span>
+                    <span class="text-[10px] font-semibold tracking-widest uppercase">No Media Preview</span>
                 </div>
             {% endif %}
 
@@ -167,13 +167,13 @@
                 <!-- Key Meta Details -->
                 <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
                     <div>
-                        <span class="block text-[10px] font-mono text-white/50 uppercase">Type & Res</span>
+                        <span class="block text-[10px] font-semibold text-white/50 uppercase">Type & Res</span>
                         <span class="font-medium text-white/90">{{ bb.get_screen_type_display }} ({{ bb.resolution }})</span>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-mono text-white/50 uppercase">Price Rate</span>
-                        <span class="font-mono font-bold text-emerald-400">
-                            &#8358;{{ bb.price_per_slot|floatformat:2 }}/
+                        <span class="block text-[10px] font-semibold text-white/50 uppercase">Price Rate</span>
+                        <span class="font-bold text-emerald-400 tabular-nums">
+                            <span class="font-normal mr-1">&#8358;</span>{{ bb.price_per_slot|floatformat:2 }}/
                             {% if bb.charge_unit == 'hourly' %}hr{% elif bb.charge_unit == 'daily' %}day{% else %}slot{% endif %}
                         </span>
                     </div>
@@ -182,7 +182,7 @@
                 <!-- Coordinates Tag -->
                 {% if bb.latitude and bb.longitude %}
                 <div class="mt-3">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-white/10 text-[10px] text-white/60 font-mono">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-white/60">
                         <svg class="w-3 h-3 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                         </svg>
@@ -197,8 +197,8 @@
                 {% if bb.is_paired %}
                     <div class="flex items-center gap-2 flex-wrap">
                         <a href="{% url 'device:billboard_schedule' bb.pk %}"
-                           class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white/5 hover:bg-white/10 text-white/90 transition flex items-center gap-1.5 border border-white/5">
-                            <svg class="w-3.5 h-3.5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-accent/10 hover:bg-accent/20 text-accent transition flex items-center gap-1.5 border border-accent/20">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             Schedule

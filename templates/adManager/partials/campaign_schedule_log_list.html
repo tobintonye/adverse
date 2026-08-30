@@ -20,7 +20,7 @@
                         Failed
                     </span>
                 {% endif %}
-                <p class="text-xs text-white/50 pt-1 font-mono">{{ log.generated_at|date:"M j, Y — g:i A" }}</p>
+                <p class="text-xs text-white/50 pt-1">{{ log.generated_at|date:"M j, Y — g:i A" }}</p>
             </div>
 
             <div class="text-right flex-shrink-0">
@@ -57,7 +57,7 @@
         {% if log.error_message %}
         <div class="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3.5 mt-4">
             <span class="text-[10px] font-bold text-rose-400 uppercase tracking-widest block mb-1">Error Details</span>
-            <p class="text-rose-300 text-xs leading-relaxed font-mono bg-bg/50 p-2.5 rounded border border-rose-500/10">{{ log.error_message }}</p>
+            <p class="text-rose-300 text-xs leading-relaxed bg-bg/50 p-2.5 rounded border border-rose-500/10">{{ log.error_message }}</p>
         </div>
         {% endif %}
     </div>

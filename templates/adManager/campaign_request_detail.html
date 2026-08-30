@@ -31,10 +31,10 @@
             <div class="relative overflow-hidden bg-bg border border-white/10 rounded-lg aspect-video flex items-center justify-center shadow-inner group">
                 {% if campaign.media.media_type == 'image' %}
                     <img src="{{ campaign.media.file.url }}" alt="{{ campaign.media.title }}" class="w-full h-full object-contain select-none">
-                    <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono font-bold text-white/70 uppercase tracking-widest border border-white/10">Image</span>
+                    <span class="dark-surface absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-white/10">Image</span>
                 {% elif campaign.media.media_type == 'video' %}
                     <video src="{{ campaign.media.file.url }}" class="w-full h-full object-contain" controls preload="metadata"></video>
-                    <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono font-bold text-white/70 uppercase tracking-widest border border-white/10">Video</span>
+                    <span class="dark-surface absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-white/10">Video</span>
                 {% endif %}
             </div>
             <div class="mt-4 flex items-center justify-between">
@@ -82,37 +82,37 @@
                 </div>
                 <!-- Status Badges with matching request page colors -->
                 {% if campaign.status == 'pending_manager_review' or campaign.status == 'pending_review' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 flex-shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 flex-shrink-0">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         Pending Review
                     </span>
                 {% elif campaign.status == 'pending_admin_review' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 flex-shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 flex-shrink-0">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         Pending Admin Review
                     </span>
                 {% elif campaign.status == 'approved' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-accent/15 text-accent border border-accent/30 flex-shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
                         Approved
                     </span>
                 {% elif campaign.status == 'active' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         Active
                     </span>
                 {% elif campaign.status == 'completed' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30 flex-shrink-0">
-                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-violet-500/10 text-violet-400 border border-violet-500/30 flex-shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
                         Completed
                     </span>
                 {% elif campaign.status == 'rejected' or campaign.status == 'canceled' or campaign.status == 'cancelled' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30 flex-shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30 flex-shrink-0">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                         {{ campaign.get_status_display }}
                     </span>
                 {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide uppercase bg-white/10 text-white/70 border border-white/20 flex-shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-white/10 text-white/70 border border-white/20 flex-shrink-0">
                         {{ campaign.get_status_display }}
                     </span>
                 {% endif %}
@@ -120,12 +120,12 @@
             <!-- Details Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Advertiser</p>
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Advertiser</p>
                     <p class="text-sm font-medium text-white">{{ campaign.advertiser.business_name }}</p>
                     <p class="text-xs text-white/50 mt-0.5">{{ campaign.advertiser.get_business_category_display }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Advertiser Status</p>
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Advertiser Status</p>
                     {% if campaign.advertiser.is_verified %}
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             ✓ Verified
@@ -139,7 +139,7 @@
                 <div class="sm:col-span-2 border-t border-white/5 my-1"></div>
                 <!-- Schedule Section -->
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Schedule</p>
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Schedule</p>
                     <p class="text-xs font-medium text-white flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5 text-white/40 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -158,18 +158,18 @@
                     </p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Duration</p>
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Duration</p>
                     <p class="text-sm font-medium text-white">{{ campaign.duration_days }} Day{{ campaign.duration_days|pluralize }}</p>
                 </div>
                 <div class="sm:col-span-2 border-t border-white/5 my-1"></div>
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Campaign Budget</p>
-                    <p class="font-mono text-lg font-bold text-white">₦{{ campaign.budget }}</p>
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Campaign Budget</p>
+                    <p class="text-lg font-bold text-white tabular-nums"><span class="font-normal mr-1">₦</span>{{ campaign.budget }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest mb-1">Estimated Cost</p>
-                    <p class="font-mono text-lg font-bold {% if campaign.estimated_price > campaign.budget %}text-red-400{% else %}text-white{% endif %}">
-                        ₦{{ campaign.estimated_price }}
+                    <p class="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Estimated Cost</p>
+                    <p class="text-lg font-bold tabular-nums {% if campaign.estimated_price > campaign.budget %}text-red-400{% else %}text-white{% endif %}">
+                        <span class="font-normal mr-1">₦</span>{{ campaign.estimated_price }}
                     </p>
                     {% if campaign.estimated_price > campaign.budget %}
                         <p class="text-red-400 text-xs mt-1 flex items-center gap-1">⚠ Exceeds campaign budget</p>
@@ -198,9 +198,6 @@
                 </div>
                 
                 <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-end gap-3 pt-2">
-                    <a href="{% url 'admanager:campaign_requests' %}" class="w-full sm:w-auto text-center px-3.5 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition order-3 sm:order-1">
-                        Back to requests
-                    </a>
                     <button type="submit" name="action" value="reject" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition order-2">
                         Reject
                     </button>
@@ -220,22 +217,16 @@
                 Decision Summary
             </h3>
             <p class="text-sm text-white/60">
-                This campaign has already been processed and is currently <strong class="uppercase text-white font-mono">{{ campaign.get_status_display }}</strong>.
+                This campaign has already been processed and is currently <strong class="uppercase text-white">{{ campaign.get_status_display }}</strong>.
             </p>
             
             {% if campaign.status == 'rejected' and campaign.rejection_reason %}
             <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3.5 space-y-1 mt-3">
-                <span class="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest block">Rejection Reason</span>
+                <span class="text-[10px] font-bold text-red-400 uppercase tracking-widest block">Rejection Reason</span>
                 <p class="text-red-300 text-sm leading-relaxed">{{ campaign.rejection_reason }}</p>
             </div>
             {% endif %}
             <div class="mt-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
-                <a href="{% url 'admanager:campaign_requests' %}" class="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    Back to Requests
-                </a>
                 <button type="button"
                         onclick="document.getElementById('scheduleLogModal').showModal()"
                         hx-get="{% url 'admanager:campaign_schedule_log' campaign.pk %}"

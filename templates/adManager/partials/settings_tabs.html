@@ -58,7 +58,7 @@
                         <label class="block text-xs font-medium text-white/70">Business Type</label>
                         <select name="business_type" class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500/60 transition cursor-pointer">
                             {% for val, label in form.fields.business_type.choices %}
-                            <option value="{{ val }}" class="bg-[#121212] text-white" {% if form.business_type.value == val %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ val }}" class="bg-panel text-white" {% if form.business_type.value == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -211,7 +211,7 @@
                             {% endif %}
                         </div>
                         <p class="text-xs text-white/60 truncate mt-0.5">{{ acct.account_name }}</p>
-                        <p class="text-xs text-white/40 font-mono mt-0.5">{{ acct.account_number }}</p>
+                        <p class="text-xs text-white/40 mt-0.5">{{ acct.account_number }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
@@ -254,7 +254,7 @@
                     <div class="space-y-1.5">
                         <label class="block text-xs font-medium text-white/70">Account Number</label>
                         <input name="account_number" type="text" 
-                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm font-mono tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
+                               class="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm tracking-widest text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60 transition" 
                                placeholder="10-digit account number" maxlength="20" required>
                     </div>
                 </div>

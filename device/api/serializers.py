@@ -20,6 +20,7 @@ class BillboardSerializer(serializers.ModelSerializer):
             "operating_hours_start",
             "operating_hours_end",
             "timezone",
+            "audio_enable",
             "availability",
             "is_paired",
             "created_at",
@@ -44,6 +45,7 @@ class BillboardWriteSerializer(serializers.ModelSerializer):
             "operating_hours_start",
             "operating_hours_end",
             "timezone",
+            "audio_enable",
             "availability",
         )
 class PlayerDeviceSerializer(serializers.ModelSerializer):

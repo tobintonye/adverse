@@ -2,7 +2,7 @@
 
     {# Results count #}
     {% if search_query or selected_status %}
-    <p class="text-xs text-white/50 font-mono">
+    <p class="text-xs text-white/50 tabular-nums">
         {{ page_obj.paginator.count }} campaign{{ page_obj.paginator.count|pluralize }} found.
     </p>
     {% endif %}
@@ -12,14 +12,14 @@
         <div class="overflow-x-auto">
         <table class="w-full text-sm text-left border-collapse min-w-[700px]">
             <thead>
-                <tr class="border-b border-white/10 bg-black/40 select-none">
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest w-16">Creative</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Campaign</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Advertiser</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Schedule</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Budget</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest">Status</th>
-                    <th class="px-4 py-3.5 text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest text-right w-16">Action</th>
+                <tr class="border-b border-white/10 bg-white/5 select-none">
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest w-16">Creative</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Campaign</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Advertiser</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Schedule</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Budget</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Status</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest text-right w-16">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
@@ -29,7 +29,7 @@
                     {# Media Preview #}
                     <td class="px-4 py-3.5 align-middle">
                         {% if campaign.media.file %}
-                            <div class="w-12 h-8 rounded-lg overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center relative shrink-0 shadow-md">
+                            <div class="w-12 h-8 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center relative shrink-0 shadow-md">
                                 {% if campaign.media.media_type == 'video' %}
                                     <video src="{{ campaign.media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
                                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -42,7 +42,7 @@
                                 {% endif %}
                             </div>
                         {% else %}
-                            <div class="w-12 h-8 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-white/30 shrink-0">
+                            <div class="w-12 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/40 shrink-0">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
@@ -57,7 +57,7 @@
                     </td>
 
                     {# Advertiser #}
-                    <td class="px-4 py-3.5 align-middle text-xs font-mono text-white/70 whitespace-nowrap">
+                    <td class="px-4 py-3.5 align-middle text-xs text-white/70 whitespace-nowrap">
                         {{ campaign.advertiser.business_name }}
                     </td>
 
@@ -66,60 +66,60 @@
                         {% if campaign.start_date and campaign.end_date %}
                         <div class="flex flex-col">
                             <span class="font-medium text-white/90 whitespace-nowrap">{{ campaign.start_date }} — {{ campaign.end_date }}</span>
-                            <span class="text-[11px] text-white/40 font-mono whitespace-nowrap">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                            <span class="text-[11px] text-white/40 whitespace-nowrap tabular-nums">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
                         {% else %}
                         <div class="flex flex-col">
                             <span class="font-medium text-white/60 whitespace-nowrap">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }} · dates pending</span>
-                            <span class="text-[11px] text-white/40 font-mono whitespace-nowrap">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
+                            <span class="text-[11px] text-white/40 whitespace-nowrap tabular-nums">{{ campaign.daily_start_time }} to {{ campaign.daily_end_time }}</span>
                         </div>
                         {% endif %}
                     </td>
 
                     {# Budget #}
-                    <td class="px-4 py-3.5 align-middle font-mono font-semibold text-xs text-white whitespace-nowrap">
-                        ₦{{ campaign.budget|floatformat:2 }}
+                    <td class="px-4 py-3.5 align-middle font-semibold text-xs text-white whitespace-nowrap tabular-nums">
+                        <span class="font-normal mr-1">₦</span>{{ campaign.budget|floatformat:2 }}
                     </td>
 
                     {# Status Badges #}
                     <td class="px-4 py-3.5 align-middle whitespace-nowrap">
                         {% if campaign.status == 'pending_manager_review' or campaign.status == 'pending_admin_review' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                 {% if campaign.status == 'pending_admin_review' %}Pending Admin Review{% else %}Pending Review{% endif %}
                             </span>
                         {% elif campaign.status == 'approved' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-accent/15 border border-accent/30 text-accent">
+                                <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
                                 Approved
                             </span>
                         {% elif campaign.status == 'active' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                 Active
                             </span>
                         {% elif campaign.status == 'completed' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-sky-500/10 border border-sky-500/30 text-sky-400">
-                                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-violet-500/10 border border-violet-500/30 text-violet-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
                                 Completed
                             </span>
                         {% elif campaign.status == 'approval_expired' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-rose-500/10 border border-rose-500/30 text-rose-400">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                 Approval Expired
                             </span>
                         {% elif campaign.status == 'rejected' or campaign.status == 'cancelled' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-500/10 border border-rose-500/30 text-rose-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                                 {{ campaign.status|title }}
                             </span>
                         {% elif campaign.status == 'paused' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-zinc-500/10 border border-zinc-500/30 text-zinc-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
                                 Paused
                             </span>
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-white/5 border border-white/10 text-white/60">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/5 border border-white/10 text-white/60">
                                 {{ campaign.status|title }}
                             </span>
                         {% endif %}
@@ -140,8 +140,8 @@
 
         {# Pagination Controls #}
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-white/10 bg-black/20">
-            <p class="text-xs text-white/40 font-mono">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-white/10 bg-white/[0.02]">
+            <p class="text-xs text-white/40 tabular-nums">
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                 &middot; {{ page_obj.paginator.count }} total
             </p>
@@ -171,14 +171,14 @@
                 <div class="hidden sm:flex items-center gap-1.5">
                     {% for num in page_obj.paginator.page_range %}
                         {% if num == page_obj.number %}
-                            <span class="px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white font-semibold font-mono text-xs">{{ num }}</span>
+                            <span class="px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white font-semibold text-xs tabular-nums">{{ num }}</span>
                         {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
                             <button
                                 hx-get="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
                                 hx-target="#campaign-table-container"
                                 hx-swap="outerHTML"
                                 hx-push-url="true"
-                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/70 hover:text-white transition tabular-nums">
                                 {{ num }}
                             </button>
                         {% elif num == 1 or num == page_obj.paginator.num_pages %}
@@ -187,7 +187,7 @@
                                 hx-target="#campaign-table-container"
                                 hx-swap="outerHTML"
                                 hx-push-url="true"
-                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-mono text-xs text-white/70 hover:text-white transition">
+                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/70 hover:text-white transition tabular-nums">
                                 {{ num }}
                             </button>
                         {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
@@ -224,7 +224,7 @@
     {# Empty States #}
     {% else %}
     <div class="bg-panel border border-white/10 rounded-xl p-12 flex flex-col items-center justify-center text-center shadow-xl">
-        <div class="w-12 h-12 bg-black/40 border border-white/10 rounded-full flex items-center justify-center text-white/30 mb-4 shadow-inner">
+        <div class="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/40 mb-4 shadow-inner">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>

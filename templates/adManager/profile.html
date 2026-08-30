@@ -58,32 +58,32 @@
 
       <!-- Section: Business Details -->
       <div>
-        <h3 class="font-mono text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Business details</h3>
+        <h3 class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Business details</h3>
         <div class="space-y-4">
           <div>
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Business name</label>
+            <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Business name</label>
             <input type="text" name="{{ form.business_name.name }}" placeholder="e.g. Acme Media Group" required
                    value="{{ form.business_name.value|default_if_none:'' }}"
                    class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
           </div>
           <div>
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Business type</label>
+            <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Business type</label>
             <select name="{{ form.business_type.name }}"
                     class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
               {% for value, label in form.fields.business_type.choices %}
-              <option value="{{ value }}" {% if form.business_type.value == value %}selected{% endif %} class="bg-black">{{ label }}</option>
+              <option value="{{ value }}" {% if form.business_type.value == value %}selected{% endif %} class="bg-panel text-white">{{ label }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">CAC reg. number</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">CAC reg. number</label>
               <input type="text" name="{{ form.company_registration_number.name }}" placeholder="Optional"
                      value="{{ form.company_registration_number.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Tax ID</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Tax ID</label>
               <input type="text" name="{{ form.tax_identification_number.name }}" placeholder="Optional"
                      value="{{ form.tax_identification_number.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
@@ -94,24 +94,24 @@
 
       <!-- Section: Contact -->
       <div class="pt-8 border-t border-white/10">
-        <h3 class="font-mono text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Contact</h3>
+        <h3 class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Contact</h3>
         <div class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Business email</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Business email</label>
               <input type="email" name="{{ form.business_email.name }}" placeholder="contact@business.com" required
                      value="{{ form.business_email.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Business phone</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Business phone</label>
               <input type="text" name="{{ form.business_phone.name }}" placeholder="e.g. 08012345678" required
                      value="{{ form.business_phone.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>
           </div>
           <div>
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Website</label>
+            <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Website</label>
             <input type="url" name="{{ form.website.name }}" placeholder="https://yourbusiness.com"
                    value="{{ form.website.value|default_if_none:'' }}"
                    class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
@@ -121,28 +121,28 @@
 
       <!-- Section: Location -->
       <div class="pt-8 border-t border-white/10">
-        <h3 class="font-mono text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Location</h3>
+        <h3 class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Location</h3>
         <div class="space-y-4">
           <div>
-            <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Address</label>
+            <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Address</label>
             <textarea name="{{ form.address.name }}" rows="3" placeholder="Full business address..." required
                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition resize-none">{{ form.address.value|default_if_none:'' }}</textarea>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">City</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">City</label>
               <input type="text" name="{{ form.city.name }}" placeholder="e.g. Lagos" required
                      value="{{ form.city.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">State</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">State</label>
               <input type="text" name="{{ form.state.name }}" placeholder="e.g. Lagos State" required
                      value="{{ form.state.value|default_if_none:'' }}"
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>
             <div>
-              <label class="block font-mono text-[10px] uppercase tracking-wider text-white/85 mb-2">Country</label>
+              <label class="block text-[10px] uppercase tracking-wider text-white/85 mb-2">Country</label>
               <input type="text" name="{{ form.country.name }}" value="{{ form.country.value|default:'Nigeria' }}" required
                      class="w-full bg-black/40 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition">
             </div>

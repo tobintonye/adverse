@@ -32,13 +32,13 @@
             <tbody class="divide-y divide-base-300/50">
                 {% for w in withdrawals %}
                 <tr class="hover:bg-base-300/10 transition-colors">
-                    <td class="font-mono text-base-content/60 text-[10px]">{{ w.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="text-base-content/60 text-[10px]">{{ w.created_at|date:"Y-m-d H:i" }}</td>
                     <td>
                         <span class="font-bold block">{{ w.ad_manager.business_name }}</span>
                         <span class="text-[10px] text-base-content/50">{{ w.ad_manager.business_email }}</span>
                     </td>
                     <td class="font-extrabold">₦{{ w.amount|floatformat:2 }}</td>
-                    <td class="text-base-content/60 font-mono text-[10px] whitespace-pre-line leading-tight">{{ w.bank_details }}</td>
+                    <td class="text-base-content/60 text-[10px] whitespace-pre-line leading-tight">{{ w.bank_details }}</td>
                     <td>
                         {% if w.status == 'pending' %}
                             <span class="badge badge-warning badge-sm uppercase">Pending</span>

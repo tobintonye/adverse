@@ -98,6 +98,16 @@ html.light .text-sky-400 { color: #0369a1 !important; }
 html.light .text-sky-400\/80 { color: rgb(3 105 161 / 0.85) !important; }
 html.light .text-violet-400 { color: #6d28d9 !important; }
 html.light .text-zinc-400 { color: #52525b !important; }
+
+/* Buttons with a SOLID colored fill (bg-accent, bg-red-500 — no opacity
+   suffix) need their text-white to stay literally white for contrast.
+   The generic .text-white rule above is for text sitting on the page/card
+   background and forces it to black; on a saturated button fill that
+   would be unreadable. A tinted background (bg-accent/10, bg-emerald-500/5,
+   etc.) is NOT included here — pure black text is correct on those, since
+   they render as a near-white/pale tint in light mode. */
+html.light .bg-accent.text-white,
+html.light .bg-red-500.text-white { color: #FFFFFF !important; }
 html.light .bg-zinc-800 { background-color: rgb(var(--color-panel)) !important; }
 html.light .border-zinc-700 { border-color: rgb(var(--color-border)) !important; }
 html.light .text-slate-300 { color: rgb(var(--color-text-main)) !important; }

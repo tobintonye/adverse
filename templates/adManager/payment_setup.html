@@ -43,25 +43,25 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 pt-5">
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Business name</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Business name</p>
                 <p class="text-sm font-medium text-white">{{ subaccount.business_name }}</p>
             </div>
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Bank</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Bank</p>
                 <p class="text-sm font-medium text-white">{{ subaccount.bank_name }}</p>
             </div>
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account number</p>
-                <p class="text-sm font-mono font-semibold text-white tracking-wider">{{ subaccount.masked_account_number }}</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Account number</p>
+                <p class="text-sm font-semibold text-white tracking-wider">{{ subaccount.masked_account_number }}</p>
             </div>
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account name</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Account name</p>
                 <p class="text-sm font-medium text-white">{{ subaccount.account_name }}</p>
             </div>
         </div>
 
         <div class="mt-5 pt-4 border-t border-white/10">
-            <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-3">Verification status</p>
+            <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-3">Verification status</p>
             {% if subaccount.is_verified %}
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -128,15 +128,15 @@
 
     <!-- Disabled/Previous Account Summary -->
     <div class="bg-panel/50 border border-white/5 rounded-xl p-6 opacity-60">
-        <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-3">Previous account (inactive)</p>
+        <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-3">Previous account (inactive)</p>
         <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Bank</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Bank</p>
                 <p class="font-medium text-white">{{ subaccount.bank_name }}</p>
             </div>
             <div>
-                <p class="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-1">Account number</p>
-                <p class="font-mono font-medium text-white">{{ subaccount.masked_account_number }}</p>
+                <p class="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">Account number</p>
+                <p class="font-medium text-white">{{ subaccount.masked_account_number }}</p>
             </div>
         </div>
     </div>
