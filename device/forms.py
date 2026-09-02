@@ -10,11 +10,37 @@ class BillboardForm(forms.ModelForm):
     to accept whatever string value lands in request.POST.
     """
 
+    # Not a Billboard field — lives on the related BillboardCapacity model
+    # (created automatically the first time a Billboard is saved, default 8).
+    # Handled here as a plain form field and wired to that related object
+    # explicitly in the view, rather than via ModelForm's normal save path.
+    max_concurrent_positions = forms.IntegerField(
+        min_value=1,
+        initial=8,
+        label="Rotation Loop Capacity",
+        widget=forms.NumberInput(attrs={'class': 'input w-full', 'placeholder': '8'}),
+        help_text="Total number of ad slots that repeat in this billboard's "
+            "rotation. All advertisers active at the same time share "
+            "this same pool of slots — it's not one slot per advertiser. "
+            "One advertiser can take just a few, or buy every slot for "
+            "themselves (a full buyout). Fewer total slots means each "
+            "one comes up more often in the rotation, which is why "
+            "billboards with fewer slots can charge more per slot.",
+)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            try:
+                self.fields['max_concurrent_positions'].initial = self.instance.capacity.max_concurrent_positions
+            except Billboard.capacity.RelatedObjectDoesNotExist:
+                pass
+
     class Meta:
         model = Billboard
         fields = [ 'name', 'country', 'state', 'location_name', 'latitude', 'longitude', 'media_file', 'screen_type',
-                    'screen_width_px', 'screen_height_px', 'charge_unit', 'price_per_slot', 'operating_hours_start',
-                    'operating_hours_end', 'availability',           
+                    'audio_enabled', 'screen_width_px', 'screen_height_px', 'charge_unit', 'price_per_slot', 'operating_hours_start',
+                    'operating_hours_end', 'timezone', 'availability',           
         ]
 
         widgets = {
@@ -35,29 +61,16 @@ class BillboardForm(forms.ModelForm):
                 'id': 'lng-input',
             }),
             'screen_type': forms.Select(attrs={'class': 'select w-full'}),
-            'screen_width_px': forms.NumberInput(attrs={
-                'placeholder': '1920', 'class': 'input w-full',
-            }),
-            'screen_height_px': forms.NumberInput(attrs={
-                'placeholder': '1080', 'class': 'input w-full',
-            }),
-            'charge_unit': forms.Select(attrs={
-                'class': 'select w-full', 'id': 'charge-unit-select',
-            }),
-            'price_per_slot': forms.NumberInput(attrs={
-                'placeholder': '5000.00', 'step': '0.01', 'class': 'input w-full',
-            }),
-            'operating_hours_start': forms.TimeInput(attrs={
-                'type': 'time', 'class': 'input w-full',
-            }),
-            'operating_hours_end': forms.TimeInput(attrs={
-                'type': 'time', 'class': 'input w-full',
-            }),
+            'audio_enabled': forms.CheckboxInput(attrs={'class': 'checkbox'}),
+            'screen_width_px': forms.NumberInput(attrs={'placeholder': '1920', 'class': 'input w-full',}),
+            'screen_height_px': forms.NumberInput(attrs={'placeholder': '1080', 'class': 'input w-full',}),
+            'charge_unit': forms.Select(attrs={'class': 'select w-full', 'id': 'charge-unit-select',}),
+            'price_per_slot': forms.NumberInput(attrs={'placeholder': '5000.00', 'step': '0.01', 'class': 'input w-full',}),
+            'operating_hours_start': forms.TimeInput(attrs={'type': 'time', 'class': 'input w-full',}),
+            'operating_hours_end': forms.TimeInput(attrs={'type': 'time', 'class': 'input w-full',}),
+            'timezone': forms.Select(attrs={'class': 'select w-full', 'id': 'timezone-select'}),
             'availability': forms.Select(attrs={'class': 'select w-full'}),
-            'media_file': forms.ClearableFileInput(attrs={
-                'class': 'hidden', 'id': 'media-file-input',
-                'accept': 'image/*,video/*',
-            }),
+            'media_file': forms.ClearableFileInput(attrs={'class': 'hidden', 'id': 'media-file-input','accept': 'image/*,video/*',}),
         }
 
     def clean(self):
@@ -96,4 +109,4 @@ class BillboardForm(forms.ModelForm):
         lng = self.cleaned_data.get('longitude')
         if lng is not None and not (-180 <= lng <= 180):
             raise ValidationError("Longitude must be between -180 and 180.")
-        return lng    
+        return lng

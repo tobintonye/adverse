@@ -11,7 +11,7 @@ from ..models import ( BillboardCapacity, ScheduleGenerationLog, TimeSlot, check
 from .serializers import ( BillboardCapacitySerializer, CapacityCheckSerializer, ScheduleGenerationLogSerializer,
                            TimeSlotSerializer,
                         )
-from datetime import date as date_type
+from datetime import date as date_type, time, timedelta
 from django.db.models import Count
 
 class BillboardScheduleView(APIView):
@@ -92,7 +92,77 @@ class BillboardCapacityRecalculateView(APIView):
             "detail": "Capacity updated.",
             "max_concurrent_positions": new_max,
         })
-    
+
+class BillboardHourlyLoadView(APIView):
+    """
+    GET /scheduling/billboards/<uuid:pk>/hourly-load/?days_ahead=14
+
+    Returns hourly rotation loop availability across operating hours to help 
+    advertisers choose an available daypart during campaign creation (since 
+    dayparts cannot be edited after approval).
+
+    Reports the worst-case (busiest single day) load for each hour over the next 
+    `days_ahead` days. 
+
+    Limitation: Does not support overnight operating hours or dayparts (e.g. 22:00-06:00).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk): 
+        try:
+            billboard = Billboard.objects.get(pk=pk)
+        except Billboard.DoesNotExist:
+            raise NotFound("Billboard not found")
+        try:
+            capacity = billboard.capacity
+        except BillboardCapacity.DoesNotExist:
+            return Response({ "detail": "Capacity not configured for this billboard yet."}, status=status.HTTP_400_BAD_REQUEST,)
+
+        try:
+            days_ahead = int(request.query_params.get('days_ahead', 14))
+        except ValueError:
+            days_ahead = 14
+        days_ahead = max(1, min(days_ahead, 60)) # sane bounds not 0, not unbounded
+
+        today = timezone.now().date()
+        dates = [today + timedelta(days=i) for i in range(days_ahead)]
+
+        start_hour = billboard.operating_hours_start.hour
+        end_hour = billboard.operating_hours_end.hour
+
+        hours = []
+        h = start_hour
+        while True:
+            hours.append(h)
+            if h == end_hour:
+                break
+            h = (h + 1) % 24
+            if len(hours) > 24:
+                break # safety net against a malformed/overnight-wrapping window
+
+        blocks = []
+        for h in hours:
+            block_start = time(h, 0)
+            max_load = 0
+            for d in dates:
+                used = TimeSlot.objects.filter(billboard=billboard, date=d, is_active=True, campaign__daily_start_time__lte=block_start, campaign__daily_end_time__gt=block_start).count()
+                max_load = max(max_load, used)
+            blocks.append({
+                "hour": h,
+                "label": block_start.strftime("%I:%M %p").lstrip("0"),
+                "used": max_load,
+                "capacity": capacity.max_concurrent_positions,
+                "available": max(0, capacity.max_concurrent_positions - max_load),
+                "is_full": max_load >= capacity.max_concurrent_positions,
+            })
+
+        return Response({
+            "billboard": billboard.name,
+            "max_concurrent_positions": capacity.max_concurrent_positions,
+            "days_ahead": days_ahead,
+            "hours": blocks,
+        })
+
 class CapacityCheckView(APIView):
     """
         Check whether a billboard has enough free capacity before booking.

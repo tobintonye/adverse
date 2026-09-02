@@ -576,11 +576,13 @@ def campaign_select_dates(request, pk):
                 day_ok = False
                 break
         preview_days.append({"date": day, "available": day_ok})
+    available_count = sum(1 for d in preview_days if d["available"])
 
     return render(request, "advertiser/campaign_select_dates.html", {
         "campaign": campaign,
         "slots": slots,
         "preview_days": preview_days,
+        "available_count": available_count,
         "min_date": (today + timedelta(days=1)).strftime("%Y-%m-%d"),
     })
 
@@ -823,7 +825,15 @@ def campaign_detail(request, pk):
     on_air_billboards = []
     if campaign.status == Campaign.Status.ACTIVE:
         for slot in slots:
-            billboard_now = now.astimezone(ZoneInfo(slot.billboard.timezone))
+            try:
+                billboard_now = now.astimezone(ZoneInfo(slot.billboard.timezone))
+            except (ValueError, TypeError):
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Invalid timezone %r on billboard %s (id=%s) — falling back to UTC",
+                    slot.billboard.timezone, slot.billboard.name, slot.billboard_id,
+                )
+                billboard_now = now
             if (
                 campaign.start_date <= billboard_now.date() <= campaign.end_date
                 and campaign.daily_start_time <= billboard_now.time() < campaign.daily_end_time
@@ -856,7 +866,7 @@ def campaign_detail(request, pk):
         "slots": slots,
         "payment": payment,
         "is_on_air_now": is_on_air_now, 
-        "on_air_billboard": on_air_billboards,
+        "on_air_billboards": on_air_billboards,
        
     })
 

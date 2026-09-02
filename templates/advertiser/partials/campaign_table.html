@@ -32,8 +32,8 @@
                             {% elif campaign.status == 'pending_manager_review' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">Pending Manager</span>
                             {% elif campaign.status == 'approved' %}
-                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-accent/15 text-accent border border-accent/30 px-3 py-1 rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                     Approved
                                 </span>
                             {% elif campaign.status == 'active' %}
@@ -46,7 +46,7 @@
                             {% elif campaign.status == 'cancelled' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full">Cancelled</span>
                             {% elif campaign.status == 'completed' %}
-                                <span class="inline-flex items-center text-[11px] font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20 px-3 py-1 rounded-full">Completed</span>
+                                <span class="inline-flex items-center text-[11px] font-medium bg-accent/15 text-accent border border-accent/30 px-3 py-1 rounded-full">Completed</span>
                             {% elif campaign.status == 'paused' %}
                                 <span class="inline-flex items-center text-[11px] font-medium bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-3 py-1 rounded-full">Paused</span>
                             {% else %}
@@ -142,7 +142,7 @@
         {% else %}
             <p class="text-white font-semibold text-xs">No campaigns yet</p>
             <p class="text-white/40 text-xs mt-1">Create your first campaign to get started.</p>
-            <a href="{% url 'advertiser:campaign_create' %}" class="bg-accent hover:opacity-90 text-white font-semibold text-xs px-4 py-2 rounded-lg transition mt-4 inline-block shadow-md">
+            <a href="{% url 'advertiser:campaign_create' %}" class="bg-accent hover:bg-blue-400 text-[#06101F] font-semibold text-xs px-4 py-2 rounded-lg transition mt-4 inline-block shadow-md">
                 Create Campaign
             </a>
         {% endif %}

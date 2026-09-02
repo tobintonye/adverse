@@ -51,7 +51,7 @@ class Billboard(TimeStampedModel):
 
     # Screen specs
     screen_type = models.CharField(max_length=24, choices=ScreenType.choices, default=ScreenType.DIGITAL)
-    audio_enable = models.BooleanField(default=False, help_text="Only enable for indoor installs where the venue actually wants sound. Leave off for outdoor/highway billboards.")
+    audio_enabled = models.BooleanField(default=False, help_text="Only enable for indoor installs where the venue actually wants sound. Leave off for outdoor/highway billboards.")
     screen_width_px = models.PositiveIntegerField(default=1920)
     screen_height_px = models.PositiveIntegerField(default=1080)
     

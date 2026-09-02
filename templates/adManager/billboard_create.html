@@ -1,4 +1,3 @@
-
 {% extends "adManager/base.html" %}
 {% load static %}
 {% block title %}{{ action }} Billboard{% endblock %}
@@ -256,6 +255,41 @@
             {% endif %}
         </div>
 
+       <!-- Timezone & Audio -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-xs font-semibold text-white/100 uppercase tracking-wider mb-2">Timezone</label>
+                <div class="[&>select]:w-full [&>select]:bg-white/5 [&>select]:border [&>select]:border-white/10 [&>select]:focus:border-accent [&>select]:focus:outline-none [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-2.5 [&>select]:text-sm [&>select]:text-white [&>select>option]:bg-panel [&>select>option]:text-white">
+                    {{ form.timezone }}
+                </div>
+                <p class="text-white/40 text-xs mt-1.5">This billboard's own local time, determines when operating hours and every campaign's daypart actually open and close. Always the screen's physical location, never the advertiser's.</p>
+                {% if form.timezone.errors %}
+                    <p class="text-red-400 text-xs mt-1.5">{{ form.timezone.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div class="flex flex-col justify-center">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    {{ form.audio_enabled }}
+                    <span class="text-xs font-semibold text-white/100 uppercase tracking-wider">Enable Audio</span>
+                </label>
+                <p class="text-white/40 text-xs mt-1.5">Leave off for outdoor/highway billboards (recommended, driver-distraction and hardware concerns). Only enable for indoor/retail installs where the venue actually wants sound.</p>
+                {% if form.audio_enabled.errors %}
+                    <p class="text-red-400 text-xs mt-1.5">{{ form.audio_enabled.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Rotation Capacity -->
+        <div class="w-full sm:w-72">
+            <label class="block text-xs font-semibold text-white/100 uppercase tracking-wider mb-2">Rotation Loop Capacity</label>
+            <div class="[&>input]:w-full [&>input]:bg-white/5 [&>input]:border [&>input]:border-white/10 [&>input]:focus:border-accent [&>input]:focus:outline-none [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-2.5 [&>input]:text-sm [&>input]:text-white [&>input]:transition">
+                {{ form.max_concurrent_positions }}
+            </div>
+            <p class="text-white/40 text-xs mt-1.5">Total rotation positions this billboard sells per daypart. This is a shared pool, one advertiser's Ad Slots Per Day claims from this same total, so a single advertiser can buy the entire capacity (a full buyout). Fewer positions means each advertiser plays more often (more valuable inventory).</p>
+            {% if form.max_concurrent_positions.errors %}
+                <p class="text-red-400 text-xs mt-1.5">{{ form.max_concurrent_positions.errors.0 }}</p>
+            {% endif %}
+        </div>
         <!-- Submit & Actions -->
         <div class="flex items-center justify-end gap-3 pt-6 border-t border-white/10">
             <a href="{% url 'device:billboard_list' %}" class="px-5 py-2.5 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-medium text-white/100 hover:text-white transition">

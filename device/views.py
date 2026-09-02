@@ -74,6 +74,11 @@ def billboard_create(request):
             billboard = form.save(commit=False)
             billboard.ad_manager = ad_manager
             billboard.save()
+            # Billboard.save() auto-creates BillboardCapacity with the
+            # default (8) — apply whatever the ad manager actually chose.
+            capacity = billboard.capacity
+            capacity.max_concurrent_positions = form.cleaned_data['max_concurrent_positions']
+            capacity.save(update_fields=['max_concurrent_positions', 'last_calculated_at'])
             messages.success(request, f"Billboard '{billboard.name}' created successfully.")
             return redirect("device:billboard_list")
         else:
@@ -109,6 +114,9 @@ def billboard_edit(request, pk):
         form = BillboardForm(request.POST, request.FILES, instance=billboard)
         if form.is_valid():
             form.save()
+            capacity, _ = BillboardCapacity.objects.get_or_create(billboard=billboard)
+            capacity.max_concurrent_positions = form.cleaned_data['max_concurrent_positions']
+            capacity.save(update_fields=['max_concurrent_positions', 'last_calculated_at'])
             messages.success(request, f"Billboard '{billboard.name}' updated successfully.")
             return redirect("device:billboard_list")
         else:
@@ -160,7 +168,7 @@ def billboard_schedule(request, pk):
         max_concurrent_positions = 0
 
     #  The actual playlist for the selected date
-    time_slots  = ( TimeSlot.objects.filter(billboard=billboard, date=target_date, is_active=True,).select_related("campaign", "campaign__media", "campaign__advertiser", "campaign_slot").order_by("play_order"))
+    time_slots = ( TimeSlot.objects.filter(billboard=billboard, date=target_date, is_active=True,).select_related("campaign", "campaign__media", "campaign__advertiser", "campaign_slot").order_by("play_order"))
     booked_count = time_slots.count()
     free_count = max(0, max_concurrent_positions - booked_count)
     context = {

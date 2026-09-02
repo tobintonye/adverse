@@ -404,12 +404,19 @@ def campaign_playback_log(request, pk):
     ad_manager = request.user.ad_manager
     campaign = _get_campaign_for_manager(ad_manager, pk)
 
-    time_slots = (TimeSlot.objects.filter(...).order_by("date", "play_order"))
+    time_slots = (TimeSlot.objects.filter(campaign=campaign, billboard__ad_manager=ad_manager).select_related("billboard").prefetch_related("playback_logs").order_by("date", "play_order"))
     today = timezone.now().date()  # rough UTC date, refined per-row below
     rows = []
     for ts in time_slots:
         log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
-        billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone))
+        try:
+            billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone))
+        except (ValueError, TypeError):
+            logger.warning(
+                "Invalid timezone %r on billboard %s (id=%s) — falling back to UTC",
+                ts.billboard.timezone, ts.billboard.name, ts.billboard_id,
+            )
+            billboard_now = timezone.now()
         billboard_today = billboard_now.date()
         if log:
             state = "confirmed"

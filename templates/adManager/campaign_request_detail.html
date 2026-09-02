@@ -92,8 +92,8 @@
                         Pending Admin Review
                     </span>
                 {% elif campaign.status == 'approved' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-accent/15 text-accent border border-accent/30 flex-shrink-0">
-                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                         Approved
                     </span>
                 {% elif campaign.status == 'active' %}
@@ -102,8 +102,8 @@
                         Active
                     </span>
                 {% elif campaign.status == 'completed' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-violet-500/10 text-violet-400 border border-violet-500/30 flex-shrink-0">
-                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase bg-accent/15 text-accent border border-accent/30 flex-shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
                         Completed
                     </span>
                 {% elif campaign.status == 'rejected' or campaign.status == 'canceled' or campaign.status == 'cancelled' %}

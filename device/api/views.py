@@ -270,14 +270,12 @@ class PlayerPlaybackBulkView(APIView):
         logs_data = serializer.validated_data["logs"]
         created_logs, skipped = [], 0
         for entry in logs_data:
+            # The device already knows and sends the exact TimeSlot this
+            # play belongs to (time_slot_id) — use that directly.
             time_slot = None
-            if player.billboard_id:
-                time_slot = TimeSlot.objects.filter(
-                    billboard=player.billboard,
-                    date=entry["started_at"].date(),
-                    is_active=True,
-                    campaign_slot__campaign__media_id=entry["media_id"],
-                ).first()
+            time_slot_id = entry.get("time_slot_id")
+            if time_slot_id and player.billboard_id:
+                time_slot = TimeSlot.objects.filter(id=time_slot_id, billboard=player.billboard).first()
             log, created = PlaybackLog.objects.get_or_create(
                 player=player,
                 media_id=entry["media_id"],

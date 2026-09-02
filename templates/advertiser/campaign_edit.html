@@ -166,6 +166,27 @@
             </div>
         </div>
 
+        {# Hourly Availability Heatmap #}
+        <div id="hourly-load-container" class="hidden bg-bg border border-white/10 rounded-xl p-4 shadow-md">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white/70 mb-1 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Availability by time of day
+            </h3>
+            <p class="text-[11px] text-white/40 mb-3">Busiest day in the next two weeks, per hour. Click a bar to set your start time, click another to set your end time — or pick a window with room before setting times manually above.</p>
+            <div id="hourly-load-bars" class="flex items-end gap-0.5 h-16"></div>
+            <div class="flex items-center justify-between text-[10px] text-white/40 mt-1.5">
+                <span id="hourly-load-first-label"></span>
+                <span id="hourly-load-last-label"></span>
+            </div>
+            <div class="flex items-center gap-4 text-[10px] text-white/40 mt-3">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/40"></span>Open</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-500/40"></span>Filling up</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500/40"></span>Full</span>
+            </div>
+        </div>
+
         {# Live Price Breakdown #}
         <div id="price-estimate" class="hidden bg-bg border border-white/10 rounded-xl p-4 shadow-md">
             <h3 class="text-xs font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
@@ -204,7 +225,7 @@
 
         {# Actions #}
         <div class="flex items-center gap-4 pt-4 border-t border-white/10">
-            <button type="submit" class="bg-accent hover:opacity-90 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md cursor-pointer">
+            <button type="submit" class="bg-accent hover:bg-blue-400 text-[#06101F] text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-md cursor-pointer">
                 Save Changes
             </button>
             <a href="{% url 'advertiser:campaign_detail' pk=campaign.pk %}" class="text-xs text-white/50 hover:text-white transition">
@@ -228,21 +249,25 @@
     var bbScreenType  = document.getElementById('bb-screen-type');
     var bbHours       = document.getElementById('bb-hours');
     var bbChargeLabel = document.getElementById('bb-charge-label');
-    var bbRate        = document.getElementById('bb-rate-value');
+    var bbRate  = document.getElementById('bb-rate-value');
     var bbPreviewImg  = document.getElementById('bb-preview-img');
     var bbPreviewVid  = document.getElementById('bb-preview-vid');
     var bbNoPreview   = document.getElementById('bb-no-preview');
-    var pricePanel    = document.getElementById('price-estimate');
-    var estRate       = document.getElementById('est-rate');
+    var pricePanel = document.getElementById('price-estimate');
+    var estRate  = document.getElementById('est-rate');
     var estQtyLabel   = document.getElementById('est-qty-label');
-    var estQtyVal     = document.getElementById('est-qty-val');
-    var estDays       = document.getElementById('est-days');
-    var estTotal      = document.getElementById('est-total');
-    var qtyLabel      = document.getElementById('qty-label');
-    var qtyHint       = document.getElementById('qty-hint');
+    var estQtyVal  = document.getElementById('est-qty-val');
+    var estDays = document.getElementById('est-days');
+    var estTotal= document.getElementById('est-total');
+    var qtyLabel = document.getElementById('qty-label');
+    var qtyHint = document.getElementById('qty-hint');
     var budgetWarning = document.getElementById('budget-warning');
-    var capacityWarning     = document.getElementById('capacity-warning');
+    var capacityWarning = document.getElementById('capacity-warning');
     var capacityWarningText = document.getElementById('capacity-warning-text');
+    var hourlyLoadContainer = document.getElementById('hourly-load-container');
+    var hourlyLoadBars = document.getElementById('hourly-load-bars');
+    var hourlyLoadFirstLbl= document.getElementById('hourly-load-first-label');
+    var hourlyLoadLastLbl = document.getElementById('hourly-load-last-label');
     var startTimeEl = document.getElementById('daily-start-time');
     var endTimeEl   = document.getElementById('daily-end-time');
     var currentBillboard = null;
@@ -263,12 +288,21 @@
         return diff > 0 ? diff : null;
     }
     function checkCapacityFit() {
-        // Sanity check only — total theoretical seats in the chosen window.
-        // Not a live query against what other campaigns already booked
-        // there; the real, authoritative check still happens server-side
-        // at date-confirmation. This just catches an obviously-impossible
-        // request before submission, without adding a network round-trip.
-        if (!currentBillboard || currentBillboard.slot_duration_seconds == null) {
+        // Sanity check only — total rotation positions this billboard sells
+        // at all. Not a live query against what other campaigns already
+        // booked in this daypart; the real, authoritative check still
+        // happens server-side at date-confirmation (which IS daypart-aware —
+        // it only counts campaigns whose daypart actually overlaps this
+        // one). This just catches an obviously-impossible request before
+        // submission, without adding a network round-trip.
+        //
+        // Note this is intentionally NOT derived from the chosen time
+        // window's width anymore — under the rotation model, a screen's
+        // capacity is a fixed number of concurrent advertiser positions
+        // (max_concurrent_positions), independent of how wide a daypart
+        // window is. A 1-hour window and a 12-hour window share the same
+        // ceiling on how many advertisers can rotate through it at once.
+        if (!currentBillboard || currentBillboard.max_concurrent_positions == null) {
             capacityWarning.classList.add('hidden');
             return;
         }
@@ -278,19 +312,61 @@
             capacityWarning.classList.add('hidden');
             return;
         }
-        var maxPossible = Math.floor(winSec / currentBillboard.slot_duration_seconds);
+        var maxPossible = currentBillboard.max_concurrent_positions;
         if (qty > maxPossible) {
             capacityWarningText.textContent =
-                'This time window can hold at most ' + maxPossible + ' slot' + (maxPossible !== 1 ? 's' : '') +
-                ' at ' + currentBillboard.slot_duration_seconds + 's each — reduce quantity or widen the window. ' +
-                '(Actual availability may be lower if other campaigns already share this window.)';
+                'This billboard supports at most ' + maxPossible + ' concurrent position' + (maxPossible !== 1 ? 's' : '') +
+                ' in rotation — reduce quantity or choose another billboard. ' +
+                '(Actual availability may be lower if other campaigns already share this daypart.)';
             capacityWarning.classList.remove('hidden');
         } else {
             capacityWarning.classList.add('hidden');
         }
     }
-    function updateBillboardCard(bb) {
+    var loadSelection = { start: null };
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+    function fetchHourlyLoad(pk) {
+        if (!pk) { hourlyLoadContainer.classList.add('hidden'); return; }
+        fetch('/adverse-api/billboards/' + pk + '/hourly-load/?days_ahead=14', { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+            .then(function (data) { renderHourlyLoad(data); })
+            .catch(function () { hourlyLoadContainer.classList.add('hidden'); });
+    }
+    function renderHourlyLoad(data) {
+        if (!data.hours || !data.hours.length) { hourlyLoadContainer.classList.add('hidden'); return; }
+        hourlyLoadBars.innerHTML = '';
+        loadSelection.start = null;
+        data.hours.forEach(function (block) {
+            var ratio = block.capacity > 0 ? (block.used / block.capacity) : 1;
+            var colorClass = block.is_full ? 'bg-rose-500/50' : (ratio >= 0.6 ? 'bg-amber-500/50' : 'bg-emerald-500/50');
+            var bar = document.createElement('div');
+            bar.className = 'flex-1 rounded-t cursor-pointer hover:opacity-80 transition ' + colorClass;
+            bar.style.height = Math.max(8, Math.round(ratio * 100)) + '%';
+            bar.title = block.label + ' — ' + block.available + ' of ' + block.capacity + ' position' + (block.capacity !== 1 ? 's' : '') + ' open';
+            bar.addEventListener('click', function () { onHourBarClick(block); });
+            hourlyLoadBars.appendChild(bar);
+        });
+        hourlyLoadFirstLbl.textContent = data.hours[0].label;
+        hourlyLoadLastLbl.textContent = data.hours[data.hours.length - 1].label;
+        hourlyLoadContainer.classList.remove('hidden');
+    }
+    function onHourBarClick(block) {
+        if (loadSelection.start === null) {
+            loadSelection.start = block.hour;
+            startTimeEl.value = pad2(block.hour) + ':00';
+        } else {
+            var startHour = block.hour >= loadSelection.start ? loadSelection.start : block.hour;
+            var endHour   = block.hour >= loadSelection.start ? block.hour + 1 : loadSelection.start + 1;
+            startTimeEl.value = pad2(startHour) + ':00';
+            endTimeEl.value   = pad2(endHour % 24) + ':00';
+            loadSelection.start = null;
+        }
+        startTimeEl.dispatchEvent(new Event('input'));
+        endTimeEl.dispatchEvent(new Event('input'));
+    }
+    function updateBillboardCard(bb, pk) {
         currentBillboard = bb;
+        fetchHourlyLoad(pk);
         if (bb.media_url) {
             if (bb.media_is_video) {
                 bbPreviewImg.classList.add('hidden');
@@ -308,28 +384,28 @@
             bbPreviewVid.classList.add('hidden');
             bbNoPreview.classList.remove('hidden');
         }
-        bbName.textContent       = bb.name;
-        bbLocation.textContent   = (bb.state ? bb.state + ', ' : '') + bb.country;
+        bbName.textContent = bb.name;
+        bbLocation.textContent= (bb.state ? bb.state + ', ' : '') + bb.country;
         bbScreenType.textContent = bb.screen_type;
-        bbHours.textContent      = bb.hours_start + ' – ' + bb.hours_end;
-        bbRate.textContent       = fmt(bb.price);
+        bbHours.textContent = bb.hours_start + ' – ' + bb.hours_end;
+        bbRate.textContent = fmt(bb.price);
         var unitLabel, qLabel, qHint;
         if (bb.charge_unit === 'hourly') {
             unitLabel = 'Hourly — billed per hour/day';
-            qLabel    = 'Hours Per Day';
-            qHint     = 'Number of hours of airtime per day on this screen.';
+            qLabel = 'Hours Per Day';
+            qHint = 'Number of hours of airtime per day on this screen.';
         } else if (bb.charge_unit === 'daily') {
             unitLabel = 'Daily — billed per day';
-            qLabel    = 'Ad Plays Per Day';
-            qHint     = 'How many times your ad runs per day on this screen.';
+            qLabel = 'Ad Plays Per Day';
+            qHint = 'How many positions in this screen\'s shared rotation loop your ad claims each day. More positions means your ad plays more often relative to other advertisers sharing the same time window — not a separate fixed count.';
         } else {
             unitLabel = 'Per Slot — billed per ad slot/day';
-            qLabel    = 'Ad Slots Per Day';
-            qHint     = 'Number of times your ad plays on this screen per day.';
+            qLabel = 'Ad Slots Per Day';
+            qHint = 'How many positions in this screen\'s shared rotation loop your ad claims each day. More positions means your ad plays more often relative to other advertisers sharing the same time window — not a separate fixed count.';
         }
         bbChargeLabel.textContent = unitLabel;
-        qtyLabel.textContent      = qLabel;
-        qtyHint.textContent       = qHint;
+        qtyLabel.textContent = qLabel;
+        qtyHint.textContent = qHint;
         infoCard.classList.remove('hidden');
         qtyRow.classList.remove('hidden');
         recalculate();
@@ -387,13 +463,14 @@
     selectEl.addEventListener('change', function () {
         var pk = this.value;
         if (pk && BILLBOARDS[pk]) {
-            updateBillboardCard(BILLBOARDS[pk]);
+            updateBillboardCard(BILLBOARDS[pk], pk);
         } else {
             currentBillboard = null;
             infoCard.classList.add('hidden');
             qtyRow.classList.add('hidden');
             pricePanel.classList.add('hidden');
             capacityWarning.classList.add('hidden');
+            hourlyLoadContainer.classList.add('hidden');
         }
     });
     durationEl.addEventListener('input', recalculate);
@@ -405,7 +482,7 @@
     // On edit, a billboard is pre-selected — load its card immediately on page load
     var initialPk = selectEl.value;
     if (initialPk && BILLBOARDS[initialPk]) {
-        updateBillboardCard(BILLBOARDS[initialPk]);
+        updateBillboardCard(BILLBOARDS[initialPk], initialPk);
     }
 }());
 </script>

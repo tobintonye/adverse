@@ -73,6 +73,9 @@ html.light .\[\&\>select\]\:border-white\/10 > select { border-color: rgb(var(--
 html.light .\[\&\>select\]\:text-white > select { color: rgb(var(--color-text-main)) !important; }
 html.light .\[\&\>select\>option\]\:text-white > select > option { color: rgb(var(--color-text-main)) !important; }
 html.light .\[\&\>option\]\:text-white > option { color: rgb(var(--color-text-main)) !important; }
+html.light .\[\&\>input\]\:bg-white\/5 > input { background-color: rgb(var(--color-text-main) / 0.04) !important; }
+html.light .\[\&\>input\]\:border-white\/10 > input { border-color: rgb(var(--color-border)) !important; }
+html.light .\[\&\>input\]\:text-white > input { color: rgb(var(--color-text-main)) !important; }
 
 /* Native file-input "Choose File" button: Tailwind's file: variant styles
    ::file-selector-button, a different selector shape than the generic
