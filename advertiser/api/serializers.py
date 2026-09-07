@@ -220,9 +220,10 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         daily_start = attrs.get("daily_start_time")
         daily_end = attrs.get("daily_end_time")
-        if daily_start and daily_end and daily_end <= daily_start:
+        # overnight daypart, only end == start is rejected.
+        if daily_start and daily_end and daily_end == daily_start:
             raise serializers.ValidationError(
-                {"daily_end_time": "Daily end time must be scheduled after start time."}
+                {"daily_end_time": "Daily end time must be different from daily start time."}
             )
         return attrs
 

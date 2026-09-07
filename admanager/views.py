@@ -1,13 +1,15 @@
 
+import datetime
+
 from payments.services import ( create_paystack_subaccount)
 from django.contrib.auth import get_user_model
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import Sum, Q, Prefetch
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from zoneinfo import ZoneInfo
 import json
 from django.db import transaction
@@ -20,11 +22,12 @@ from .forms import AdManagerProfileForm
 from django.core.exceptions import ValidationError, PermissionDenied
 from advertiser.models import Campaign
 from advertiser.services import approve_campaign_by_manager, reject_campaign
-from django.db.models import Q
 from scheduling.models import ScheduleGenerationLog
 from django.core.paginator import Paginator
 from scheduling.models import TimeSlot
 import logging
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from device.models import PlaybackLog
 
 logger = logging.getLogger(__name__)
 
@@ -400,39 +403,45 @@ def campaign_playback_log(request, pk):
     on this ad manager's billboards, matched against whether a PlaybackLog
     confirms it actually played.
     """
-
     ad_manager = request.user.ad_manager
     campaign = _get_campaign_for_manager(ad_manager, pk)
-
-    time_slots = (TimeSlot.objects.filter(campaign=campaign, billboard__ad_manager=ad_manager).select_related("billboard").prefetch_related("playback_logs").order_by("date", "play_order"))
-    today = timezone.now().date()  # rough UTC date, refined per-row below
+    time_slots = (
+        TimeSlot.objects.filter(campaign=campaign, billboard__ad_manager=ad_manager)
+        .select_related("billboard")
+        .prefetch_related(
+            Prefetch(
+                "playback_logs",
+                queryset=PlaybackLog.objects.filter(completed=True).order_by("started_at"),
+                to_attr="confirmed_logs",
+            )
+        )
+        .order_by("date", "play_order")
+    )
     rows = []
     for ts in time_slots:
-        log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
+        log = ts.confirmed_logs[0] if ts.confirmed_logs else None
         try:
             billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone))
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, ZoneInfoNotFoundError):
             logger.warning(
                 "Invalid timezone %r on billboard %s (id=%s) — falling back to UTC",
                 ts.billboard.timezone, ts.billboard.name, ts.billboard_id,
             )
             billboard_now = timezone.now()
-        billboard_today = billboard_now.date()
+        start_t, end_t = campaign.daily_start_time, campaign.daily_end_time
+        close_date = ts.date + timedelta(days=1) if end_t <= start_t else ts.date
+        close_at = datetime.combine(close_date, end_t, tzinfo=billboard_now.tzinfo)
         if log:
             state = "confirmed"
-        elif ts.date > billboard_today:
-            state = "upcoming"
-        elif ts.date == billboard_today and billboard_now.time() < ts.campaign.daily_end_time:
+        elif billboard_now < close_at:
             state = "upcoming"
         else:
             state = "missed"
         rows.append({"time_slot": ts, "log": log, "state": state})
-
     total = len(rows)
     confirmed_count = sum(1 for r in rows if r["state"] == "confirmed")
     missed_count = sum(1 for r in rows if r["state"] == "missed")
     upcoming_count = sum(1 for r in rows if r["state"] == "upcoming")
-
     context = {
         "campaign": campaign,
         "rows": rows,
@@ -442,7 +451,6 @@ def campaign_playback_log(request, pk):
         "upcoming_count": upcoming_count,
         "confirmed_pct": round((confirmed_count / total) * 100, 1) if total else 0,
     }
-
     if request.headers.get("HX-Request"):
         return render(request, "adManager/partials/campaign_playback_log_table.html", context)
     return render(request, "adManager/campaign_playback_log.html", context)

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Q, Prefetch
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 from datetime import timedelta
@@ -11,16 +11,15 @@ import json
 from .forms import AdvertiserProfileForm, MediaUploadForm, CampaignForm
 from advertiser.decorators import advertiser_required
 from .models import Advertiser, Campaign, CampaignSlot, Media
-from device.models import Billboard
+from device.models import Billboard, PlaybackLog
 from django.db import transaction
-from payments.services import initialize_campaign_payment
 from .tasks import _notify_campaign_submitted
 from django.core.paginator import Paginator
 from scheduling.models import TimeSlot
 from security.models import CustomUser
 from decimal import Decimal, InvalidOperation
 import logging
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +204,6 @@ def media_library(request):
     expired = Campaign.objects.filter(advertiser=advertiser, status=Campaign.Status.ACTIVE, end_date__lt=today,)
     if expired.exists():
         expired.update(status=Campaign.Status.COMPLETED)
-    media_items = advertiser.media_files.prefetch_related("campaigns").order_by("-created_at")
 
     # Build a set of media IDs that have active campaigns right now
     active_media_ids = set(
@@ -499,19 +497,15 @@ class _BillboardChoiceField:
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
-    
+
 @login_required(login_url="security:login")
 @advertiser_required
 def campaign_select_dates(request, pk):
     """
-    GET  — shows a 30-day availability preview for the campaign's billboard(s)
-           and a start-date picker (duration_days is fixed; end_date is derived).
-    POST — confirms the dates via confirm_campaign_dates(), which does the real
-           all-or-nothing capacity check across the FULL date range and creates
-           TimeSlots. The calendar preview below is a guide only — the actual
-           enforcement happens server-side on submit.
+    GET: Displays the editable daypart availability heatmap and start-date picker.
+    POST: Verifies full date range capacity and creates TimeSlots via confirm_campaign_dates().
+    Daypart is editable here so advertisers can resolve schedule conflicts without recreating campaigns.
     """
-    
     from advertiser.services import confirm_campaign_dates
     from scheduling.models import ScheduleGenerationError
    
@@ -530,7 +524,7 @@ def campaign_select_dates(request, pk):
         return redirect("advertiser:campaign_detail", pk=pk)
     
     today = timezone.now().date() # current date
-
+ 
     if request.method == "POST":
         start_date_str = request.POST.get("start_date", "").strip()
         try:
@@ -538,9 +532,23 @@ def campaign_select_dates(request, pk):
         except ValueError:
             messages.error(request, "Please select a valid start date.")
             return redirect("advertiser:campaign_select_dates", pk=pk)
-
+ 
+        daily_start_time = daily_end_time = None
+        raw_start = request.POST.get("daily_start_time", "").strip()
+        raw_end = request.POST.get("daily_end_time", "").strip()
+        if raw_start and raw_end:
+            try:
+                daily_start_time = datetime.strptime(raw_start, "%H:%M").time()
+                daily_end_time = datetime.strptime(raw_end, "%H:%M").time()
+            except ValueError:
+                messages.error(request, "Please enter a valid daily time window.")
+                return redirect("advertiser:campaign_select_dates", pk=pk)
+ 
         try:
-            confirm_campaign_dates(campaign, start_date=start_date)
+            confirm_campaign_dates(
+                campaign, start_date=start_date,
+                daily_start_time=daily_start_time, daily_end_time=daily_end_time,
+            )
             messages.success(
                 request,
                 f"Dates confirmed: {campaign.start_date.strftime('%b %d')} — "
@@ -556,36 +564,15 @@ def campaign_select_dates(request, pk):
             )
         except ValidationError as e:
             messages.error(request, e.message if hasattr(e, "message") else str(e))
-
-    # Build 30-day single-day availability preview 
-    # NOTE: this shows per-day capacity as a guide only. A day marked "available" here doesn't guarantee the FULL duration_days range
-    # starting there is free — that's verified server-side on submit.
-    preview_days = []
+ 
     slots = list(campaign.campaign_slots.select_related("billboard__capacity").all())
-    for i in range(30):
-        day = today + timedelta(days=i + 1)  # start from tomorrow
-        day_ok = True
-        for cs in slots:
-            try:
-                available = cs.billboard.capacity.available_positions_on(
-                    day, campaign.daily_start_time, campaign.daily_end_time
-                )
-            except Exception:
-                available = 0
-            if available < cs.slots_per_day:
-                day_ok = False
-                break
-        preview_days.append({"date": day, "available": day_ok})
-    available_count = sum(1 for d in preview_days if d["available"])
-
+ 
     return render(request, "advertiser/campaign_select_dates.html", {
         "campaign": campaign,
         "slots": slots,
-        "preview_days": preview_days,
-        "available_count": available_count,
         "min_date": (today + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "billboard_pk": str(slots[0].billboard_id) if slots else None,
     })
-
 @login_required(login_url="security:login")
 @advertiser_required
 def campaign_run_again(request, pk):
@@ -827,17 +814,21 @@ def campaign_detail(request, pk):
         for slot in slots:
             try:
                 billboard_now = now.astimezone(ZoneInfo(slot.billboard.timezone))
-            except (ValueError, TypeError):
-                import logging
-                logging.getLogger(__name__).warning(
+            except (ValueError, TypeError, ZoneInfoNotFoundError):
+                logging.warning(
                     "Invalid timezone %r on billboard %s (id=%s) — falling back to UTC",
                     slot.billboard.timezone, slot.billboard.name, slot.billboard_id,
                 )
                 billboard_now = now
-            if (
-                campaign.start_date <= billboard_now.date() <= campaign.end_date
-                and campaign.daily_start_time <= billboard_now.time() < campaign.daily_end_time
-            ):
+            start_t, end_t = campaign.daily_start_time, campaign.daily_end_time
+            if start_t < end_t:  
+                in_window = start_t <= billboard_now.time() < end_t
+            elif start_t > end_t:
+                # wraps past midnight (e.g 22:00-02:00)
+                in_window = billboard_now.time() >= start_t or billboard_now.time() < end_t
+            else: 
+                in_window = False # identical start/end already rejected at creation
+            if campaign.start_date <= billboard_now.date() <= campaign.end_date and in_window:
                 on_air_billboards.append(slot.billboard.name)
     is_on_air_now = bool(on_air_billboards)
 
@@ -881,37 +872,43 @@ def campaign_playback_log(request, pk):
     """
     advertiser = _get_advertiser(request)
     campaign = get_object_or_404(Campaign, pk=pk, advertiser=advertiser)
-
     time_slots = (
         TimeSlot.objects.filter(campaign=campaign)
         .select_related("billboard")
-        .prefetch_related("playback_logs")
+        .prefetch_related(
+            Prefetch(
+                "playback_logs",
+                queryset=PlaybackLog.objects.filter(completed=True).order_by("started_at"),
+                to_attr="confirmed_logs",
+            )
+        )
         .order_by("date", "play_order")
     )
-
-    today = timezone.now().date()
     rows = []
     for ts in time_slots:
-        log = ts.playback_logs.filter(completed=True).order_by("started_at").first()
-        billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone)) # converts the utc timezone to a local billboard timezone
-        billboard_today = billboard_now.date()
+        log = ts.confirmed_logs[0] if ts.confirmed_logs else None
+        try:
+            billboard_now = timezone.now().astimezone(ZoneInfo(ts.billboard.timezone))
+        except (ValueError, TypeError, ZoneInfoNotFoundError):
+            logger.warning(
+                "Invalid timezone %r on billboard %s (id=%s) — falling back to UTC",
+                ts.billboard.timezone, ts.billboard.name, ts.billboard_id,
+            )
+            billboard_now = timezone.now()
+        start_t, end_t = campaign.daily_start_time, campaign.daily_end_time
+        close_date = ts.date + timedelta(days=1) if end_t <= start_t else ts.date
+        close_at = datetime.combine(close_date, end_t, tzinfo=billboard_now.tzinfo)
         if log:
             state = "confirmed"
-        elif ts.date > billboard_today:
-            state = "upcoming"
-        elif ts.date == billboard_today and billboard_now.time() < ts.campaign.daily_end_time:
-            # Today (in THIS billboard's local time), daypart hasn't
-            # closed yet — still has a chance to play.
+        elif billboard_now < close_at:
             state = "upcoming"
         else:
             state = "missed"
         rows.append({"time_slot": ts, "log": log, "state": state})
-
     total = len(rows)
     confirmed_count = sum(1 for r in rows if r["state"] == "confirmed")
     missed_count = sum(1 for r in rows if r["state"] == "missed")
     upcoming_count = sum(1 for r in rows if r["state"] == "upcoming")
-
     context = {
         "campaign": campaign,
         "rows": rows,
@@ -921,10 +918,8 @@ def campaign_playback_log(request, pk):
         "upcoming_count": upcoming_count,
         "confirmed_pct": round((confirmed_count / total) * 100, 1) if total else 0,
     }
-
     if request.headers.get("HX-Request"):
         return render(request, "advertiser/partials/campaign_playback_log_table.html", context)
-
     return render(request, "advertiser/campaign_playback_log.html", context)
 
 @login_required(login_url="security:login")

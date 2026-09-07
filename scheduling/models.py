@@ -4,6 +4,8 @@ from datetime import date, timedelta, datetime
 from django.utils import timezone
 from common.models import TimeStampedModel
 from advertiser.models import Campaign
+from django.db.models import Q, F
+
 """
 Scheduling engine — decides what plays, when, and where.
 
@@ -22,6 +24,33 @@ play_order is the real, used ordering field now (previously described as
 Flow triggered by campaign approval:
   manager_approve(campaign) → generate_schedule(campaign) → TimeSlot rows created
 """
+
+
+def _daypart_overlap_q(window_start, window_end, field_prefix="campaign__"):
+    """
+    Returns a Q object to check if a row's daypart overlaps a given [window_start, window_end).
+
+    Handles overnight/past-midnight intervals for both the row's daypart and the target window:
+    - Neither wraps: standard range overlap (start_a < end_b AND end_a > start_b)
+    - Exactly one wraps: split range overlap (start_a < end_b OR end_a > start_b)
+    - Both wrap: guaranteed overlap (both active at midnight)
+    """
+    start_f, end_f = f"{field_prefix}daily_start_time", f"{field_prefix}daily_end_time"
+    row_no_wrap = Q(**{f"{start_f}__lt": F(end_f)})
+    row_wraps = Q(**{f"{start_f}__gte": F(end_f)})
+
+    start_lt_window_end = Q(**{f"{start_f}__lt": window_end})
+    end_gt_window_start = Q(**{f"{end_f}__gt": window_start})
+
+    window_wraps = window_start > window_end    
+
+    if window_wraps:
+        return row_wraps | (row_no_wrap & (start_lt_window_end | end_gt_window_start))
+    else:
+        return (row_no_wrap & start_lt_window_end & end_gt_window_start) | (
+            row_wraps & (start_lt_window_end | end_gt_window_start)
+        )
+
 class ScheduleGenerationError(Exception):
     """Raised when a campaign's date range can't be fully scheduled.
     Carries the list of (billboard, date) conflicts for display to the user."""
@@ -128,10 +157,7 @@ class BillboardCapacity(TimeStampedModel):
             billboard=self.billboard, date=target_date, is_active=True,
         )
         if daily_start_time is not None and daily_end_time is not None:
-            qs = qs.filter(
-                campaign__daily_start_time__lt=daily_end_time,
-                campaign__daily_end_time__gt=daily_start_time,
-            )
+            qs = qs.filter(_daypart_overlap_q(daily_start_time, daily_end_time))
         return qs.count()
 
     def available_positions_on(self, target_date, daily_start_time=None, daily_end_time=None):

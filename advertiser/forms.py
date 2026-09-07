@@ -199,8 +199,11 @@ class CampaignForm(forms.ModelForm):
         cleaned_data = super().clean()
         daily_start = cleaned_data.get("daily_start_time")
         daily_end = cleaned_data.get("daily_end_time")
-        if daily_start and daily_end and daily_end <= daily_start:
-            self.add_error("daily_end_time", "Daily end time must be after daily start time.")
+        # end < start is a legitimate overnight daypart (e.g. 22:00-02:00) the scheduling engine (_daypart_overlap_q) and the Android player
+        # (isEligibleNow) both already interpret start > end as "wraps past midnight." Only reject the genuinely ambiguous case where the two
+        # are identical (zero-length or "all day," neither of which this
+        if daily_start and daily_end and daily_end == daily_start:
+            self.add_error("daily_end_time", "Daily end time must be different from daily start time.")
         return cleaned_data
 
 class CampaignSlotForm(forms.ModelForm):

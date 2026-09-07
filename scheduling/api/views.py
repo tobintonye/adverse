@@ -1,5 +1,7 @@
 from django.utils import timezone
 from rest_framework import permissions, status
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView 
@@ -12,8 +14,7 @@ from .serializers import ( BillboardCapacitySerializer, CapacityCheckSerializer,
                            TimeSlotSerializer,
                         )
 from datetime import date as date_type, time, timedelta
-from django.db.models import Count
-
+from django.db.models import Q, F, Count
 class BillboardScheduleView(APIView):
     """
     GET /scheduling/billboards/<uuid:pk>/schedule/?date=2026-06-01
@@ -93,21 +94,44 @@ class BillboardCapacityRecalculateView(APIView):
             "max_concurrent_positions": new_max,
         })
 
+def _block_in_daypart_q(block_start):
+    """
+    Q object: is `block_start` (a single clock hour) inside a TimeSlot's
+    campaign's own daypart? Handles dayparts that wrap past midnight
+    (start > end, e.g. 22:00-02:00) the same way the Android player's
+    isEligibleNow() does on-device: non-wrapping dayparts use a normal
+    [start, end) containment check; wrapping ones are "in the window if
+    at/after start OR before end." Shared by BillboardHourlyLoadView and
+    BillboardHourDailyBreakdownView so the wrap-aware logic can't drift
+    out of sync between the worst-case summary and the per-day detail.
+    """
+    return (
+        Q(campaign__daily_start_time__lte=F("campaign__daily_end_time"))
+        & Q(campaign__daily_start_time__lte=block_start, campaign__daily_end_time__gt=block_start)
+    ) | (
+        Q(campaign__daily_start_time__gt=F("campaign__daily_end_time"))
+        & (Q(campaign__daily_start_time__lte=block_start) | Q(campaign__daily_end_time__gt=block_start))
+    )
+
 class BillboardHourlyLoadView(APIView):
     """
     GET /scheduling/billboards/<uuid:pk>/hourly-load/?days_ahead=14
-
+ 
     Returns hourly rotation loop availability across operating hours to help 
-    advertisers choose an available daypart during campaign creation (since 
-    dayparts cannot be edited after approval).
-
+    advertisers choose an available daypart during campaign creation.
+ 
     Reports the worst-case (busiest single day) load for each hour over the next 
-    `days_ahead` days. 
-
-    Limitation: Does not support overnight operating hours or dayparts (e.g. 22:00-06:00).
+    `days_ahead` days. Handles overnight operating hours and overnight campaign
+    dayparts (e.g. 22:00-06:00) correctly — both the hour walk below and the
+    per-hour occupancy check account for wrap-past-midnight windows. One
+    remaining edge case: operating_hours_start and operating_hours_end sharing
+    the same hour is ambiguous on hour granularity alone (could mean "runs the
+    full 24h back around to this hour" or a genuine 1-hour window) and is
+    currently treated as a 1-hour window.
     """
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-
+ 
     def get(self, request, pk): 
         try:
             billboard = Billboard.objects.get(pk=pk)
@@ -117,19 +141,19 @@ class BillboardHourlyLoadView(APIView):
             capacity = billboard.capacity
         except BillboardCapacity.DoesNotExist:
             return Response({ "detail": "Capacity not configured for this billboard yet."}, status=status.HTTP_400_BAD_REQUEST,)
-
+ 
         try:
             days_ahead = int(request.query_params.get('days_ahead', 14))
         except ValueError:
             days_ahead = 14
         days_ahead = max(1, min(days_ahead, 60)) # sane bounds not 0, not unbounded
-
+ 
         today = timezone.now().date()
         dates = [today + timedelta(days=i) for i in range(days_ahead)]
-
+ 
         start_hour = billboard.operating_hours_start.hour
         end_hour = billboard.operating_hours_end.hour
-
+ 
         hours = []
         h = start_hour
         while True:
@@ -139,13 +163,16 @@ class BillboardHourlyLoadView(APIView):
             h = (h + 1) % 24
             if len(hours) > 24:
                 break # safety net against a malformed/overnight-wrapping window
-
+ 
         blocks = []
         for h in hours:
             block_start = time(h, 0)
+            block_in_daypart = _block_in_daypart_q(block_start)
             max_load = 0
             for d in dates:
-                used = TimeSlot.objects.filter(billboard=billboard, date=d, is_active=True, campaign__daily_start_time__lte=block_start, campaign__daily_end_time__gt=block_start).count()
+                used = TimeSlot.objects.filter(
+                    billboard=billboard, date=d, is_active=True
+                ).filter(block_in_daypart).count()
                 max_load = max(max_load, used)
             blocks.append({
                 "hour": h,
@@ -155,13 +182,78 @@ class BillboardHourlyLoadView(APIView):
                 "available": max(0, capacity.max_concurrent_positions - max_load),
                 "is_full": max_load >= capacity.max_concurrent_positions,
             })
-
+ 
         return Response({
             "billboard": billboard.name,
             "max_concurrent_positions": capacity.max_concurrent_positions,
             "days_ahead": days_ahead,
             "hours": blocks,
         })
+
+
+class BillboardHourDailyBreakdownView(APIView):
+    """
+    GET /scheduling/billboards/<uuid:pk>/hourly-load/<int:hour>/daily/?days_ahead=14
+ 
+    The drill-down behind a single hour bar on BillboardHourlyLoadView.
+    That endpoint deliberately collapses each hour to one worst-case
+    verdict across the whole window ("could this hour burn you on ANY of
+    the next N days") — which is the right signal to scan quickly, but
+    can't answer "which specific days, though?" This endpoint answers
+    exactly that for one hour at a time, so the advertiser only has to
+    read a 14-cell day strip for an hour they're actually considering,
+    not a full hours-by-days grid up front.
+    """
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+ 
+    def get(self, request, pk, hour):
+        try:
+            billboard = Billboard.objects.get(pk=pk)
+        except Billboard.DoesNotExist:
+            raise NotFound("Billboard not found")
+        try:
+            capacity = billboard.capacity
+        except BillboardCapacity.DoesNotExist:
+            return Response({"detail": "Capacity not configured for this billboard yet."}, status=status.HTTP_400_BAD_REQUEST)
+ 
+        if not (0 <= hour <= 23):
+            return Response({"detail": "hour must be between 0 and 23."}, status=status.HTTP_400_BAD_REQUEST)
+ 
+        try:
+            days_ahead = int(request.query_params.get('days_ahead', 14))
+        except ValueError:
+            days_ahead = 14
+        days_ahead = max(1, min(days_ahead, 60))
+ 
+        today = timezone.now().date()
+        block_start = time(hour, 0)
+        block_in_daypart = _block_in_daypart_q(block_start)
+ 
+        days = []
+        for i in range(days_ahead):
+            d = today + timedelta(days=i)
+            used = TimeSlot.objects.filter(
+                billboard=billboard, date=d, is_active=True
+            ).filter(block_in_daypart).count()
+            days.append({
+                "date": d.isoformat(),
+                "label": d.strftime("%a") + " " + str(d.day),  # portable — no platform-specific strftime flags
+                "used": used,
+                "available": max(0, capacity.max_concurrent_positions - used),
+                "is_full": used >= capacity.max_concurrent_positions,
+            })
+ 
+        return Response({
+            "billboard": billboard.name,
+            "hour": hour,
+            "label": block_start.strftime("%I:%M %p").lstrip("0"),
+            "capacity": capacity.max_concurrent_positions,
+            "days_ahead": days_ahead,
+            "days": days,
+        })
+ 
+
 
 class CapacityCheckView(APIView):
     """
@@ -208,7 +300,7 @@ class CampaignScheduleGenerateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk): 
-        if not request.user.is_staff or request.user.ad_manager: 
+        if not (request.user.is_staff or request.user.ad_manager): 
             raise PermissionDenied("Only admins and ad managers can trigger schedule generation.")
         
         try:

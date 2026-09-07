@@ -47,12 +47,8 @@ class CapacityCheckSerializer(serializers.Serializer):
     daily_end_time = serializers.TimeField()
     def validate(self, attrs):
             if attrs["end_date"] < attrs["start_date"]:
-                raise serializers.ValidationError(
-                    {"end_date": "End date cannot be before start date."}
-                )
-            if attrs["daily_end_time"] <= attrs["daily_start_time"]:
-                raise serializers.ValidationError(
-                    {"daily_end_time": "Daily end time must be after start time."}
-                )
+                raise serializers.ValidationError({"end_date": "End date cannot be before start date."})
+            if attrs["daily_end_time"] == attrs["daily_start_time"]:
+                raise serializers.ValidationError({"daily_end_time": "Daily start and end time cannot be identical."})
             return attrs
  

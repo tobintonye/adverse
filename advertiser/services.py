@@ -32,16 +32,16 @@ def approve_campaign_by_manager(campaign, manager_user):
 }
 
 @transaction.atomic
-def confirm_campaign_dates(campaign, start_date):
+def confirm_campaign_dates(campaign, start_date, daily_start_time=None, daily_end_time=None):
     """
-    Called when the advertiser picks a start date after approval.
-    end_date is derived from campaign.duration_days automatically.
-
-    Atomic: if capacity check fails anywhere in the range, the date
-    assignment itself is rolled back too the campaign stays APPROVED
-    with no dates set, so the advertiser can simply try a different range.
+    daily_start_time/daily_end_time are optional overrides — see
+    Campaign.confirm_dates() docstring for why this is safe to allow here
+    (ad manager approval covers content + billboard, not the exact hours).
+    When given, generate_schedule() below picks them up automatically since
+    it reads straight from campaign.daily_start_time/daily_end_time, which
+    confirm_dates() has already updated by the time we get here.
     """
-    campaign.confirm_dates(start_date)
+    campaign.confirm_dates(start_date, daily_start_time=daily_start_time, daily_end_time=daily_end_time)
     slots_created = generate_schedule(campaign)
 
     logger.info(

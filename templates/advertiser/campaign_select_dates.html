@@ -16,28 +16,85 @@
         </svg>
         <div class="leading-relaxed">
             Your campaign runs for <strong class="text-white">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</strong>.
-            Pick a start date — your end date is calculated automatically.
+            You can still fine-tune your daily time window below, now that real availability is known — pick a start date and it's calculated automatically.
         </div>
+    </div>
+
+    <!-- Daypart Card -->
+    <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
+        <h3 class="text-sm font-bold text-white mb-1">Daily time window</h3>
+        <p class="text-xs text-white/50 mb-4">
+            Approval covered your content and billboard, not the exact hours — adjust freely here. Full capacity is checked for real when you confirm your start date.
+        </p>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-white/70 mb-1.5">Start time</label>
+                <input type="time" id="daily-start-time" value="{{ campaign.daily_start_time|time:'H:i' }}"
+                       class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-white/70 mb-1.5">End time</label>
+                <input type="time" id="daily-end-time" value="{{ campaign.daily_end_time|time:'H:i' }}"
+                       class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition">
+            </div>
+        </div>
+        <p id="window-risk-summary" class="hidden text-[11px] mt-2"></p>
+
+        {% if billboard_pk %}
+        <div id="hourly-load-container" class="hidden mt-5 pt-5 border-t border-white/10">
+            <div class="flex items-baseline justify-between mb-3">
+                <h4 class="text-xs font-semibold text-white">Availability, next 14 days</h4>
+                <div class="flex items-center gap-3 text-[10px] text-white/40">
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Open</span>
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Filling</span>
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Full</span>
+                </div>
+            </div>
+
+            <p id="hourly-tap-info" class="text-[11px] text-white/50 mb-2 h-4">Tap a bar to set your start time, tap another for your end time.</p>
+
+            <div class="relative">
+                <div id="window-highlight" class="hidden absolute top-0 bottom-0 bg-white/10 border-x border-white/20 rounded-sm pointer-events-none"></div>
+                <div id="hourly-load-bars" class="relative flex items-end gap-0.5 h-20"></div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] text-white/40 mt-1.5">
+                <span id="hourly-load-first-label"></span>
+                <span id="hourly-load-last-label"></span>
+            </div>
+
+            <button type="button" id="day-detail-toggle" class="hidden mt-3 text-[11px] text-white/50 hover:text-white/80 transition underline decoration-white/20 underline-offset-2">
+                Show which days
+            </button>
+            <div id="hourly-day-detail" class="hidden mt-2">
+                <p class="text-[11px] text-white/60 mb-1.5"><span id="hourly-day-detail-label" class="font-semibold text-white"></span></p>
+                <div id="hourly-day-detail-strip" class="flex gap-1 overflow-x-auto pb-1"></div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Date Picker Card -->
     <div class="bg-panel border border-white/10 rounded-xl p-6 shadow-xl">
         <h3 class="text-sm font-bold text-white mb-1">Choose a start date</h3>
-        <p class="text-xs text-white/50 mb-5">
-            Your full {{ campaign.duration_days }}-day range is checked for capacity when you submit.
+        <p class="text-xs text-white/50 mb-4">
+            Your end date is calculated automatically from your {{ campaign.duration_days }}-day duration. Actual availability for your daypart is verified for real when you confirm.
         </p>
 
         <!-- Date Selection Form -->
-        <form method="post" class="space-y-4">
+        <form method="post" id="select-dates-form" class="space-y-4">
             {% csrf_token %}
+            <input type="hidden" id="form-daily-start-time" name="daily_start_time" value="{{ campaign.daily_start_time|time:'H:i' }}">
+            <input type="hidden" id="form-daily-end-time" name="daily_end_time" value="{{ campaign.daily_end_time|time:'H:i' }}">
             <div>
                 <label class="block text-xs font-medium text-white/70 mb-1.5">
                     Start date <span class="text-red-400">*</span>
                 </label>
-                <input type="date" name="start_date" min="{{ min_date }}"
+                <input type="date" id="start_date_input" name="start_date" min="{{ min_date }}"
                        class="w-full bg-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent transition" required>
             </div>
-            
+
             <button type="submit" class="w-full bg-accent hover:opacity-90 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition shadow-md flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -55,12 +112,8 @@
                 <p class="text-[10px] text-white/40 uppercase tracking-wider mb-1">Duration</p>
                 <p class="font-medium text-white">{{ campaign.duration_days }} day{{ campaign.duration_days|pluralize }}</p>
             </div>
-            <div>
-                <p class="text-[10px] text-white/40 uppercase tracking-wider mb-1">Daily hours</p>
-                <p class="font-medium text-white/90 tabular-nums">{{ campaign.daily_start_time|time:"H:i" }} – {{ campaign.daily_end_time|time:"H:i" }}</p>
-            </div>
             {% for slot in slots %}
-            <div class="col-span-2 pt-2 border-t border-white/10">
+            <div>
                 <p class="text-[10px] text-white/40 uppercase tracking-wider mb-1">Billboard</p>
                 <p class="font-medium text-white">{{ slot.billboard.name }} <span class="text-white/50">— {{ slot.slots_per_day }} slot{{ slot.slots_per_day|pluralize }}/day</span></p>
             </div>
@@ -69,4 +122,198 @@
     </div>
 
 </div>
+
+<script>
+(function () {
+    var startTimeEl = document.getElementById('daily-start-time');
+    var endTimeEl = document.getElementById('daily-end-time');
+    var formStartTimeEl = document.getElementById('form-daily-start-time');
+    var formEndTimeEl = document.getElementById('form-daily-end-time');
+    var windowRiskSummary = document.getElementById('window-risk-summary');
+    var billboardPk = {% if billboard_pk %}"{{ billboard_pk }}"{% else %}null{% endif %};
+
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+    // Keep the hidden form fields (what actually gets submitted) in sync
+    // with the visible time inputs. This is the only thing that ties the
+    // daypart inputs to the form now — there's no day-availability
+    // calendar on this page anymore; start date is a plain date field,
+    // and the real, authoritative capacity check happens server-side
+    // when you submit.
+    function syncDaypartToForm() {
+        var start = startTimeEl.value, end = endTimeEl.value;
+        if (!start || !end || start === end) return;
+        formStartTimeEl.value = start;
+        formEndTimeEl.value = end;
+    }
+    startTimeEl.addEventListener('input', syncDaypartToForm);
+    endTimeEl.addEventListener('input', syncDaypartToForm);
+
+    {% if billboard_pk %}
+    // ---- Hourly heatmap + single day-by-day drill-down (same component as
+    // campaign_create/campaign_edit, operating on this campaign's one
+    // already-known billboard rather than a dropdown selection) ----
+    var hourlyLoadContainer = document.getElementById('hourly-load-container');
+    var hourlyLoadBars = document.getElementById('hourly-load-bars');
+    var windowHighlight = document.getElementById('window-highlight');
+    var hourlyLoadFirstLbl = document.getElementById('hourly-load-first-label');
+    var hourlyLoadLastLbl = document.getElementById('hourly-load-last-label');
+    var hourlyTapInfo = document.getElementById('hourly-tap-info');
+    var dayDetailToggle = document.getElementById('day-detail-toggle');
+    var hourlyDayDetail = document.getElementById('hourly-day-detail');
+    var hourlyDayDetailLabel = document.getElementById('hourly-day-detail-label');
+    var hourlyDayDetailStrip = document.getElementById('hourly-day-detail-strip');
+    var loadSelection = { start: null };
+    var lastTappedHour = null;
+    var lastHourlyData = null;
+
+    function fetchHourlyLoad() {
+        fetch('/adverse-api/billboards/' + billboardPk + '/hourly-load/?days_ahead=14', { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+            .then(function (data) { renderHourlyLoad(data); })
+            .catch(function () { hourlyLoadContainer.classList.add('hidden'); });
+    }
+
+    function renderHourlyLoad(data) {
+        if (!data.hours || !data.hours.length) { hourlyLoadContainer.classList.add('hidden'); lastHourlyData = null; return; }
+        lastHourlyData = data;
+        hourlyLoadBars.innerHTML = '';
+        loadSelection.start = null;
+        dayDetailToggle.classList.add('hidden');
+        hourlyDayDetail.classList.add('hidden');
+
+        data.hours.forEach(function (block, i) {
+            var ratio = block.capacity > 0 ? (block.used / block.capacity) : 1;
+            var colorClass = block.is_full ? 'bg-rose-500/60' : (ratio >= 0.6 ? 'bg-amber-500/60' : 'bg-emerald-500/60');
+            var infoText = block.label + ' — ' + block.available + ' of ' + block.capacity + ' position' + (block.capacity !== 1 ? 's' : '') + ' open';
+
+            var bar = document.createElement('div');
+            bar.className = 'flex-1 rounded-t cursor-pointer hover:opacity-80 transition ' + colorClass;
+            bar.style.height = Math.max(8, Math.round(ratio * 100)) + '%';
+            bar.dataset.hour = block.hour;
+            bar.dataset.index = i;
+            bar.title = infoText;
+            bar.addEventListener('click', function () {
+                hourlyTapInfo.textContent = infoText;
+                lastTappedHour = block;
+                dayDetailToggle.classList.remove('hidden');
+                dayDetailToggle.textContent = 'Show days open at ' + block.label;
+                hourlyDayDetail.classList.add('hidden');
+                onHourBarClick(block);
+            });
+            hourlyLoadBars.appendChild(bar);
+        });
+
+        hourlyLoadFirstLbl.textContent = data.hours[0].label;
+        hourlyLoadLastLbl.textContent = data.hours[data.hours.length - 1].label;
+        hourlyLoadContainer.classList.remove('hidden');
+        computeWindowRisk();
+        positionHighlight();
+    }
+
+    dayDetailToggle.addEventListener('click', function () {
+        if (!hourlyDayDetail.classList.contains('hidden')) { hourlyDayDetail.classList.add('hidden'); return; }
+        if (!lastTappedHour) return;
+        hourlyDayDetailLabel.textContent = lastTappedHour.label;
+        hourlyDayDetailStrip.innerHTML = '<p class="text-[10px] text-white/30 py-2">Loading…</p>';
+        hourlyDayDetail.classList.remove('hidden');
+        fetch('/adverse-api/billboards/' + billboardPk + '/hourly-load/' + lastTappedHour.hour + '/daily/?days_ahead=14', { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+            .then(function (data) { renderHourDayDetail(data); })
+            .catch(function () {
+                hourlyDayDetailStrip.innerHTML = '<p class="text-[10px] text-rose-400/70 py-2">Couldn\'t load this — try again.</p>';
+            });
+    });
+
+    function renderHourDayDetail(data) {
+        hourlyDayDetailStrip.innerHTML = '';
+        (data.days || []).forEach(function (day) {
+            var parts = day.label.split(' ');
+            var cell = document.createElement('div');
+            cell.className = 'shrink-0 flex flex-col items-center justify-center w-9 h-11 rounded-md border text-center ' +
+                (day.is_full
+                    ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300');
+            cell.title = day.available + ' of ' + data.capacity + ' position' + (data.capacity !== 1 ? 's' : '') + ' open';
+            cell.innerHTML =
+                '<span class="text-[8px] uppercase tracking-wide opacity-70">' + (parts[0] || '') + '</span>' +
+                '<span class="text-xs font-bold leading-tight">' + (parts[1] || '') + '</span>';
+            hourlyDayDetailStrip.appendChild(cell);
+        });
+    }
+
+    function onHourBarClick(block) {
+        if (loadSelection.start === null) {
+            loadSelection.start = block.hour;
+            startTimeEl.value = pad2(block.hour) + ':00';
+        } else {
+            var endHour = block.hour + 1;
+            startTimeEl.value = pad2(loadSelection.start) + ':00';
+            endTimeEl.value = pad2(endHour % 24) + ':00';
+            loadSelection.start = null;
+        }
+        startTimeEl.dispatchEvent(new Event('input'));
+        endTimeEl.dispatchEvent(new Event('input'));
+        positionHighlight();
+    }
+
+    function positionHighlight() {
+        if (!lastHourlyData) return;
+        var s = startTimeEl.value, e = endTimeEl.value;
+        if (!s || !e || s === e) { windowHighlight.classList.add('hidden'); return; }
+        var startHour = parseInt(s.split(':')[0], 10);
+        var endHour = parseInt(e.split(':')[0], 10);
+        var hours = lastHourlyData.hours;
+        var startIdx = hours.findIndex(function (h) { return h.hour === startHour; });
+        var endIdx = hours.findIndex(function (h) { return h.hour === endHour; });
+        if (startIdx === -1) { windowHighlight.classList.add('hidden'); return; }
+        if (endIdx === -1) endIdx = endHour < startHour ? hours.length : startIdx + 1;
+        var bars = hourlyLoadBars.children;
+        if (!bars.length) return;
+        var left = bars[startIdx].offsetLeft;
+        var right = endIdx < bars.length ? bars[endIdx].offsetLeft : hourlyLoadBars.clientWidth;
+        windowHighlight.style.left = left + 'px';
+        windowHighlight.style.width = Math.max(2, right - left) + 'px';
+        windowHighlight.classList.remove('hidden');
+    }
+
+    function computeWindowRisk() {
+        if (!lastHourlyData || !lastHourlyData.hours || !lastHourlyData.hours.length) {
+            windowRiskSummary.classList.add('hidden');
+            return;
+        }
+        var s = startTimeEl.value, e = endTimeEl.value;
+        if (!s || !e || s === e) { windowRiskSummary.classList.add('hidden'); return; }
+        var startHour = parseInt(s.split(':')[0], 10);
+        var endHour = parseInt(e.split(':')[0], 10);
+        var wraps = endHour <= startHour;
+        var coveredFull = 0, coveredTotal = 0;
+        lastHourlyData.hours.forEach(function (block) {
+            var inWindow = wraps
+                ? (block.hour >= startHour || block.hour < endHour)
+                : (block.hour >= startHour && block.hour < endHour);
+            if (!inWindow) return;
+            coveredTotal++;
+            if (block.is_full) coveredFull++;
+        });
+        if (coveredTotal === 0) { windowRiskSummary.classList.add('hidden'); return; }
+        windowRiskSummary.classList.remove('hidden');
+        if (coveredFull === 0) {
+            windowRiskSummary.className = 'text-[11px] mt-2 text-emerald-400';
+            windowRiskSummary.textContent = 'Open across the next 14 days for this window.';
+        } else {
+            windowRiskSummary.className = 'text-[11px] mt-2 text-amber-400';
+            windowRiskSummary.textContent = coveredFull + ' of ' + coveredTotal + ' hour' + (coveredTotal !== 1 ? 's' : '') + ' in this window ' + (coveredFull !== 1 ? 'have' : 'has') + ' been fully booked on at least one day recently.';
+        }
+    }
+    startTimeEl.addEventListener('input', computeWindowRisk);
+    endTimeEl.addEventListener('input', computeWindowRisk);
+    startTimeEl.addEventListener('input', positionHighlight);
+    endTimeEl.addEventListener('input', positionHighlight);
+    window.addEventListener('resize', positionHighlight);
+
+    fetchHourlyLoad();
+    {% endif %}
+}());
+</script>
 {% endblock %}

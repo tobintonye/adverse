@@ -209,13 +209,20 @@ class PlayerScheduleView(APIView):
             )
         from scheduling.models import get_playlist_for_billboard
         from scheduling.api.serializers import TimeSlotSerializer
-        slots = get_playlist_for_billboard(player.billboard)
+        target_date = timezone.now().date()
+        slots = get_playlist_for_billboard(player.billboard, target_date)
 
         EMPTY_SCHEDULE_SENTINEL = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
 
         latest = slots.aggregate(latest=Max("updated_at"))["latest"]
         if latest is None:
-            latest = EMPTY_SCHEDULE_SENTINEL
+            latest = EMPTY_SCHEDULE_SENTINEL    
+        day_start = datetime.datetime.combine(
+            target_date, datetime.time.min, tzinfo=datetime.timezone.utc
+        )
+
+        if latest < day_start:
+            latest = day_start
 
         since_header = request.META.get("HTTP_IF_MODIFIED_SINCE")
         if since_header: 

@@ -12,7 +12,7 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from security.models import CustomUser
 from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSerializer, BillboardPublicSerializer,
-                           MediaSerializer, MediaUploadSerializer, MediaReviewSerializer, CampaignSlotSerializer,
+                           MediaSerializer, MediaUploadSerializer, MediaReviewSerializer,
                            CampaignSerializer, CampaignWriteSerializer, CampaignPriceEstimateSerializer, 
                            CampaignReviewSerializer
                           )

@@ -451,13 +451,20 @@ class Campaign(TimeStampedModel):
         self.status = self.Status.CANCELLED
         self.save(update_fields=["status", "updated_at"])
 
-    def confirm_dates(self, start_date):
+    def confirm_dates(self, start_date, daily_start_time=None, daily_end_time=None):
         """
-        Called when the advertiser picks a start date after approval.
-        end_date is derived from duration_days they never pick an end date.
-        Actual TimeSlot generation + capacity check happens in the service
-        layer (advertiser/services.py), wrapped in a transaction so a capacity
-        failure rolls this back cleanly.
+            Called when the advertiser picks a start date after approval —
+            real per-day/per-hour availability is only knowable at this stage,
+            so this is also the point where the advertiser may adjust their
+            daypart if their original creation-time guess turns out to be
+            unavailable. Ad manager approval is for the CONTENT and the
+            BILLBOARD, not a specific locked time window, so revising the
+            daypart here (before any TimeSlots exist) doesn't reopen anything
+            that was actually approved.
+
+            Actual TimeSlot generation + capacity check happens in the service
+            layer (advertiser/services.py), wrapped in a transaction so a capacity
+            failure rolls this back cleanly.
         """
         with transaction.atomic():
             locked = type(self).objects.select_for_update().get(pk=self.pk)
@@ -465,12 +472,26 @@ class Campaign(TimeStampedModel):
                 raise ValidationError("Campaign must be approved before selecting dates.")
             if start_date < timezone.now().date():
                 raise ValidationError({"start_date": "Start date cannot be in the past."})
-            
+
             from datetime import timedelta
+            update_fields = ["start_date", "end_date", "dates_confirmed_at", "updated_at"]
+           
             self.start_date = start_date
             self.end_date = start_date + timedelta(days=self.duration_days - 1)
             self.dates_confirmed_at = timezone.now()
-            self.save(update_fields=["start_date", "end_date", "dates_confirmed_at", "updated_at"])
+
+            if daily_start_time is not None and daily_end_time is not None:
+                if daily_start_time == daily_end_time:
+                    raise ValidationError({ "daily_end_time": "Daily end time must be different from daily start time." })
+                self.daily_start_time = daily_start_time
+                self.daily_end_time = daily_end_time
+                update_fields += ["daily_start_time", "daily_end_time"]
+
+                # check that a campaign's daypart actually fits inside its billboard's operating hours
+                for cs in self.campaign_slots.select_related("billboard").all():
+                    cs.campaign = self
+                    cs.full_clean()            
+            self.save(update_fields=update_fields)
 
     def expire_approval(self):
         """Called by the daily expiry task for APPROVED campaigns with no
@@ -506,25 +527,12 @@ class Campaign(TimeStampedModel):
             today = timezone.now().date()
             if self.status == self.Status.DRAFT and self.start_date < today:
                 raise ValidationError({"start_date": "Start date cannot be in the past."})
-            
-            # if starting today, the daily start time must still be ahead
-            # of the current clock time — you can't schedule an ad to start at 6am today if it's already past 6am.
-            """
-            if (self.status == self.Status.DRAFT and self.start_date == today and self.daily_end_time):
-                current_time = timezone.localtime(timezone.now()).time()
-                if current_time >= self.daily_end_time:
-                    raise ValidationError({
-                        "start_date": (
-                            "Today's daily window has already ended. Please choose a "
-                            "later daily end time, or set the start date to tomorrow."
-                        )
-                    })
-            """
+    
         # Operations timeframe bounds
         if self.daily_start_time and self.daily_end_time:
             if isinstance(self.daily_start_time, datetime.time) and isinstance(self.daily_end_time, datetime.time):
-                if self.daily_end_time <= self.daily_start_time:
-                    raise ValidationError({"daily_end_time": "Daily end time must be after start time."})
+                if self.daily_end_time == self.daily_start_time:
+                    raise ValidationError({"daily_end_time": "Daily end time must be different from daily start time."})
 
     def save(self, *args, **kwargs):
         if not kwargs.get("update_fields"):
@@ -560,16 +568,31 @@ class CampaignSlot(TimeStampedModel):
             bb_start = self.billboard.operating_hours_start
             bb_end = self.billboard.operating_hours_end
 
-            if campaign_start < bb_start or campaign_end > bb_end:
-                raise ValidationError({
-                    "billboard": (
-                        f"'{self.billboard.name}' only operates "
-                        f"{bb_start.strftime('%I:%M %p')}–{bb_end.strftime('%I:%M %p')}. "
-                        f"Your campaign's daily window "
-                        f"({campaign_start.strftime('%I:%M %p')}–{campaign_end.strftime('%I:%M %p')}) "
-                        f"falls outside that range."
-                    )
-                })
+            # A billboard's own operating_hours_start == operating_hours_end
+            # means "open 24 hours" (unlike a campaign daypart, where equal
+            # start/end is rejected as ambiguous — for a billboard's own
+            # hours there's only one sensible reading). Any daypart fits.
+            if bb_start != bb_end:
+                def mins(t):
+                    return t.hour * 60 + t.minute
+
+                o_s, o_e = mins(bb_start), mins(bb_end)
+                i_s, i_e = mins(campaign_start), mins(campaign_end)
+
+                outer_len = (o_e - o_s) % 1440 or 1440
+                inner_len = (i_e - i_s) % 1440 or 1440
+                offset = (i_s - o_s) % 1440
+
+                if offset + inner_len > outer_len:
+                    raise ValidationError({
+                        "billboard": (
+                            f"'{self.billboard.name}' only operates "
+                            f"{bb_start.strftime('%I:%M %p')}–{bb_end.strftime('%I:%M %p')}. "
+                            f"Your campaign's daily window "
+                            f"({campaign_start.strftime('%I:%M %p')}–{campaign_end.strftime('%I:%M %p')}) "
+                            f"falls outside that range."
+                        )
+                    })
 
     class Meta:
         unique_together = [("campaign", "billboard")]

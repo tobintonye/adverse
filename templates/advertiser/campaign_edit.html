@@ -165,6 +165,7 @@
                 {% if form.daily_end_time.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.daily_end_time.errors.0 }}</p>{% endif %}
             </div>
         </div>
+        <p id="window-risk-summary" class="hidden text-[11px] mb-4 -mt-2"></p>
 
         {# Hourly Availability Heatmap #}
         <div id="hourly-load-container" class="hidden bg-bg border border-white/10 rounded-xl p-4 shadow-md">
@@ -174,8 +175,9 @@
                 </svg>
                 Availability by time of day
             </h3>
-            <p class="text-[11px] text-white/40 mb-3">Busiest day in the next two weeks, per hour. Click a bar to set your start time, click another to set your end time — or pick a window with room before setting times manually above.</p>
+            <p class="text-[11px] text-white/40 mb-3">Busiest day in the next two weeks, per hour. Click a bar to set your start time, then click another for your end time — click an earlier hour second to select an overnight window that crosses midnight. Tap ▾ under any hour to see which specific days are open.</p>
             <div id="hourly-load-bars" class="flex items-end gap-0.5 h-16"></div>
+            <div id="hourly-load-toggles" class="flex gap-0.5 mt-0.5"></div>
             <div class="flex items-center justify-between text-[10px] text-white/40 mt-1.5">
                 <span id="hourly-load-first-label"></span>
                 <span id="hourly-load-last-label"></span>
@@ -184,6 +186,17 @@
                 <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/40"></span>Open</span>
                 <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-500/40"></span>Filling up</span>
                 <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500/40"></span>Full</span>
+            </div>
+            {# Per-hour day-by-day drill-down — hidden until a "which days?" toggle is tapped.
+               A worst-case-red bar only says "risky somewhere in the next 14 days," not which
+               days specifically; this answers that, scoped to one hour at a time so nobody has
+               to read a full hours-by-days grid to get a quick read on the chart above. #}
+            <div id="hourly-day-detail" class="hidden mt-3 pt-3 border-t border-white/10">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-[11px] text-white/60"><span id="hourly-day-detail-label" class="font-semibold text-white"></span> — day by day</p>
+                    <button type="button" onclick="closeHourDetail()" class="text-white/30 hover:text-white/60 text-xs leading-none">✕</button>
+                </div>
+                <div id="hourly-day-detail-strip" class="flex gap-1 overflow-x-auto pb-1"></div>
             </div>
         </div>
 
@@ -266,8 +279,13 @@
     var capacityWarningText = document.getElementById('capacity-warning-text');
     var hourlyLoadContainer = document.getElementById('hourly-load-container');
     var hourlyLoadBars = document.getElementById('hourly-load-bars');
+    var hourlyLoadToggles = document.getElementById('hourly-load-toggles');
     var hourlyLoadFirstLbl= document.getElementById('hourly-load-first-label');
     var hourlyLoadLastLbl = document.getElementById('hourly-load-last-label');
+    var hourlyDayDetail = document.getElementById('hourly-day-detail');
+    var hourlyDayDetailLabel = document.getElementById('hourly-day-detail-label');
+    var hourlyDayDetailStrip = document.getElementById('hourly-day-detail-strip');
+    var windowRiskSummary = document.getElementById('window-risk-summary');
     var startTimeEl = document.getElementById('daily-start-time');
     var endTimeEl   = document.getElementById('daily-end-time');
     var currentBillboard = null;
@@ -324,8 +342,13 @@
         }
     }
     var loadSelection = { start: null };
+    var currentBillboardPk = null;
+    var openDetailHour = null;
+    var lastHourlyData = null;
     function pad2(n) { return n < 10 ? '0' + n : '' + n; }
     function fetchHourlyLoad(pk) {
+        currentBillboardPk = pk;
+        closeHourDetail();
         if (!pk) { hourlyLoadContainer.classList.add('hidden'); return; }
         fetch('/adverse-api/billboards/' + pk + '/hourly-load/?days_ahead=14', { credentials: 'same-origin' })
             .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
@@ -333,9 +356,12 @@
             .catch(function () { hourlyLoadContainer.classList.add('hidden'); });
     }
     function renderHourlyLoad(data) {
-        if (!data.hours || !data.hours.length) { hourlyLoadContainer.classList.add('hidden'); return; }
+        if (!data.hours || !data.hours.length) { hourlyLoadContainer.classList.add('hidden'); lastHourlyData = null; windowRiskSummary.classList.add('hidden'); return; }
+        lastHourlyData = data;
         hourlyLoadBars.innerHTML = '';
+        hourlyLoadToggles.innerHTML = '';
         loadSelection.start = null;
+        closeHourDetail();
         data.hours.forEach(function (block) {
             var ratio = block.capacity > 0 ? (block.used / block.capacity) : 1;
             var colorClass = block.is_full ? 'bg-rose-500/50' : (ratio >= 0.6 ? 'bg-amber-500/50' : 'bg-emerald-500/50');
@@ -345,19 +371,105 @@
             bar.title = block.label + ' — ' + block.available + ' of ' + block.capacity + ' position' + (block.capacity !== 1 ? 's' : '') + ' open';
             bar.addEventListener('click', function () { onHourBarClick(block); });
             hourlyLoadBars.appendChild(bar);
+
+            // Separate small "which days?" affordance, deliberately distinct
+            // from the bar itself — tapping the bar keeps setting your
+            // start/end time; this only opens the day-by-day drill-down for
+            // that one hour, so neither action can be triggered by accident
+            // in place of the other.
+            var toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'flex-1 text-[8px] leading-none text-white/25 hover:text-white/60 transition py-0.5';
+            toggle.textContent = '▾';
+            toggle.title = 'See which days are open at ' + block.label;
+            toggle.addEventListener('click', function () { toggleHourDetail(block); });
+            hourlyLoadToggles.appendChild(toggle);
         });
         hourlyLoadFirstLbl.textContent = data.hours[0].label;
         hourlyLoadLastLbl.textContent = data.hours[data.hours.length - 1].label;
         hourlyLoadContainer.classList.remove('hidden');
+        computeWindowRisk();
     }
+    function closeHourDetail() {
+        openDetailHour = null;
+        hourlyDayDetail.classList.add('hidden');
+        hourlyDayDetailStrip.innerHTML = '';
+    }
+    function toggleHourDetail(block) {
+        if (openDetailHour === block.hour) { closeHourDetail(); return; }
+        openDetailHour = block.hour;
+        hourlyDayDetailLabel.textContent = block.label;
+        hourlyDayDetailStrip.innerHTML = '<p class="text-[10px] text-white/30 py-2">Loading…</p>';
+        hourlyDayDetail.classList.remove('hidden');
+        if (!currentBillboardPk) return;
+        fetch('/adverse-api/billboards/' + currentBillboardPk + '/hourly-load/' + block.hour + '/daily/?days_ahead=14', { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+            .then(function (data) { renderHourDayDetail(data); })
+            .catch(function () {
+                hourlyDayDetailStrip.innerHTML = '<p class="text-[10px] text-rose-400/70 py-2">Couldn\'t load this — try again.</p>';
+            });
+    }
+    function renderHourDayDetail(data) {
+        if (openDetailHour !== data.hour) return; // a different hour was opened while this was loading
+        hourlyDayDetailStrip.innerHTML = '';
+        (data.days || []).forEach(function (day) {
+            var parts = day.label.split(' ');
+            var cell = document.createElement('div');
+            cell.className = 'shrink-0 flex flex-col items-center justify-center w-9 h-11 rounded-md border text-center ' +
+                (day.is_full
+                    ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300');
+            cell.title = day.available + ' of ' + data.capacity + ' position' + (data.capacity !== 1 ? 's' : '') + ' open';
+            cell.innerHTML =
+                '<span class="text-[8px] uppercase tracking-wide opacity-70">' + (parts[0] || '') + '</span>' +
+                '<span class="text-xs font-bold leading-tight">' + (parts[1] || '') + '</span>';
+            hourlyDayDetailStrip.appendChild(cell);
+        });
+    }
+    function computeWindowRisk() {
+        if (!lastHourlyData || !lastHourlyData.hours || !lastHourlyData.hours.length) {
+            windowRiskSummary.classList.add('hidden');
+            return;
+        }
+        var s = startTimeEl.value, e = endTimeEl.value;
+        if (!s || !e || s === e) { windowRiskSummary.classList.add('hidden'); return; }
+        var startHour = parseInt(s.split(':')[0], 10);
+        var endHour = parseInt(e.split(':')[0], 10);
+        var wraps = endHour <= startHour;
+        var coveredFull = 0, coveredTotal = 0;
+        lastHourlyData.hours.forEach(function (block) {
+            var inWindow = wraps
+                ? (block.hour >= startHour || block.hour < endHour)
+                : (block.hour >= startHour && block.hour < endHour);
+            if (!inWindow) return;
+            coveredTotal++;
+            if (block.is_full) coveredFull++;
+        });
+        if (coveredTotal === 0) { windowRiskSummary.classList.add('hidden'); return; }
+        windowRiskSummary.classList.remove('hidden');
+        if (coveredFull === 0) {
+            windowRiskSummary.className = 'text-[11px] mb-4 -mt-2 text-emerald-400';
+            windowRiskSummary.textContent = 'Open across the next 14 days for this window.';
+        } else {
+            windowRiskSummary.className = 'text-[11px] mb-4 -mt-2 text-amber-400';
+            windowRiskSummary.textContent = 'Heads up: ' + coveredFull + ' of the ' + coveredTotal + ' hour' + (coveredTotal !== 1 ? 's' : '') + ' in this window ' + (coveredFull !== 1 ? 'have' : 'has') + ' been fully booked on at least one day in the next 14 days.';
+        }
+    }
+    startTimeEl.addEventListener('input', computeWindowRisk);
+    endTimeEl.addEventListener('input', computeWindowRisk);
     function onHourBarClick(block) {
         if (loadSelection.start === null) {
             loadSelection.start = block.hour;
             startTimeEl.value = pad2(block.hour) + ':00';
         } else {
-            var startHour = block.hour >= loadSelection.start ? loadSelection.start : block.hour;
-            var endHour   = block.hour >= loadSelection.start ? block.hour + 1 : loadSelection.start + 1;
-            startTimeEl.value = pad2(startHour) + ':00';
+            // Keep the literal click order: first click is always the
+            // start, second is always the end — even when the second hour
+            // is numerically smaller than the first. That's what makes an
+            // overnight window (e.g. click 10pm, then click 2am) selectable
+            // at all; sorting into min..max would silently invert that
+            // click order into the wrong, much larger daytime window.
+            var endHour = block.hour + 1; // +1: the clicked bar's own hour is included in the window
+            startTimeEl.value = pad2(loadSelection.start) + ':00';
             endTimeEl.value   = pad2(endHour % 24) + ':00';
             loadSelection.start = null;
         }
