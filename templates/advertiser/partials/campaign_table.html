@@ -9,6 +9,7 @@
                         <th class="py-3 px-4 whitespace-nowrap">Schedule</th>
                         <th class="py-3 px-4 whitespace-nowrap">Budget</th>
                         <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Created</th> 
                         <th class="py-3 px-4 text-right whitespace-nowrap">Action</th>
                     </tr>
                 </thead>
@@ -53,6 +54,10 @@
                                 <span class="inline-flex items-center text-[11px] font-medium bg-white/10 text-white/70 border border-white/10 px-3 py-1 rounded-full">{{ campaign.get_status_display }}</span>
                             {% endif %}
                         </td>
+                        <td class="py-3.5 px-4 text-white/70 whitespace-nowrap tabular-nums">
+                        {{ campaign.created_at|date:"M d, Y" }}
+                        <p class="text-[11px] text-white/40 mt-0.5">{{ campaign.created_at|time:"g:i A" }}</p>
+                    </td>
                         <td class="py-3.5 px-4 text-right whitespace-nowrap">
                             <a href="{% url 'advertiser:campaign_detail' campaign.pk %}"
                                class="inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 text-xs font-semibold text-accent border border-white/10 px-3 py-1.5 rounded-lg transition">

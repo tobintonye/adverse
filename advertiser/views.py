@@ -786,26 +786,16 @@ def campaign_detail(request, pk):
     try:
         payment = getattr(campaign, "payment", None)
         if payment and payment.status == "pending":
-            from payments.services import handle_charge_success
-            try:
-                handle_charge_success({
-                    "event": "charge.success",
-                    "data": {"reference": payment.reference}
-                })
-                payment.refresh_from_db()
-                campaign.refresh_from_db()
-                if payment.status == "completed":
-                    messages.success(
-                        request,
-                        "Payment confirmed! Your campaign is now active."
-                    )
-            except Exception:
-                 logger.info(
-                        "Payment verification poll for campaign %s (payment %s) did not complete yet.",
-                        campaign.pk, payment.pk, exc_info=True,
-                    )
+            from payments.services import sync_pending_payment
+            previous_status = payment.status
+            payment = sync_pending_payment(payment)
+            campaign.refresh_from_db()
+            if payment.status == "completed" and previous_status != "completed":
+                messages.success(request, "Payment confirmed! Your campaign is now active.")
+            elif payment.status == "failed" and previous_status != "failed":
+                messages.warning(request, "That payment attempt wasn't completed. You can try again below.") 
     except Exception:
-        payment = None
+        payment = getattr(campaign, "payment", None)
     slots = campaign.campaign_slots.select_related("billboard").all()
 
     now = timezone.now()
@@ -940,23 +930,13 @@ def campaign_status_fragment(request, pk):
     payment = None
     try:
         payment = getattr(campaign, "payment", None)
-        # Auto-verify pending payment on each poll
+        # Auto-sync pending payment against Paystack's live status on each poll
         if payment and payment.status == "pending":
-            from payments.services import handle_charge_success
-            try:
-                handle_charge_success({
-                    "event": "charge.success",
-                    "data": {"reference": payment.reference}
-                })
-                payment.refresh_from_db()
-                campaign.refresh_from_db()
-            except Exception:
-                logger.info(
-                        "Payment verification poll for campaign %s (payment %s) did not complete yet.",
-                        campaign.pk, payment.pk, exc_info=True,
-                    )
+            from payments.services import sync_pending_payment
+            payment = sync_pending_payment(payment)
+            campaign.refresh_from_db()
     except Exception:
-        payment = None
+        payment = getattr(campaign, "payment", None)
  
     return render(request, "advertiser/partials/campaign_status_banner.html", {
         "campaign": campaign,

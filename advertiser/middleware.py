@@ -2,7 +2,7 @@ import logging
 
 from django.core.cache import cache
 from django.utils import timezone
-from scheduling.tasks import activate_due_campaigns, expire_old_campaigns
+from scheduling.tasks import activate_due_campaigns, expire_old_campaigns,expire_unconfirmed_approvals
 from advertiser.models import Campaign
 
 logger = logging.getLogger("advertiser.middleware")
@@ -28,5 +28,6 @@ class CampaignStatusSyncMiddleware:
         try:
             activate_due_campaigns()
             expire_old_campaigns()
+            expire_unconfirmed_approvals()
         except Exception:
             logger.exception("CampaignStatusSyncMiddleware: sync failed")

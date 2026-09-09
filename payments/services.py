@@ -230,6 +230,7 @@ def initialize_campaign_payment(campaign) -> dict:
     """
 
     existing_payment = getattr(campaign, "payment", None)
+    retry_payment = None
     if existing_payment is not None:
         if existing_payment.status == CampaignPayment.Status.COMPLETED:
             raise ValidationError("This campaign has already been paid for.")
@@ -238,11 +239,10 @@ def initialize_campaign_payment(campaign) -> dict:
                 "A payment is already in progress for this campaign. "
                 "Please complete or wait for it to expire before retrying."
             )
-        raise ValidationError(
-            "A previous payment attempt for this campaign did not succeed. "
-            "Please contact support to retry."
-        )
-
+        if existing_payment.status == CampaignPayment.Status.FAILED:
+            retry_payment = existing_payment
+        else:
+            raise ValidationError("This campaign's previous payment requires manual review. Please contact support to retry.")
     # Never take money for content that isn't verified safe to play. Human approval (full_approved) is about content/policy; this is a separate automated check
     # that the file can actually be decoded on the billboard hardware. Both must pass before payment is even offered/
     media = campaign.media
@@ -280,16 +280,34 @@ def initialize_campaign_payment(campaign) -> dict:
     # This ensures that if Paystack succeeds but the DB write fails,
     # we don't end up with money taken and no local record.
 
-    payment = CampaignPayment.objects.create( 
-        campaign=campaign,
-        subaccount=subaccount,
-        total_amount=total_amount,
-        platform_fee=platform_fee,
-        manager_amount=manager_amount,
-        reference=reference,
-        status=CampaignPayment.Status.PENDING,
-    )
-    # call Paystack. If this fails, clean up the local record.
+    if retry_payment is not None:
+        payment = retry_payment
+        payment.subaccount = subaccount
+        payment.total_amount = total_amount
+        payment.platform_fee = platform_fee
+        payment.manager_amount = manager_amount
+        payment.reference = reference
+        payment.paystack_reference = ""
+        payment.gateway_response = {}
+        payment.status = CampaignPayment.Status.PENDING
+        payment.completed_at = None
+        payment.save(update_fields=[
+            "subaccount", "total_amount", "platform_fee", "manager_amount",
+            "reference", "paystack_reference", "gateway_response",
+            "status", "completed_at", "updated_at"
+        ])
+    else:
+        payment = CampaignPayment.objects.create(
+            campaign=campaign,
+            subaccount=subaccount,
+            total_amount=total_amount,
+            platform_fee=platform_fee,
+            manager_amount=manager_amount,
+            reference=reference,
+            status=CampaignPayment.Status.PENDING
+        )
+     # call Paystack. If this fails: delete a brand-new record, or put a retried record back to FAILED (never leave it stuck PENDING against a reference Paystack never actually received).
+
     try: 
          response_payload = _paystack_post(
             "https://api.paystack.co/transaction/initialize",
@@ -311,7 +329,10 @@ def initialize_campaign_payment(campaign) -> dict:
             },
         )
     except ValidationError:
-        payment.delete()
+        if retry_payment is not None:
+            payment.mark_failed(gateway_response={})
+        else:
+            payment.delete()
         raise
  
     return response_payload.get("data", {})
@@ -388,6 +409,62 @@ def handle_charge_success(event_data: dict) -> CampaignPayment | None:
     )
     return payment
 
+# Paystack transaction statuses that mean "this checkout session is 
+# definitively over and did not result in a successful charge." Safe to
+# free the payment up for retry immediately on these
+_TERMINAL_UNSUCCESSFUL_STATUSES = {"abandoned", "failed", "reversed"}
+
+def sync_pending_payment(payment) -> CampaignPayment: 
+    """
+    Reconciles a PENDING payment live against Paystack before webhooks or cleanup tasks run.
+
+    Updates status directly: COMPLETED on success, FAILED on terminal failures
+    (allowing immediate retry), or leaves untouched if pending or on API error.
+    Safe to call unconditionally; no-ops if not PENDING and never raises.
+    """
+    if payment is None or payment.status != CampaignPayment.Status.PENDING: 
+        return payment
+
+    try:
+        response = _paystack_get(f"https://api.paystack.co/transaction/verify/{payment.reference}")
+    except ValidationError: 
+        logger.info("sync_pending_payment: could not reach Paystack for payment %s (reference=%s) — will retry later.", payment.id, payment.reference,)
+        return payment
+    data = response.get("data") or {}
+    paystack_status = data.get("status")
+
+    if paystack_status == "success":
+        try:
+            result = handle_charge_success({
+                "event": "charge.success", 
+                "data": {"reference": payment.reference},
+            })
+            return result if result is not None else payment
+        except ValidationError:
+            logger.exception(
+                "sync_pending_payment: Paystack reported success but handle_charge_success "
+                "rejected payment %s (reference=%s) — needs manual review.",
+                payment.id, payment.reference,
+            )
+            return payment
+    if paystack_status in _TERMINAL_UNSUCCESSFUL_STATUSES:
+        try:
+            payment.mark_failed(gateway_response=_safe_gateway_response(data))
+            logger.info(
+                "sync_pending_payment: payment %s marked FAILED — Paystack reports '%s' (reference=%s).",
+                payment.id, paystack_status, payment.reference,
+            )
+        except ValidationError: 
+            logger.info(
+                "sync_pending_payment: payment %s could not be marked FAILED — "
+                "likely completed concurrently in the meantime (reference=%s).",
+                payment.id, payment.reference,
+            )
+            payment.refresh_from_db()
+        return payment
+
+    # Still genuinely in flight on Paystack's side — leave it PENDING.
+    return payment
 
 # Refund
 def initiate_campaign_refund(campaign, initiated_by=None) -> dict:

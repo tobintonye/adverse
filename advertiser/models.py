@@ -178,6 +178,8 @@ class Media(TimeStampedModel):
         Called automatically when the ad manager approves the campaign.
     """
     def fully_approve(self, manager_user):
+        if self.status == self.Status.FULLY_APPROVED:
+            return
         if self.status != self.Status.ADMIN_APPROVED:
              raise ValidationError("Media must be admin-approved before manager approval.")
         self.status = self.Status.FULLY_APPROVED 

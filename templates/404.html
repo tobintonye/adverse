@@ -1,0 +1,27 @@
+{% extends "adverse/base.html" %}
+{% load static %}
+
+{% block title %}Page not found — Advers{% endblock %}
+
+{% block content %}
+<section style="min-height: 80vh; display:flex; align-items:center; justify-content:center; padding: 140px 24px 80px;">
+    <div class="wrap" style="max-width: 640px; text-align:center;">
+
+        <p class="eyebrow" style="margin-bottom: 18px;">Error 404</p>
+
+        <h1 style="font-family:'Space Grotesk', sans-serif; font-weight:600; font-size: clamp(48px, 8vw, 96px); line-height:1; color: var(--text-hi); margin-bottom: 20px;">
+            Page not found
+        </h1>
+
+        <p style="font-size: 16px; line-height:1.6; color: var(--text-mid); max-width: 440px; margin: 0 auto 40px;">
+            The page you're looking for doesn't exist, may have moved, or the link might be broken.
+        </p>
+
+        <div style="display:flex; align-items:center; justify-content:center; gap: 14px; flex-wrap: wrap;">
+            <a href="{% url 'adverse:home' %}" class="btn btn-primary">Go to homepage</a>
+            <a href="javascript:history.back()" class="btn btn-ghost">Go back</a>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

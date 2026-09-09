@@ -116,23 +116,23 @@
 {# PAYMENT FAILED #}
 {% elif payment_status == "failed" %}
 <div id="campaign-status-banner"
-     class="rounded-xl border border-red-500/20 bg-red-500/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+     class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex items-start gap-4">
-        <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
-            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
         <div>
-            <p class="text-sm font-bold text-red-400">Payment failed</p>
+            <p class="text-sm font-bold text-amber-400">Payment not completed</p>
             <p class="text-xs text-white/70 mt-1">
-                Your previous payment attempt did not go through. Try again to activate this campaign.
+                Your previous payment attempt didn't go through. Try again to activate this campaign.
             </p>
         </div>
     </div>
     <form method="post" action="{% url 'advertiser:campaign_pay' campaign.pk %}">
         {% csrf_token %}
-        <button type="submit" class="inline-flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white font-semibold text-xs rounded-lg transition shrink-0">
+        <button type="submit" class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-[#06101F] font-semibold text-xs rounded-lg transition shrink-0">
             Retry payment
         </button>
     </form>

@@ -1,5 +1,16 @@
 <div id="campaign-table-container" class="w-full space-y-4">
 
+    <style>
+        /* Hide the horizontal scrollbar track while keeping scroll functional */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+        }
+    </style>
+
     {# Results count #}
     {% if search_query or selected_status %}
     <p class="text-xs text-white/50 tabular-nums">
@@ -9,8 +20,8 @@
 
     {% if campaigns %}
     <div class="bg-panel border border-white/10 rounded-xl shadow-xl">
-        <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left border-collapse min-w-[700px]">
+        <div class="overflow-x-auto scrollbar-hide">
+        <table class="w-full text-sm text-left border-collapse min-w-[820px]">
             <thead>
                 <tr class="border-b border-white/10 bg-white/5 select-none">
                     <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest w-16">Creative</th>
@@ -19,6 +30,7 @@
                     <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Schedule</th>
                     <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Budget</th>
                     <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest">Status</th>
+                    <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest whitespace-nowrap">Created</th> 
                     <th class="px-4 py-3.5 text-[10px] font-semibold text-white/50 uppercase tracking-widest text-right w-16">Action</th>
                 </tr>
             </thead>
@@ -104,8 +116,8 @@
                                 Completed
                             </span>
                         {% elif campaign.status == 'approval_expired' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-zinc-500/10 border border-zinc-500/30 text-zinc-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
                                 Approval Expired
                             </span>
                         {% elif campaign.status == 'rejected' or campaign.status == 'cancelled' %}
@@ -124,8 +136,11 @@
                             </span>
                         {% endif %}
                     </td>
-
-                    {# Action Link #}
+                    <td class="px-4 py-3.5 align-middle whitespace-nowrap">
+                        <div class="text-xs text-white/70">{{ campaign.created_at|date:"M d, Y" }}</div>
+                        <div class="text-[11px] text-white/40 tabular-nums">{{ campaign.created_at|time:"g:i A" }}</div>
+                    </td>
+                 
                     <td class="px-4 py-3.5 align-middle text-right whitespace-nowrap">
                         <a href="{% url 'admanager:campaign_request_detail' campaign.pk %}"
                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white/80 hover:text-white transition inline-block">
