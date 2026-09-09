@@ -127,7 +127,8 @@ class MediaUploadForm(forms.ModelForm):
 class CampaignForm(forms.ModelForm):
     """
     Mirrors CampaignWriteSerializer's validate() rules.
-    Media choices are scoped to this advertiser's ADMIN_APPROVED files only.
+    Media choices are scoped to this advertiser's admin_approved or fully_approved files, so previously-approved media can be reused
+    for a new campaign.
 
     NOTE: start_date/end_date are NOT collected here anymore. The advertiser
     only picks duration_days at creation time actual calendar dates are
@@ -146,10 +147,10 @@ class CampaignForm(forms.ModelForm):
     def __init__(self, advertiser, *args, **kwargs):
         self.advertiser = advertiser
         super().__init__(*args, **kwargs)
-        # Scope media dropdown to this advertiser's admin-approved files only
+        # Scope media dropdown to this advertiser's approved files only
         self.fields["media"].queryset = Media.objects.filter(
             advertiser=advertiser,
-            status=Media.Status.ADMIN_APPROVED,
+            status__in=[Media.Status.ADMIN_APPROVED, Media.Status.FULLY_APPROVED],
         )
         self.fields["media"].empty_label = "Select approved media..."
 
@@ -167,8 +168,9 @@ class CampaignForm(forms.ModelForm):
         media = self.cleaned_data.get("media")
         if not media:
             return media
-        if media.status != Media.Status.ADMIN_APPROVED: 
-            raise ValidationError("Only admin-approved media files can be used in a campaign.")
+        if media.status not in (Media.Status.ADMIN_APPROVED, Media.Status.FULLY_APPROVED): 
+            raise ValidationError("Only approved media files can be used in a campaign.")
+        
         if media.advertiser != self.advertiser:
             raise ValidationError("You do not own this media asset.")
         return media

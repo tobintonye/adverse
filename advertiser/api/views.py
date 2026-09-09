@@ -17,7 +17,7 @@ from .serializers import ( AdvertiserProfileSerializer, AdvertiserProfileWriteSe
                            CampaignReviewSerializer
                           )
 from decimal import Decimal
-from  ..services import (approve_campaign_by_manager, reject_campaign,admin_forward_campaign,)
+from  ..services import (approve_campaign_by_manager, reject_campaign, admin_forward_campaign,)
 
 User = get_user_model()
 

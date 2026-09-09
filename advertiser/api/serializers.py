@@ -210,7 +210,8 @@ class CampaignWriteSerializer(serializers.ModelSerializer):
         )
     
     def validate_media(self, media): 
-        if media.status != Media.Status.ADMIN_APPROVED:
+        # if media.status != Media.Status.ADMIN_APPROVED:
+        if media.status not in (Media.Status.ADMIN_APPROVED, Media.Status.FULLY_APPROVED):
             raise serializers.ValidationError("Only approved media files can be used to set up a campaign.")
         advertiser = self.context["advertiser"]
         if media.advertiser != advertiser:
