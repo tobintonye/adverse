@@ -1,0 +1,135 @@
+{% comment %}
+Media Selector — searchable thumbnail picker.
+Include with: {% include "advertiser/partials/media_field.html" with form=form selected_media=selected_media %}
+`selected_media` (optional) is a Media instance to pre-fill the trigger with —
+pass the campaign's current media on edit, or the resubmitted value after a
+failed validation POST.
+{% endcomment %}
+<div class="min-w-0">
+    <label class="block text-xs font-semibold text-white/90 uppercase tracking-wider mb-2">
+        Select Media <span class="text-white/40 font-normal lowercase">(approved or previously-approved)</span>
+    </label>
+
+    <input type="hidden" name="media" id="media-input" value="{{ form.media.value|default:'' }}">
+
+    <button type="button" id="media-trigger" onclick="AdVerseMediaPicker.open()"
+            class="w-full flex items-center gap-3 bg-bg border border-white/10 hover:border-accent/50 rounded-lg px-3 py-2.5 text-left transition min-w-0">
+        <div id="media-trigger-thumb" class="w-9 h-9 rounded-md bg-white/5 border border-white/10 flex-shrink-0 overflow-hidden flex items-center justify-center">
+            {% if selected_media %}
+                <img src="{% if selected_media.thumbnail %}{{ selected_media.thumbnail.url }}{% else %}{{ selected_media.file.url }}{% endif %}" class="w-full h-full object-cover">
+            {% else %}
+                <svg class="w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            {% endif %}
+        </div>
+        <span id="media-trigger-label" class="text-xs flex-1 min-w-0 truncate {% if selected_media %}text-white{% else %}text-white/40{% endif %}">
+            {% if selected_media %}{{ selected_media.title }} ({{ selected_media.get_media_type_display }}){% else %}Select your approved media...{% endif %}
+        </span>
+        <svg class="w-3.5 h-3.5 text-white/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    {% if form.media.errors %}<p class="text-red-400 text-xs mt-1.5">{{ form.media.errors.0 }}</p>{% endif %}
+    {% if not form.fields.media.queryset %}
+    <p class="text-amber-400 text-xs mt-2">
+        You have no approved media yet.
+        <a href="{% url 'advertiser:upload_media' %}" class="text-accent underline hover:opacity-90">Upload media</a>
+        first and wait for admin approval.
+    </p>
+    {% endif %}
+
+    {# Picker panel #}
+    <div id="media-picker-panel" class="hidden mt-2 bg-panel border border-white/10 rounded-xl shadow-xl overflow-hidden">
+        <div class="p-2.5 border-b border-white/10">
+            <input type="text" id="media-search" name="q" placeholder="Search your media by title..."
+                   hx-get="{% url 'advertiser:media_picker' %}"
+                   hx-trigger="keyup changed delay:300ms, mediaPickerOpen"
+                   hx-target="#media-picker-results"
+                   hx-swap="innerHTML"
+                   hx-include="#media-type-active"
+                   class="w-full bg-bg border border-white/10 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition">
+        </div>
+        <input type="hidden" id="media-type-active" name="type" value="all">
+        <div class="flex items-center gap-1 px-2.5 pt-2 pb-1">
+            <button type="button" data-type="all"
+                    hx-get="{% url 'advertiser:media_picker' %}" hx-target="#media-picker-results" hx-swap="innerHTML"
+                    hx-include="#media-search" hx-vals='{"type": "all"}'
+                    onclick="AdVerseMediaPicker.setTab(this)"
+                    class="media-picker-tab text-[10px] font-medium px-2.5 py-1 rounded-md transition cursor-pointer text-white bg-white/10">
+                All
+            </button>
+            <button type="button" data-type="image"
+                    hx-get="{% url 'advertiser:media_picker' %}" hx-target="#media-picker-results" hx-swap="innerHTML"
+                    hx-include="#media-search" hx-vals='{"type": "image"}'
+                    onclick="AdVerseMediaPicker.setTab(this)"
+                    class="media-picker-tab text-[10px] font-medium px-2.5 py-1 rounded-md transition cursor-pointer text-white/50 hover:text-white">
+                Images
+            </button>
+            <button type="button" data-type="video"
+                    hx-get="{% url 'advertiser:media_picker' %}" hx-target="#media-picker-results" hx-swap="innerHTML"
+                    hx-include="#media-search" hx-vals='{"type": "video"}'
+                    onclick="AdVerseMediaPicker.setTab(this)"
+                    class="media-picker-tab text-[10px] font-medium px-2.5 py-1 rounded-md transition cursor-pointer text-white/50 hover:text-white">
+                Videos
+            </button>
+        </div>
+        <div id="media-picker-results" class="p-2.5 max-h-72 overflow-y-auto">
+            <p class="text-white/30 text-xs text-center py-6">Loading…</p>
+        </div>
+    </div>
+</div>
+
+<script>
+var AdVerseMediaPicker = (function () {
+    var panel = document.getElementById('media-picker-panel');
+    var trigger = document.getElementById('media-trigger');
+    var input = document.getElementById('media-input');
+    var label = document.getElementById('media-trigger-label');
+    var thumb = document.getElementById('media-trigger-thumb');
+    var searchBox = document.getElementById('media-search');
+    var typeActive = document.getElementById('media-type-active');
+
+    function open() {
+        panel.classList.remove('hidden');
+        searchBox.value = '';
+        searchBox.focus();
+        searchBox.dispatchEvent(new Event('mediaPickerOpen'));
+        document.addEventListener('click', handleOutsideClick, true);
+    }
+    function close() {
+        panel.classList.add('hidden');
+        document.removeEventListener('click', handleOutsideClick, true);
+    }
+    function handleOutsideClick(e) {
+        if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+            close();
+        }
+    }
+    function setTab(el) {
+        typeActive.value = el.getAttribute('data-type');
+        document.querySelectorAll('.media-picker-tab').forEach(function (t) {
+            t.classList.remove('text-white', 'bg-white/10');
+            t.classList.add('text-white/50');
+        });
+        el.classList.add('text-white', 'bg-white/10');
+        el.classList.remove('text-white/50');
+    }
+    function select(el) {
+        var id = el.getAttribute('data-media-id');
+        var title = el.getAttribute('data-media-title');
+        var type = el.getAttribute('data-media-type');
+        var thumbUrl = el.getAttribute('data-media-thumb');
+
+        input.value = id;
+        input.dispatchEvent(new Event('change'));
+        label.textContent = title + ' (' + type + ')';
+        label.classList.remove('text-white/40');
+        label.classList.add('text-white');
+        thumb.innerHTML = '<img src="' + thumbUrl + '" class="w-full h-full object-cover">';
+        close();
+    }
+    return { open: open, close: close, select: select, setTab: setTab };
+}());
+</script>

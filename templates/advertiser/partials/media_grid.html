@@ -1,34 +1,55 @@
 {% load static %}
 <div>
     <!-- Header with Filter Controls -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 border-b border-white/10 pb-4">
-        <!-- Filter Tabs -->
-        <div class="inline-flex items-center gap-1 bg-panel border border-white/10 p-1 rounded-lg w-full sm:w-auto overflow-x-auto no-scrollbar">
-            <button hx-get="{% url 'advertiser:media_library' %}?type=all"
-                    hx-target="#media-library-container"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                    class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'all' or not current_type %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
-                All Media
-            </button>
-            <button hx-get="{% url 'advertiser:media_library' %}?type=image"
-                    hx-target="#media-library-container"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                    class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'image' %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
-                Images
-            </button>
-            <button hx-get="{% url 'advertiser:media_library' %}?type=video"
-                    hx-target="#media-library-container"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                    class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'video' %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
-                Videos
-            </button>
+    <div class="flex flex-col gap-3 mb-6 border-b border-white/10 pb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <!-- Type Filter Tabs -->
+            <div class="inline-flex items-center gap-1 bg-panel border border-white/10 p-1 rounded-lg w-full sm:w-auto overflow-x-auto no-scrollbar">
+                <button hx-get="{% url 'advertiser:media_library' %}?type=all&status={{ current_status }}"
+                        hx-target="#media-library-container"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                        class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'all' or not current_type %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
+                    All Media
+                </button>
+                <button hx-get="{% url 'advertiser:media_library' %}?type=image&status={{ current_status }}"
+                        hx-target="#media-library-container"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                        class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'image' %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
+                    Images
+                </button>
+                <button hx-get="{% url 'advertiser:media_library' %}?type=video&status={{ current_status }}"
+                        hx-target="#media-library-container"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                        class="flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 rounded-md transition cursor-pointer whitespace-nowrap {% if current_type == 'video' %}text-white bg-white/10{% else %}text-white/50 hover:text-white{% endif %}">
+                    Videos
+                </button>
+            </div>
+            <!-- Real-time Count Info -->
+            <div class="text-xs text-white/50 tabular-nums">
+                Showing <span class="text-white font-medium">{{ media_files|length }}</span> of {{ page_obj.paginator.count }} assets
+            </div>
         </div>
-        <!-- Real-time Count Info -->
-        <div class="text-xs text-white/50 tabular-nums">
-            Showing <span class="text-white font-medium">{{ media_files|length }}</span> of {{ page_obj.paginator.count }} assets
+        <!-- Status Filter Dropdown -->
+        <div class="relative w-full sm:w-56">
+            <select name="status"
+                    hx-get="{% url 'advertiser:media_library' %}?type={{ current_type }}"
+                    hx-trigger="change"
+                    hx-target="#media-library-container"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="w-full appearance-none bg-panel border border-white/10 text-white text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-accent transition cursor-pointer">
+                <option value="all" class="bg-panel text-white" {% if current_status == 'all' or not current_status %}selected{% endif %}>All Statuses</option>
+                <option value="pending" class="bg-panel text-white" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="admin_approved" class="bg-panel text-white" {% if current_status == 'admin_approved' %}selected{% endif %}>Admin Approved</option>
+                <option value="fully_approved" class="bg-panel text-white" {% if current_status == 'fully_approved' %}selected{% endif %}>Fully Approved</option>
+                <option value="rejected" class="bg-panel text-white" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+            <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
         </div>
     </div>
     {% if media_files %}
@@ -61,6 +82,21 @@
                             {{ media.get_media_type_display }}
                         </span>
                     </div>
+
+                    <!-- Delete — only ever possible while pending or rejected (see media_delete) -->
+                    {% if media.status == 'pending' or media.status == 'rejected' %}
+                    <form method="post" action="{% url 'advertiser:media_delete' media.pk %}" id="delete-form-{{ media.pk }}" class="hidden">
+                        {% csrf_token %}
+                    </form>
+                    <button type="button" title="Delete media"
+                            onclick="event.stopPropagation(); AdVerseDeleteConfirm.open('delete-form-{{ media.pk }}', '{{ media.title|escapejs }}');"
+                            class="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 hover:bg-red-500/90 border border-white/20 hover:border-red-400/60 text-[#ffffff] backdrop-blur-sm flex items-center justify-center transition">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2H8.5V5a1 1 0 011-1z"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+
                     <!-- Action Hover Overlay (desktop only — no hover on touch) -->
                     <div class="hidden sm:flex absolute inset-0 bg-bg/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center backdrop-blur-xs">
                         <span class="text-xs font-semibold text-white bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg">View Details</span>
@@ -102,7 +138,7 @@
             <div class="order-1 sm:order-2 flex items-center gap-1.5 bg-panel border border-white/10 p-1 rounded-xl max-w-full overflow-x-auto no-scrollbar">
                 <!-- Previous Button -->
                 {% if page_obj.has_previous %}
-                    <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_obj.previous_page_number }}&type={{ current_type }}"
+                    <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_obj.previous_page_number }}&type={{ current_type }}&status={{ current_status }}"
                             hx-target="#media-library-container"
                             hx-swap="innerHTML"
                             hx-push-url="true"
@@ -121,7 +157,7 @@
                             {{ page_num }}
                         </span>
                     {% else %}
-                        <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_num }}&type={{ current_type }}"
+                        <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_num }}&type={{ current_type }}&status={{ current_status }}"
                                 hx-target="#media-library-container"
                                 hx-swap="innerHTML"
                                 hx-push-url="true"
@@ -132,7 +168,7 @@
                 {% endfor %}
                 <!-- Next Button -->
                 {% if page_obj.has_next %}
-                    <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_obj.next_page_number }}&type={{ current_type }}"
+                    <button hx-get="{% url 'advertiser:media_library' %}?page={{ page_obj.next_page_number }}&type={{ current_type }}&status={{ current_status }}"
                             hx-target="#media-library-container"
                             hx-swap="innerHTML"
                             hx-push-url="true"

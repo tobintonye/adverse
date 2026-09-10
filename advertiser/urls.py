@@ -13,6 +13,8 @@ urlpatterns = [
     path("media/upload/", views.upload_media, name="upload_media"),
     path("media/<uuid:pk>/delete/", views.media_delete, name="media_delete"),
     path("media/<uuid:pk>/preview/", views.media_preview, name="media_preview"),
+    path("media/picker/", views.media_picker, name="media_picker"),
+
     # Billboards (browse only — advertisers don't own billboards)
     path("billboards/", views.browse_billboards, name="browse_billboards"),
     # Campaigns
@@ -25,6 +27,6 @@ urlpatterns = [
     path("campaigns/<uuid:pk>/pay/", views.campaign_pay, name="campaign_pay"), 
     path("campaigns/<uuid:pk>/playback-log/", views.campaign_playback_log, name="campaign_playback_log"),
     # advertiser/urls.py — add
-path("campaigns/<uuid:pk>/select-dates/", views.campaign_select_dates, name="campaign_select_dates"),
+    path("campaigns/<uuid:pk>/select-dates/", views.campaign_select_dates, name="campaign_select_dates"),
     path("settings/", views.advertiser_settings, name="settings"),
 ]

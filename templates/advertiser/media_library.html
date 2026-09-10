@@ -31,6 +31,35 @@
         <div id="preview-modal-content" class="contents"></div>
     </div>
 </dialog>
+<!-- Delete confirmation — replaces the native browser confirm() with something
+     that matches the app's theme instead of showing a raw "127.0.0.1:8000 says". -->
+<dialog id="delete-confirm-modal"
+        class="bg-transparent backdrop:bg-black/70 backdrop:backdrop-blur-sm p-4 w-full max-w-sm rounded-2xl border-0"
+        onclick="if (event.target === event.currentTarget) this.close()">
+    <div class="bg-panel border border-white/10 rounded-2xl shadow-2xl p-5" onclick="event.stopPropagation()">
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2H8.5V5a1 1 0 011-1z"/>
+                </svg>
+            </div>
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-white">Delete media?</h3>
+                <p id="delete-confirm-message" class="text-xs text-white/60 mt-1 leading-relaxed"></p>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 mt-5">
+            <button type="button" onclick="document.getElementById('delete-confirm-modal').close()"
+                    class="text-xs font-medium px-3.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">
+                Cancel
+            </button>
+            <button type="button" id="delete-confirm-submit"
+                    class="text-xs font-semibold px-3.5 py-2 rounded-lg bg-red-500 hover:bg-red-400 text-white transition">
+                Delete
+            </button>
+        </div>
+    </div>
+</dialog>
 {% endblock %}
 {% block extra_js %}
 <script src="{% static 'js/advertiser/media-library.js' %}"></script>

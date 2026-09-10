@@ -218,10 +218,15 @@ def media_library(request):
 
     # Filter media based on tab selection ('all', 'image', or 'video')
     media_type = request.GET.get("type", "all")
+    media_status = request.GET.get("status", "all")
     media_files_qs = Media.objects.filter(advertiser=advertiser)
 
     if media_type in ["image", "video"]:
         media_files_qs = media_files_qs.filter(media_type=media_type)
+
+    valid_statuses = {choice for choice, _ in Media.Status.choices}
+    if media_status in valid_statuses:
+        media_files_qs = media_files_qs.filter(status=media_status)
 
     media_files_qs = media_files_qs.order_by("-created_at")
 
@@ -236,14 +241,35 @@ def media_library(request):
         "active_media_ids": active_media_ids,
         "completed_media_ids": completed_media_ids,
         "current_type": media_type,
+        "current_status": media_status,
         "today": today,
     }
 
     if request.headers.get("HX-Request"):
         return render(request, "advertiser/partials/media_grid.html", context)
-
     return render(request, "advertiser/media_library.html", context)
- 
+
+@login_required(login_url="security:login")
+@advertiser_required
+def media_picker(request): 
+    advertiser = _get_advertiser(request)
+    q = request.GET.get("q", "").strip()
+    media_type = request.GET.get("type", "all")
+    media_qs = Media.objects.filter(advertiser=advertiser, status__in=[Media.Status.ADMIN_APPROVED, Media.Status.FULLY_APPROVED])
+
+    if media_type in ("image", "video"):
+        media_qs = media_qs.filter(media_type=media_type)
+    if q:
+        media_qs = media_qs.filter(title__icontains=q)
+    media_qs = media_qs.order_by("-created_at")[:60]
+
+    return render(request, "advertiser/partials/media_picker_grid.html", {
+        "media_files": media_qs,
+        "current_type": media_type,
+        "q": q,
+    })  
+
+
 @login_required(login_url="security:login")
 @advertiser_required
 def upload_media(request):
@@ -482,6 +508,7 @@ def campaign_create(request):
         "form": form,
         "billboards_json": _build_billboards_json(available_billboards),
         "preselected_billboard": preselected_billboard,
+        "selected_media": _resolve_selected_media(advertiser, request),
     }
     # Inject the billboard queryset into the form field so the template can
     # iterate form.fields.billboard.queryset for the <select> options
@@ -497,6 +524,16 @@ class _BillboardChoiceField:
         without making CampaignForm a full ModelForm for Billboard.
         Not a real Django field — just exposes .queryset for template iteration.
     """
+
+def _resolve_selected_media(advertiser, request, instance=None):
+    media_pk = None
+    if request.method == "POST":  
+        media_pk = request.POST.get("media", "").strip()
+    elif instance is not None:
+        media_pk = instance.media_id
+    if not media_pk:
+        return None
+    return Media.objects.filter(pk=media_pk, advertiser=advertiser).first()
 
 @login_required(login_url="security:login")
 @advertiser_required
@@ -764,6 +801,7 @@ def campaign_edit(request, pk):
         "preselected_billboard": initial_billboard_pk,
         "initial_slots_per_day": initial_slots_per_day,
         "is_edit": True,
+        "selected_media": _resolve_selected_media(advertiser, request, instance=campaign),
     }
     return render(request, "advertiser/campaign_edit.html", context)
 

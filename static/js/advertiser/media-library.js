@@ -18,3 +18,33 @@ document.addEventListener('DOMContentLoaded', function () {
         if (video) video.pause();
     });
 });
+
+// Delete confirmation dialog — opened by the trash button on pending/rejected
+// media cards (see media_grid.html). Submits the matching hidden delete form
+// once the person confirms, instead of a native window.confirm().
+var AdVerseDeleteConfirm = (function () {
+    var modal, message, submitBtn, pendingFormId;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        modal = document.getElementById('delete-confirm-modal');
+        message = document.getElementById('delete-confirm-message');
+        submitBtn = document.getElementById('delete-confirm-submit');
+        if (!modal || !submitBtn) return;
+
+        submitBtn.addEventListener('click', function () {
+            var form = pendingFormId && document.getElementById(pendingFormId);
+            modal.close();
+            if (form) form.submit();
+        });
+    });
+
+    function open(formId, title) {
+        pendingFormId = formId;
+        if (message) {
+            message.textContent = '"' + title + '" will be permanently deleted. This cannot be undone.';
+        }
+        if (modal) modal.showModal();
+    }
+
+    return { open: open };
+}());

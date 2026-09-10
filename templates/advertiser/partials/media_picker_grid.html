@@ -1,0 +1,39 @@
+{% if media_files %}
+<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+    {% for media in media_files %}
+    <button type="button"
+            data-media-id="{{ media.pk }}"
+            data-media-title="{{ media.title }}"
+            data-media-type="{{ media.get_media_type_display }}"
+            data-media-thumb="{% if media.thumbnail %}{{ media.thumbnail.url }}{% else %}{{ media.file.url }}{% endif %}"
+            onclick="AdVerseMediaPicker.select(this)"
+            class="media-picker-item text-left bg-bg border border-white/10 hover:border-accent/60 rounded-lg overflow-hidden transition group">
+        <div class="aspect-square bg-black/30 relative overflow-hidden">
+            {% if media.media_type == 'image' %}
+                <img src="{% if media.thumbnail %}{{ media.thumbnail.url }}{% else %}{{ media.file.url }}{% endif %}"
+                     alt="{{ media.title }}"
+                     class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+            {% else %}
+                <video src="{{ media.file.url }}" class="w-full h-full object-cover" preload="metadata"></video>
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            {% endif %}
+            {% if media.status == 'fully_approved' %}
+            <span class="absolute top-1 left-1 text-[8px] font-bold bg-blue-500/85 text-white px-1.5 py-0.5 rounded">REUSE</span>
+            {% endif %}
+        </div>
+        <div class="px-1.5 py-1.5">
+            <p class="text-[10px] font-semibold text-white truncate" title="{{ media.title }}">{{ media.title }}</p>
+            <p class="text-[9px] text-white/40">{{ media.created_at|date:"d M Y" }}</p>
+        </div>
+    </button>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <p class="text-white/40 text-xs">
+        {% if q %}No media matching "{{ q }}".{% else %}No approved media yet.{% endif %}
+    </p>
+</div>
+{% endif %}
